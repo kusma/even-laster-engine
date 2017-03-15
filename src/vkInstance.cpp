@@ -55,7 +55,11 @@ static VkBool32 messageCallback(
 		return false;
 	}
 
+#ifdef WIN32
 	OutputDebugStringA(message);
+#else
+	fprintf(stderr, "%s\n", message);
+#endif
 	delete[] message;
 	return false;
 }
