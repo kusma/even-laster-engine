@@ -16,6 +16,7 @@
 #include "swapchain.h"
 #include "shader.h"
 #include "scene/import-texture.h"
+#include "scene/sceneimporter.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <GLFW/glfw3.h>
@@ -146,67 +147,6 @@ static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule 
 	auto err = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &computePipeline);
 	assert(err == VK_SUCCESS);
 	return computePipeline;
-}
-
-namespace CubeData
-{
-	glm::vec3 vertexPositions[] = {
-		glm::vec3(-1.0f, 1.0f, -1.0f),
-		glm::vec3(-1.0f, 1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, -1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, -1.0f, -1.0f),
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, -1.0f, 1.0f),
-
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, -1.0f, 1.0f),
-		glm::vec3(-1.0f, 1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(-1.0f, 1.0f, -1.0f),
-		glm::vec3(1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, 1.0f, -1.0f),
-
-		glm::vec3(1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, 1.0f, -1.0f),
-		glm::vec3(1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-		glm::vec3(-1.0f, 1.0f, -1.0f),
-		glm::vec3(-1.0f, 1.0f, 1.0f),
-	};
-
-	uint16_t vertexIndices[] = {
-		// front face
-		0, 1, 2,
-		2, 1, 3,
-
-		// back face
-		4, 5, 6,
-		6, 5, 7,
-
-		// top face
-		8, 9, 10,
-		10, 9, 11,
-
-		// bottom face
-		12, 13, 14,
-		14, 13, 15,
-
-		// left face
-		16, 17, 18,
-		18, 17, 19,
-
-		// right face
-		20, 21, 22,
-		22, 21, 23,
-	};
 }
 
 VkPhysicalDevice choosePhysicalDevice()
@@ -368,24 +308,10 @@ int main(int argc, char *argv[])
 		auto images = swapChain.getImages();
 
 		Scene scene;
+		auto hackScene = SceneImporter::import("assets/teapots.DAE");
+		auto model = const_cast<Model*>(hackScene->getObjects().front()->getModel());
+		Mesh &mesh = *const_cast<Mesh*>(model->getMesh());
 
-		BlobBuilder vertexBuffer;
-		for (auto i = 0u; i < ARRAY_SIZE(CubeData::vertexPositions); ++i) {
-			auto pos = CubeData::vertexPositions[i];
-			vertexBuffer.append(pos.x);
-			vertexBuffer.append(pos.y);
-			vertexBuffer.append(pos.z);
-		}
-		auto vertexData = vertexBuffer.getBytes();
-
-		BlobBuilder indexBuffer;
-		for (auto i = 0; i < ARRAY_SIZE(CubeData::vertexIndices); ++i)
-			indexBuffer.append((uint32_t)CubeData::vertexIndices[i]);
-		auto indexData = indexBuffer.getBytes();
-
-		auto mesh = Mesh(vertexData, VERTEX_FORMAT_POSITION, indexData, INDEX_TYPE_UINT32);
-		auto material = Material();
-		auto model = new Model(&mesh, &material);
 		auto t1 = scene.createMatrixTransform();
 		auto t2 = scene.createMatrixTransform(t1);
 		scene.createObject(model, t1);
