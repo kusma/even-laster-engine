@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 		DepthRenderTarget depthRenderTarget(depthFormat, width, height);
 
 		auto renderTargetFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
-		ColorRenderTarget colorRenderTarget(renderTargetFormat, width, height, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		Texture2DArrayRenderTarget colorArray(renderTargetFormat, width, height, 128);
 		ColorRenderTarget computeRenderTarget(renderTargetFormat, width, height, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		VkAttachmentDescription attachments[2];
@@ -298,14 +298,17 @@ int main(int argc, char *argv[])
 		err = vkCreateRenderPass(device, &renderpassCreateInfo, nullptr, &renderPass);
 		assert(err == VK_SUCCESS);
 
-
-		auto framebuffer = createFramebuffer(
-			width, height, 1,
-			{ depthRenderTarget.getImageView(), colorRenderTarget.getImageView() },
-			renderPass);
-
 		auto imageViews = swapChain.getImageViews();
 		auto images = swapChain.getImages();
+
+		auto colorArrayImageViews = colorArray.getArrayImageViews();
+		auto framebuffers = new VkFramebuffer[colorArrayImageViews.size()];
+		for (auto i = 0u; i < colorArrayImageViews.size(); i++) {
+			framebuffers[i] = createFramebuffer(
+				width, height, 1,
+				{ depthRenderTarget.getImageView(), colorArrayImageViews[i] },
+				renderPass);
+		}
 
 		Scene scene;
 		auto hackScene = SceneImporter::import("assets/teapots.DAE");
@@ -371,6 +374,7 @@ int main(int argc, char *argv[])
 		VkSampler textureSampler = createSampler(float(texture.getMipLevels()), false, false);
 
 		VkDescriptorImageInfo descriptorImageInfo = texture.getDescriptorImageInfo(textureSampler);
+
 		writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeDescriptorSets[1].dstSet = descriptorSet;
 		writeDescriptorSets[1].descriptorCount = 1;
@@ -383,6 +387,8 @@ int main(int argc, char *argv[])
 		// Go make vertex buffer yo!
 		auto indexedBatch = meshToIndexedBatch(mesh);
 
+		VkSampler arrayTextureSampler = createSampler(0.0f, false, false);
+
 		VkDescriptorSetLayoutBinding computeDescriptorSetLayoutBindings[] = {
 			{ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0 },
 			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
@@ -392,7 +398,13 @@ int main(int argc, char *argv[])
 			{ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0 },
 			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 		});
-		auto computePipelineLayout = createPipelineLayout({ computeDescriptorSetLayout }, {});
+		VkPushConstantRange pushConstantRange = {
+			VK_SHADER_STAGE_COMPUTE_BIT,
+			0,
+			8
+		};
+
+		auto computePipelineLayout = createPipelineLayout({ computeDescriptorSetLayout }, { pushConstantRange });
 
 		VkPipeline computePipeline = createComputePipeline(computePipelineLayout, loadShaderModule("data/shaders/postprocess.comp.spv"));
 
@@ -400,8 +412,6 @@ int main(int argc, char *argv[])
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, uint32_t(imageViews.size()) },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(imageViews.size()) },
 		}, imageViews.size());
-
-		auto colorRenderTargetSampler = createSampler(0.0f, true, true);
 
 		auto computeDescriptorSet = allocateDescriptorSet(computeDescriptorPool, computeDescriptorSetLayout);
 		{
@@ -419,8 +429,8 @@ int main(int argc, char *argv[])
 
 			VkDescriptorImageInfo descriptorImageInfo = {};
 			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfo.imageView = colorRenderTarget.getImageView();
-			descriptorImageInfo.sampler = colorRenderTargetSampler;
+			descriptorImageInfo.imageView = colorArray.getImageView();
+			descriptorImageInfo.sampler = arrayTextureSampler;
 
 			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[1].dstSet = computeDescriptorSet;
@@ -447,10 +457,14 @@ int main(int argc, char *argv[])
 		assert(err == VK_SUCCESS);
 
 		auto startTime = glfwGetTime();
+		int validFrames = 0;
 		while (!glfwWindowShouldClose(win)) {
 			auto time = glfwGetTime() - startTime;
 
 			auto currentSwapImage = swapChain.aquireNextImage(backBufferSemaphore);
+			static int nextArrayBufferFrame = 0;
+			int arrayBufferFrame = nextArrayBufferFrame++;
+			int arrayBufferFrameWrapped = arrayBufferFrame  % colorArrayImageViews.size();
 
 			err = vkWaitForFences(device, 1, &commandBufferFences[currentSwapImage], VK_TRUE, UINT64_MAX);
 			assert(err == VK_SUCCESS);
@@ -484,7 +498,7 @@ int main(int argc, char *argv[])
 			renderPassBeginInfo.renderArea.extent.height = height;
 			renderPassBeginInfo.clearValueCount = ARRAY_SIZE(clearValues);
 			renderPassBeginInfo.pClearValues = clearValues;
-			renderPassBeginInfo.framebuffer = framebuffer;
+			renderPassBeginInfo.framebuffer = framebuffers[arrayBufferFrameWrapped];
 
 			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -536,6 +550,9 @@ int main(int argc, char *argv[])
 
 			vkCmdEndRenderPass(commandBuffer);
 
+			if (validFrames < colorArray.getArrayLayers())
+				validFrames++;
+
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, 1, &computeDescriptorSet, 0, nullptr);
 
@@ -546,6 +563,16 @@ int main(int argc, char *argv[])
 				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 				0, VK_ACCESS_SHADER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+			struct {
+				uint32_t arrayBufferFrame;
+				uint32_t validFrames;
+			} data = {
+				uint32_t(arrayBufferFrame),
+				uint32_t(validFrames)
+			};
+
+			vkCmdPushConstants(commandBuffer, computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(data), &data);
 
 			vkCmdDispatch(commandBuffer, width / 16, height / 16, 1);
 
