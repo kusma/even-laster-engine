@@ -14,8 +14,16 @@ endif
 vulkan_dep = declare_dependency(dependencies : vulkan_lib,
                                 include_directories : vulkan_inc)
 
-glfw_dep = dependency('glfw3', version : '>=3.2')
-glm_dep = dependency('glm')
+glfw_dep = dependency('glfw3', version : '>=3.2', required : false)
+glm_dep = dependency('glm', required : false)
+
+if not glfw_dep.found()
+	glfw_dep = subproject('glfw').get_variable('glfw_dep')
+endif
+
+if not glm_dep.found()
+	glm_dep = subproject('glm').get_variable('glm_dep')
+endif
 
 freeimage_dep = cxx.find_library('freeimage')
 assimp_dep = cxx.find_library('assimp')
