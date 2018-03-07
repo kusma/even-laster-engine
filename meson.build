@@ -1,4 +1,8 @@
-project('engine', 'cpp', 'c', default_options : [ 'cpp_std=c++11' ])
+project('engine', 'cpp', 'c',
+	default_options : [
+		'cpp_std=c++11',
+		'default_library=static'
+	])
 
 add_global_arguments('-mf16c', language : 'cpp')
 
