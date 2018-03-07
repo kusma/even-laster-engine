@@ -1,0 +1,4 @@
+[wrap-git]
+directory=glm
+url=https://github.com/kusma/glm.git
+revision=head
