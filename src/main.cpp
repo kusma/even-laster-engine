@@ -24,6 +24,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <bass.h>
 
 using namespace vulkan;
 
@@ -213,6 +214,13 @@ int main(int argc, char *argv[])
 		win = glfwCreateWindow(width, height, appName, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
 		if (fullscreen)
 			glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+		if (!BASS_Init(-1, 44100, 0, 0, 0))
+			throw runtime_error("failed to init bass");
+
+		auto stream = BASS_StreamCreateFile(false, "data/soundtrack.mp3", 0, 0, BASS_MP3_SETPOS | BASS_STREAM_PRESCAN);
+		if (!stream)
+			throw runtime_error("failed to open tune");
 
 		glfwSetKeyCallback(win, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 			if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
@@ -456,10 +464,13 @@ int main(int argc, char *argv[])
 		err = vkQueueWaitIdle(graphicsQueue);
 		assert(err == VK_SUCCESS);
 
-		auto startTime = glfwGetTime();
+		BASS_Start();
+		BASS_ChannelPlay(stream, false);
+
 		int validFrames = 0;
 		while (!glfwWindowShouldClose(win)) {
-			auto time = glfwGetTime() - startTime;
+			auto pos = BASS_ChannelGetPosition(stream, BASS_POS_BYTE);
+			auto time = BASS_ChannelBytes2Seconds(stream, pos);
 
 			auto currentSwapImage = swapChain.aquireNextImage(backBufferSemaphore);
 			static int nextArrayBufferFrame = 0;
