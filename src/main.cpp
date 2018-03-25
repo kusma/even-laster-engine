@@ -17,6 +17,7 @@
 #include "swapchain.h"
 #include "shader.h"
 #include "scene/import-texture.h"
+#include "scenerenderer.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <GLFW/glfw3.h>
@@ -45,80 +46,6 @@ static vector<const char *> getRequiredInstanceExtensions()
 
 #include "scene/scene.h"
 #include "scene/rendertarget.h"
-
-static VkPipeline createGraphicsPipeline(const ShaderProgram &shaderProgram, VkRenderPass renderPass, const VkPipelineVertexInputStateCreateInfo &pipelineVertexInputStateCreateInfo)
-{
-	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {};
-	pipelineInputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	pipelineInputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	pipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
-
-	VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {};
-	pipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-	pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-	pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
-
-	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState[1] = { { 0 } };
-	pipelineColorBlendAttachmentState[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	pipelineColorBlendAttachmentState[0].blendEnable = VK_FALSE;
-
-	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
-	pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pipelineColorBlendStateCreateInfo.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState);
-	pipelineColorBlendStateCreateInfo.pAttachments = pipelineColorBlendAttachmentState;
-
-	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
-	pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {};
-	pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	pipelineViewportStateCreateInfo.viewportCount = 1;
-	pipelineViewportStateCreateInfo.pViewports = nullptr;
-	pipelineViewportStateCreateInfo.scissorCount = 1;
-	pipelineViewportStateCreateInfo.pScissors = nullptr;
-
-	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
-	pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
-	pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
-	pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-
-	VkDynamicState dynamicStateEnables[] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
-	pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStateEnables;
-	pipelineDynamicStateCreateInfo.dynamicStateCount = ARRAY_SIZE(dynamicStateEnables);
-
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.layout = shaderProgram.getPipelineLayout();
-	pipelineCreateInfo.renderPass = renderPass;
-	pipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
-	pipelineCreateInfo.pInputAssemblyState = &pipelineInputAssemblyStateCreateInfo;
-	pipelineCreateInfo.pRasterizationState = &pipelineRasterizationStateCreateInfo;
-	pipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
-	pipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
-	pipelineCreateInfo.pViewportState = &pipelineViewportStateCreateInfo;
-	pipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
-	pipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo;
-
-	auto shaderStages = shaderProgram.getPipelineShaderStageCreateInfos();
-	pipelineCreateInfo.stageCount = shaderStages.size();
-	pipelineCreateInfo.pStages = shaderStages.data();
-
-	VkPipeline pipeline;
-	auto err = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
-	assert(err == VK_SUCCESS);
-
-	return pipeline;
-}
 
 static VkPipeline createComputePipeline(const ShaderProgram &shaderProgram)
 {
@@ -409,7 +336,7 @@ int main(int argc, char *argv[])
 		pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescriptions.size();
 		pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
 
-		auto pipeline = createGraphicsPipeline(shaderProgram, renderPass, pipelineVertexInputStateCreateInfo);
+		auto pipeline = SceneRenderer::createGraphicsPipeline(&shaderProgram, renderPass, pipelineVertexInputStateCreateInfo);
 
 		auto descriptorPool = createDescriptorPool({
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1 },
