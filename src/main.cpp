@@ -327,13 +327,23 @@ int main(int argc, char *argv[])
 		auto imageViews = swapChain.getImageViews();
 		auto images = swapChain.getImages();
 
-		Scene scene;
-		auto hackScene = SceneImporter::import("assets/teapots.DAE");
-		auto model = const_cast<Model*>(hackScene->getObjects().front()->getModel());
-		Mesh &mesh = *const_cast<Mesh*>(model->getMesh());
+		vector<Scene *> scenes;
+		for (int i = 0; true; ++i) {
+			char path[256];
+			snprintf(path, sizeof(path), "assets/scenes/%04d.dae", i);
 
-		auto transform = scene.createMatrixTransform();
-		scene.createObject(model, transform);
+			struct stat st;
+			if (stat(path, &st) < 0 ||
+				(st.st_mode & _S_IFMT) != S_IFREG)
+				break;
+
+			VkFormat format = VK_FORMAT_UNDEFINED;
+			scenes.push_back(SceneImporter::import(path));
+		}
+
+		// just a hack to get the vertex-layout
+		auto model = const_cast<Model*>(scenes.front()->getObjects().front()->getModel());
+		Mesh &mesh = *const_cast<Mesh*>(model->getMesh());
 
 		// OK, let's prepare for rendering!
 
@@ -373,7 +383,10 @@ int main(int argc, char *argv[])
 		} perObjectUniforms;
 		auto uniformSize = sizeof(perObjectUniforms);
 		auto uniformBufferSpacing = uint32_t(alignSize(uniformSize, deviceProperties.limits.minUniformBufferOffsetAlignment));
-		auto uniformBufferSize = VkDeviceSize(uniformBufferSpacing * scene.getTransforms().size());
+		int maxTransforms = 1;
+		for (auto scene : scenes)
+			maxTransforms = max(maxTransforms, int(scene->getTransforms().size()));
+		auto uniformBufferSize = VkDeviceSize(uniformBufferSpacing * maxTransforms);
 
 		auto uniformBuffer = Buffer(uniformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
@@ -610,15 +623,17 @@ int main(int argc, char *argv[])
 
 			auto offset = 0u;
 			map<const Transform*, unsigned int> offsetMap;
-			auto transforms = scene.getTransforms();
+			auto scene = scenes.front();
+			auto transforms = scene->getTransforms();
 			auto ptr = uniformBuffer.map(0, uniformBufferSpacing * transforms.size());
 			for (auto transform : transforms) {
 				auto modelMatrix = transform->getAbsoluteMatrix();
 				auto modelViewProjectionMatrix = viewProjectionMatrix * modelMatrix;
+				auto modelMatrixInverse = glm::inverse(modelMatrix);
 
 				perObjectUniforms.modelViewProjectionMatrix = modelViewProjectionMatrix;
 				// HACK: no non-per-object ubo yet
-				perObjectUniforms.viewPosition = glm::vec4(viewPosition, 0);
+				perObjectUniforms.viewPosition = modelMatrixInverse * glm::vec4(viewPosition, 1);
 
 				memcpy(static_cast<uint8_t *>(ptr) + offset, &perObjectUniforms, sizeof(perObjectUniforms));
 				offsetMap[transform] = offset;
@@ -629,7 +644,7 @@ int main(int argc, char *argv[])
 			indexedBatch.bind(commandBuffer);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-			for (auto object : scene.getObjects()) {
+			for (auto object : scene->getObjects()) {
 				assert(offsetMap.count(object->getTransform()) > 0);
 
 				auto offset = offsetMap[object->getTransform()];
