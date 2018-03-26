@@ -17,6 +17,7 @@
 #include "shader.h"
 #include "scene/import-texture.h"
 #include "scene/sceneimporter.h"
+#include "scenerenderer.h"
 
 #include "sync/sync.h"
 
@@ -51,96 +52,6 @@ static vector<const char *> getRequiredInstanceExtensions()
 
 #include "scene/scene.h"
 #include "scene/rendertarget.h"
-
-static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass renderPass, const VkPipelineVertexInputStateCreateInfo &pipelineVertexInputStateCreateInfo)
-{
-	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {};
-	pipelineInputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	pipelineInputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	pipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
-
-	VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {};
-	pipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-	pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-	pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
-
-	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState[1] = { { 0 } };
-	pipelineColorBlendAttachmentState[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	pipelineColorBlendAttachmentState[0].blendEnable = VK_FALSE;
-
-	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
-	pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pipelineColorBlendStateCreateInfo.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState);
-	pipelineColorBlendStateCreateInfo.pAttachments = pipelineColorBlendAttachmentState;
-
-	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
-	pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {};
-	pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	pipelineViewportStateCreateInfo.viewportCount = 1;
-	pipelineViewportStateCreateInfo.pViewports = nullptr;
-	pipelineViewportStateCreateInfo.scissorCount = 1;
-	pipelineViewportStateCreateInfo.pScissors = nullptr;
-
-	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
-	pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
-	pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
-	pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-
-	VkDynamicState dynamicStateEnables[] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
-	pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStateEnables;
-	pipelineDynamicStateCreateInfo.dynamicStateCount = ARRAY_SIZE(dynamicStateEnables);
-
-	VkPipelineShaderStageCreateInfo shaderStages[] = { {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		loadShaderModule("data/shaders/triangle.vert.spv"),
-		"main",
-		NULL
-	}, {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		loadShaderModule("data/shaders/triangle.frag.spv"),
-		"main",
-		NULL
-	} };
-
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.layout = layout;
-	pipelineCreateInfo.renderPass = renderPass;
-	pipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
-	pipelineCreateInfo.pInputAssemblyState = &pipelineInputAssemblyStateCreateInfo;
-	pipelineCreateInfo.pRasterizationState = &pipelineRasterizationStateCreateInfo;
-	pipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
-	pipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
-	pipelineCreateInfo.pViewportState = &pipelineViewportStateCreateInfo;
-	pipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
-	pipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo;
-	pipelineCreateInfo.stageCount = ARRAY_SIZE(shaderStages);
-	pipelineCreateInfo.pStages = shaderStages;
-
-	VkPipeline pipeline;
-	auto err = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
-	assert(err == VK_SUCCESS);
-
-	return pipeline;
-}
 
 static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule shaderModule, const char *name = "main")
 {
@@ -341,82 +252,29 @@ int main(int argc, char *argv[])
 			scenes.push_back(SceneImporter::import(path));
 		}
 
-		// just a hack to get the vertex-layout
-		auto model = const_cast<Model*>(scenes.front()->getObjects().front()->getModel());
-		Mesh &mesh = *const_cast<Mesh*>(model->getMesh());
+		vector<SceneRenderer> sceneRenderers;
+		for (auto scene : scenes)
+			sceneRenderers.push_back(SceneRenderer(scene, renderPass));
 
 		// OK, let's prepare for rendering!
 
 		auto texture = importTexture2D("assets/excess-logo.png", TextureImportFlags::GENERATE_MIPMAPS);
 		auto offsetMaps = importTexture2DArray("assets/offset-maps", TextureImportFlags::NONE);
 
-		auto descriptorSetLayout = createDescriptorSetLayout({
-			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-		});
-		auto pipelineLayout = createPipelineLayout({ descriptorSetLayout }, {});
-
-		VkVertexInputBindingDescription vertexInputBindingDesc[1];
-		vertexInputBindingDesc[0].binding = 0;
-		vertexInputBindingDesc[0].stride = mesh.getVertexStride();
-		vertexInputBindingDesc[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		auto vertexInputAttributeDescriptions = vertexFormatToInputAttributeDescriptions(mesh.getVertexFormat());
-
-		VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
-		pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = ARRAY_SIZE(vertexInputBindingDesc);
-		pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = vertexInputBindingDesc;
-		pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescriptions.size();
-		pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
-
-		auto pipeline = createGraphicsPipeline(pipelineLayout, renderPass, pipelineVertexInputStateCreateInfo);
-
-		auto descriptorPool = createDescriptorPool({
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-		}, 1);
-
-		struct {
-			glm::mat4 modelViewProjectionMatrix;
-			glm::vec4 viewPosition;
-		} perObjectUniforms;
-		auto uniformSize = sizeof(perObjectUniforms);
-		auto uniformBufferSpacing = uint32_t(alignSize(uniformSize, deviceProperties.limits.minUniformBufferOffsetAlignment));
-		int maxTransforms = 1;
-		for (auto scene : scenes)
-			maxTransforms = max(maxTransforms, int(scene->getTransforms().size()));
-		auto uniformBufferSize = VkDeviceSize(uniformBufferSpacing * maxTransforms);
-
-		auto uniformBuffer = Buffer(uniformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-		auto descriptorSet = allocateDescriptorSet(descriptorPool, descriptorSetLayout);
-
-		VkDescriptorBufferInfo descriptorBufferInfo = uniformBuffer.getDescriptorBufferInfo();
-
-		VkWriteDescriptorSet writeDescriptorSets[2] = {};
-		writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[0].dstSet = descriptorSet;
-		writeDescriptorSets[0].descriptorCount = 1;
-		writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		writeDescriptorSets[0].pBufferInfo = &descriptorBufferInfo;
-		writeDescriptorSets[0].dstBinding = 0;
-
 		VkSampler textureSampler = createSampler(float(texture.getMipLevels()), false, false);
-
 		VkDescriptorImageInfo descriptorImageInfo = texture.getDescriptorImageInfo(textureSampler);
 
-		writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[1].dstSet = descriptorSet;
-		writeDescriptorSets[1].descriptorCount = 1;
-		writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		writeDescriptorSets[1].pBufferInfo = nullptr;
-		writeDescriptorSets[1].pImageInfo = &descriptorImageInfo;
-		writeDescriptorSets[1].dstBinding = 1;
-		vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
-
-		// Go make vertex buffer yo!
-		auto indexedBatch = meshToIndexedBatch(mesh);
+		for (SceneRenderer &sceneRenderer : sceneRenderers) {
+			VkWriteDescriptorSet writeDescriptorSet = {};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = sceneRenderer.getDescriptorSet();
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptorSet.pBufferInfo = nullptr;
+			writeDescriptorSet.pImageInfo = &descriptorImageInfo;
+			writeDescriptorSet.dstBinding = 1;
+			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+		}
 
 		VkSampler arrayTextureSampler = createSampler(0.0f, false, false);
 
@@ -619,42 +477,12 @@ int main(int argc, char *argv[])
 			auto znear = 0.01f;
 			auto zfar = 100.0f;
 			auto projectionMatrix = glm::perspective(fov * float(M_PI / 180.0f), aspect, znear, zfar);
-			auto viewProjectionMatrix = projectionMatrix * viewMatrix;
 
 			auto offset = 0u;
 			map<const Transform*, unsigned int> offsetMap;
-			auto scene = scenes.front();
-			auto transforms = scene->getTransforms();
-			auto ptr = uniformBuffer.map(0, uniformBufferSpacing * transforms.size());
-			for (auto transform : transforms) {
-				auto modelMatrix = transform->getAbsoluteMatrix();
-				auto modelViewProjectionMatrix = viewProjectionMatrix * modelMatrix;
-				auto modelMatrixInverse = glm::inverse(modelMatrix);
-
-				perObjectUniforms.modelViewProjectionMatrix = modelViewProjectionMatrix;
-				// HACK: no non-per-object ubo yet
-				perObjectUniforms.viewPosition = modelMatrixInverse * glm::vec4(viewPosition, 1);
-
-				memcpy(static_cast<uint8_t *>(ptr) + offset, &perObjectUniforms, sizeof(perObjectUniforms));
-				offsetMap[transform] = offset;
-				offset += uniformBufferSpacing;
-			}
-			uniformBuffer.unmap();
-
-			indexedBatch.bind(commandBuffer);
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-			for (auto object : scene->getObjects()) {
-				assert(offsetMap.count(object->getTransform()) > 0);
-
-				auto offset = offsetMap[object->getTransform()];
-				assert(offset <= uniformBufferSize - uniformSize);
-				uint32_t dynamicOffsets[] = { (uint32_t)offset };
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 1, dynamicOffsets);
-				// vkCmdDraw(commandBuffer, ARRAY_SIZE(vertexPositions), 1, 0, 0);
-				indexedBatch.draw(commandBuffer);
-			}
-
+			int sceneIndex = 0;
+			SceneRenderer &sceneRenderer = sceneRenderers[sceneIndex];
+			sceneRenderer.draw(commandBuffer, viewMatrix, projectionMatrix, viewPosition);
 			vkCmdEndRenderPass(commandBuffer);
 
 			imageBarrier(
