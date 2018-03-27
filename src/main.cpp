@@ -208,35 +208,35 @@ int main(int argc, char *argv[])
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		attachments.push_back(colorAttachment);
 
-		VkAttachmentReference depthStencilReference = {};
-		depthStencilReference.attachment = 0;
-		depthStencilReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference sceneDepthAttachmentReference = {};
+		sceneDepthAttachmentReference.attachment = 0;
+		sceneDepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference colorReference = {};
-		colorReference.attachment = 1;
-		colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference sceneColorAttachmentReference = {};
+		sceneColorAttachmentReference.attachment = 1;
+		sceneColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkSubpassDescription renderSceneSubpass = {};
-		renderSceneSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		renderSceneSubpass.colorAttachmentCount = 1;
-		renderSceneSubpass.pColorAttachments = &colorReference;
-		renderSceneSubpass.pDepthStencilAttachment = &depthStencilReference;
+		VkSubpassDescription sceneSubpass = {};
+		sceneSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		sceneSubpass.colorAttachmentCount = 1;
+		sceneSubpass.pColorAttachments = &sceneColorAttachmentReference;
+		sceneSubpass.pDepthStencilAttachment = &sceneDepthAttachmentReference;
 
-		VkRenderPassCreateInfo renderpassCreateInfo = {};
-		renderpassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderpassCreateInfo.attachmentCount = attachments.size();
-		renderpassCreateInfo.pAttachments = attachments.data();
-		renderpassCreateInfo.subpassCount = 1;
-		renderpassCreateInfo.pSubpasses = &renderSceneSubpass;
+		VkRenderPassCreateInfo sceneRenderPassCreateInfo = {};
+		sceneRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		sceneRenderPassCreateInfo.attachmentCount = attachments.size();
+		sceneRenderPassCreateInfo.pAttachments = attachments.data();
+		sceneRenderPassCreateInfo.subpassCount = 1;
+		sceneRenderPassCreateInfo.pSubpasses = &sceneSubpass;
 
-		VkRenderPass renderPass;
-		err = vkCreateRenderPass(device, &renderpassCreateInfo, nullptr, &renderPass);
+		VkRenderPass sceneRenderPass;
+		err = vkCreateRenderPass(device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass);
 		assert(err == VK_SUCCESS);
 
-		auto framebuffer = createFramebuffer(
+		auto sceneFramebuffer = createFramebuffer(
 			width, height, 1,
 			{ depthRenderTarget.getImageView(), colorRenderTarget.getImageView() },
-			renderPass);
+			sceneRenderPass);
 
 		auto imageViews = swapChain.getImageViews();
 		auto images = swapChain.getImages();
@@ -257,7 +257,7 @@ int main(int argc, char *argv[])
 
 		vector<SceneRenderer> sceneRenderers;
 		for (auto scene : scenes)
-			sceneRenderers.push_back(SceneRenderer(scene, renderPass));
+			sceneRenderers.push_back(SceneRenderer(scene, sceneRenderPass));
 
 		// OK, let's prepare for rendering!
 
@@ -469,18 +469,18 @@ int main(int argc, char *argv[])
 				1.0f
 			};
 
-			VkRenderPassBeginInfo renderPassBeginInfo = {};
-			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassBeginInfo.renderPass = renderPass;
-			renderPassBeginInfo.renderArea.offset.x = 0;
-			renderPassBeginInfo.renderArea.offset.y = 0;
-			renderPassBeginInfo.renderArea.extent.width = width;
-			renderPassBeginInfo.renderArea.extent.height = height;
-			renderPassBeginInfo.clearValueCount = ARRAY_SIZE(clearValues);
-			renderPassBeginInfo.pClearValues = clearValues;
-			renderPassBeginInfo.framebuffer = framebuffer;
+			VkRenderPassBeginInfo sceneRenderPassBegin = {};
+			sceneRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			sceneRenderPassBegin.renderPass = sceneRenderPass;
+			sceneRenderPassBegin.renderArea.offset.x = 0;
+			sceneRenderPassBegin.renderArea.offset.y = 0;
+			sceneRenderPassBegin.renderArea.extent.width = width;
+			sceneRenderPassBegin.renderArea.extent.height = height;
+			sceneRenderPassBegin.clearValueCount = ARRAY_SIZE(clearValues);
+			sceneRenderPassBegin.pClearValues = clearValues;
+			sceneRenderPassBegin.framebuffer = sceneFramebuffer;
 
-			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(commandBuffer, &sceneRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
 			setViewport(commandBuffer, 0, 0, float(width), float(height));
 			setScissor(commandBuffer, 0, 0, width, height);
