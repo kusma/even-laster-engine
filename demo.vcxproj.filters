@@ -41,5 +41,6 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="src\shaders\perobject.glsl" />
+    <None Include="src\shaders\utils.glsl" />
   </ItemGroup>
 </Project>
