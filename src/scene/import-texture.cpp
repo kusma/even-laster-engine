@@ -14,6 +14,7 @@ using std::max;
 using std::vector;
 
 #include <FreeImage.h>
+#include <immintrin.h>
 
 static FIBITMAP *loadBitmap(string filename, VkFormat *format)
 {
