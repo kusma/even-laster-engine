@@ -184,7 +184,7 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 
 		struct stat st;
 		if (stat(path, &st) < 0 ||
-			(st.st_mode & _S_IFMT) != S_IFREG)
+		    (st.st_mode & S_IFMT) != S_IFREG)
 			break;
 
 		VkFormat format = VK_FORMAT_UNDEFINED;
