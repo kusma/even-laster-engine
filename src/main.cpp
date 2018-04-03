@@ -804,7 +804,6 @@ int main(int argc, char *argv[])
 			    (st.st_mode & S_IFMT) != S_IFREG)
 				break;
 
-			VkFormat format = VK_FORMAT_UNDEFINED;
 			scenes.push_back(SceneImporter::import(path));
 		}
 
