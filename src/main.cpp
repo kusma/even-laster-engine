@@ -300,6 +300,7 @@ static Texture3D generateFractalNoise(int width, int height, int depth)
 
 #include <fstream>
 #include <sstream>
+#include <sys/stat.h>
 
 Texture3D importCubeFile(const std::string &filename)
 {
@@ -404,7 +405,7 @@ std::vector<Texture3D> importColorLuts(string folder)
 
 		struct stat st;
 		if (stat(path, &st) < 0 ||
-			(st.st_mode & _S_IFMT) != S_IFREG)
+		    !S_ISREG(st.st_mode))
 			break;
 
 		auto colorLut = importCubeFile(path);
@@ -800,7 +801,7 @@ int main(int argc, char *argv[])
 
 			struct stat st;
 			if (stat(path, &st) < 0 ||
-				(st.st_mode & _S_IFMT) != S_IFREG)
+			    !S_ISREG(st.st_mode))
 				break;
 
 			VkFormat format = VK_FORMAT_UNDEFINED;
