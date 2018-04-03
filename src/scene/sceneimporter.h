@@ -7,6 +7,7 @@ struct aiMesh;
 struct aiNode;
 
 #include <vector>
+#include <string>
 
 class SceneImporter
 {
