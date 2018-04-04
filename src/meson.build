@@ -22,6 +22,7 @@ executable(
 		freeimage_dep,
 		glfw_dep,
 		glm_dep,
+		thread_dep,
 		vulkan_dep
 	],
 	cpp_args : '-DSYNC_PLAYER',

@@ -8,6 +8,8 @@ add_global_arguments('-mf16c', language : 'cpp')
 
 cxx = meson.get_compiler('cpp')
 
+thread_dep = dependency('threads')
+
 vulkan_sdk = get_option('vulkan-sdk')
 vulkan_inc = include_directories(join_paths(vulkan_sdk, 'include'))
 vulkan_lib = cxx.find_library('vulkan', dirs : join_paths(vulkan_sdk, 'lib'), required : false)
