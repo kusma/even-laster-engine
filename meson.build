@@ -41,7 +41,13 @@ if bass_sdk == ''
 	bass_dep = dependency('bass')
 else
 	bass_inc = include_directories(join_paths(bass_sdk))
-	bass_lib = cxx.find_library('bass', dirs : [ bass_sdk, join_paths(bass_sdk, 'x64') ] )
+
+	bass_libpath = bass_sdk
+	if host_machine.cpu_family() == 'x86_64'
+		bass_libpath = join_paths(bass_sdk, 'x64')
+	endif
+
+	bass_lib = cxx.find_library('bass', dirs : bass_libpath)
 	bass_dep = declare_dependency(dependencies : bass_lib,
 	                              include_directories : bass_inc)
 endif
