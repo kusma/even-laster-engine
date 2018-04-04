@@ -19,13 +19,17 @@ vulkan_dep = declare_dependency(dependencies : vulkan_lib,
                                 include_directories : vulkan_inc)
 
 glfw_dep = dependency('glfw3', version : '>=3.2', required : false)
-glm_dep = dependency('glm', required : false)
-
 if not glfw_dep.found()
 	glfw_dep = subproject('glfw').get_variable('glfw_dep')
 endif
 
-if not glm_dep.found()
+if cxx.has_header('glm/glm.hpp')
+	glm_dep = declare_dependency()
+else
+	glm_dep = dependency('glm', required : false)
+	if not glm_dep.found()
+		glm_dep = subproject('glm').get_variable('glm_dep')
+	endif
 	glm_dep = subproject('glm').get_variable('glm_dep')
 endif
 
