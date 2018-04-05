@@ -561,6 +561,8 @@ int main(int argc, char *argv[])
 			float delayAmount;
 			float delayChroma;
 			float overlayAlpha;
+			float fade;
+			float flash;
 		} postProcessPushConstantData;
 
 		VkPushConstantRange postProcessPushConstantRange = {
@@ -656,6 +658,8 @@ int main(int argc, char *argv[])
 
 		auto overlayIndexTrack = sync_get_track(rocket, "overlay.index");
 		auto overlayAlphaTrack = sync_get_track(rocket, "overlay.alpha");
+		auto fadeTrack = sync_get_track(rocket, "fade");
+		auto flashTrack = sync_get_track(rocket, "flash");
 
 		BASS_Start();
 		BASS_ChannelPlay(stream, false);
@@ -858,6 +862,8 @@ int main(int argc, char *argv[])
 			postProcessPushConstantData.delayAmount = float(sync_get_val(pp_delay_amount, row));
 			postProcessPushConstantData.delayChroma = float(1.0 - min(max(0.0, sync_get_val(pp_delay_chroma, row)), 1.0));
 			postProcessPushConstantData.overlayAlpha = float(sync_get_val(overlayAlphaTrack, row));
+			postProcessPushConstantData.fade = float(sync_get_val(fadeTrack, row));
+			postProcessPushConstantData.flash = float(sync_get_val(flashTrack, row));
 
 
 			vkCmdPushConstants(commandBuffer, postProcessPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(postProcessPushConstantData), &postProcessPushConstantData);

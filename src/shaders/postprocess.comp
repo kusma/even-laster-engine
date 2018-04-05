@@ -17,6 +17,8 @@ layout(push_constant) uniform PushConstants {
 	float delayAmount;
 	float delayChroma;
 	float overlayAlpha;
+	float fade;
+	float flash;
 } pushConstants;
 
 vec3 spectrum_offset(float t)
@@ -79,6 +81,8 @@ void main()
 
 	// vignette
 	color *= 1.0 - distance(pos, vec2(0.5));
+
+	color = color * pushConstants.fade + pushConstants.flash;
 
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
 }
