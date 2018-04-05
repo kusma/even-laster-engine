@@ -39,6 +39,8 @@ using std::map;
 using std::exception;
 using std::runtime_error;
 using std::string;
+using std::max;
+using std::min;
 
 static vector<const char *> getRequiredInstanceExtensions()
 {
@@ -413,7 +415,9 @@ int main(int argc, char *argv[])
 		struct {
 			uint32_t arrayBufferFrame;
 			uint32_t validFrames;
-			uint32_t arrayLayer;
+			uint32_t delayImage;
+			float delayAmount;
+			float delayChroma;
 		} pushConstantData;
 
 		VkPushConstantRange pushConstantRange = {
@@ -495,11 +499,17 @@ int main(int argc, char *argv[])
 			throw runtime_error("failed to connect to host");
 #endif
 
-		auto clear_r = sync_get_track(rocket, "clear.r");
-		auto clear_g = sync_get_track(rocket, "clear.g");
-		auto clear_b = sync_get_track(rocket, "clear.b");
+		auto clear_r = sync_get_track(rocket, "background:clear.r");
+		auto clear_g = sync_get_track(rocket, "background:clear.g");
+		auto clear_b = sync_get_track(rocket, "background:clear.b");
+
 		auto cam_rot = sync_get_track(rocket, "camera:rot.y");
 		auto cam_dist = sync_get_track(rocket, "camera:dist");
+		auto cam_roll = sync_get_track(rocket, "camera:roll");
+
+		auto pp_delay_image = sync_get_track(rocket, "postprocess:delay.image");
+		auto pp_delay_amount = sync_get_track(rocket, "postprocess:delay.amount");
+		auto pp_delay_chroma = sync_get_track(rocket, "postprocess:delay.chroma");
 
 		BASS_Start();
 		BASS_ChannelPlay(stream, false);
@@ -584,9 +594,12 @@ int main(int argc, char *argv[])
 
 			auto th = sync_get_val(cam_rot, row) * (M_PI / 180);
 			auto dist = sync_get_val(cam_dist, row);
+			auto roll = sync_get_val(cam_roll, row) * (M_PI / 180);
 
 			auto viewPosition = glm::vec3(sin(th) * dist, cos(th) * 0.5f, cos(th) * dist);
-			auto viewMatrix = glm::lookAt(viewPosition, glm::vec3(0), glm::vec3(0, 1, 0));
+			auto lookAt = glm::lookAt(viewPosition, glm::vec3(0), glm::vec3(0, 1, 0));
+			auto viewMatrix = glm::rotate(glm::mat4(1), float(roll), glm::vec3(0, 0, 1)) * lookAt;
+
 			auto fov = 60.0f;
 			auto aspect = float(width) / height;
 			auto znear = 0.01f;
@@ -644,7 +657,9 @@ int main(int argc, char *argv[])
 
 			pushConstantData.arrayBufferFrame = uint32_t(arrayBufferFrame);
 			pushConstantData.validFrames = uint32_t(validFrames);
-			pushConstantData.arrayLayer = 2;
+			pushConstantData.delayImage = uint32_t(sync_get_val(pp_delay_image, row));
+			pushConstantData.delayAmount = float(sync_get_val(pp_delay_amount, row));
+			pushConstantData.delayChroma = float(1.0 - min(max(0.0, sync_get_val(pp_delay_chroma, row)), 1.0));
 
 			vkCmdPushConstants(commandBuffer, computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pushConstantData), &pushConstantData);
 
