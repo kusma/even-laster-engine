@@ -486,9 +486,9 @@ int main(int argc, char *argv[])
 			int sceneIndex = int(sync_get_val(sceneIndexTrack, row));
 			sceneIndex = max(sceneIndex, 0);
 			sceneIndex %= sceneRenderers.size();
-
 			SceneRenderer &sceneRenderer = sceneRenderers[sceneIndex];
-			sceneRenderer.draw(commandBuffer, viewMatrix, projectionMatrix, viewPosition);
+
+			sceneRenderer.draw(commandBuffer, viewMatrix, projectionMatrix);
 			vkCmdEndRenderPass(commandBuffer);
 
 			imageBarrier(
