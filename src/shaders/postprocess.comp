@@ -7,14 +7,17 @@ layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba8, binding = 0) uniform writeonly image2D outputImage;
 layout (binding = 1) uniform sampler2DArray samplerColor;
 layout (binding = 2) uniform sampler2DArray samplerOffsets;
+layout (binding = 3) uniform sampler2DArray overlaySampler;
 
-layout(push_constant) uniform fragmentPushConstants {
+layout(push_constant) uniform PushConstants {
 	int arrayBufferFrame;
 	int validFrames;
 	int delayImage;
+	int overlayIndex;
 	float delayAmount;
 	float delayChroma;
-} u_pushConstants;
+	float overlayAlpha;
+} pushConstants;
 
 vec3 spectrum_offset(float t)
 {
@@ -34,7 +37,7 @@ vec3 sampleSpectrum(float timeA, float timeB)
 	const int num_iter = 32;
 	const float stepsiz = 1.0 / (num_iter - 1);
 
-	float rnd = nrand(gl_GlobalInvocationID.xy + u_pushConstants.arrayBufferFrame * 0.1);
+	float rnd = nrand(gl_GlobalInvocationID.xy + pushConstants.arrayBufferFrame * 0.1);
 	float t = rnd * stepsiz;
 
 	int slices = textureSize(samplerColor, 0).z;
@@ -63,13 +66,16 @@ void main()
 {
 	vec2 pos = (gl_GlobalInvocationID.xy + 0.5) / imageSize(outputImage);
 
-	float time = u_pushConstants.arrayBufferFrame;
-	float delay = textureLod(samplerOffsets, vec3(pos.xy, u_pushConstants.delayImage), 0).x;
-	delay *= u_pushConstants.delayAmount;
+	float time = pushConstants.arrayBufferFrame;
+	float delay = textureLod(samplerOffsets, vec3(pos.xy, pushConstants.delayImage), 0).x;
+	delay *= pushConstants.delayAmount;
 	delay *= textureSize(samplerColor, 0).z;
-	delay = clamp(delay, 0, u_pushConstants.validFrames - 1);
+	delay = clamp(delay, 0, pushConstants.validFrames - 1);
 
-	vec3 color = sampleSpectrum(time - delay, time - delay * u_pushConstants.delayChroma);
+	vec3 color = sampleSpectrum(time - delay, time - delay * pushConstants.delayChroma);
+
+	vec4 overlay = textureLod(overlaySampler, vec3(pos.xy, pushConstants.overlayIndex), 0);
+	color = color * (1 - overlay.a * pushConstants.overlayAlpha) + overlay.rgb * pushConstants.overlayAlpha;
 
 	// vignette
 	color *= 1.0 - distance(pos, vec2(0.5));
