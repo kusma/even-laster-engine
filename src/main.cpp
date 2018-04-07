@@ -768,14 +768,18 @@ int main(int argc, char *argv[])
 			auto dist = sync_get_val(cameraDistTrack, row);
 			auto roll = sync_get_val(cameraRollTrack, row) * (M_PI / 180);
 
+			auto cameraTargetX = sync_get_val(cameraTargetXTrack, row);
+			auto cameraTargetY = sync_get_val(cameraTargetYTrack, row);
+			auto cameraTargetZ = sync_get_val(cameraTargetZTrack, row);
+
 			auto targetPosition = glm::vec3(
-				float(sync_get_val(cameraTargetXTrack, row)),
-				float(sync_get_val(cameraTargetYTrack, row)),
-				float(sync_get_val(cameraTargetZTrack, row)));
+				float(cameraTargetX),
+				float(cameraTargetY),
+				float(cameraTargetZ));
 			auto viewPosition = glm::vec3(
-				sin(th) * dist,
-				sync_get_val(cameraUpTrack, row),
-				cos(th) * dist);
+				cameraTargetX + sin(th) * dist,
+				cameraTargetY + sync_get_val(cameraUpTrack, row),
+				cameraTargetZ + cos(th) * dist);
 			auto lookAt = glm::lookAt(viewPosition, targetPosition, glm::vec3(0, 1, 0));
 			auto viewMatrix = glm::rotate(glm::mat4(1), float(roll), glm::vec3(0, 0, 1)) * lookAt;
 
