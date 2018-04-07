@@ -70,6 +70,9 @@
 		<track name="camera:target.z">
 			<key value="0" row="0" interpolation="0"/>
 		</track>
+		<track name="camera:fov">
+			<key value="60" row="0" interpolation="0"/>
+		</track>
 		<track name="postprocess:delay.image">
 			<key value="0" row="0" interpolation="0"/>
 			<key value="1" row="1072" interpolation="0"/>
