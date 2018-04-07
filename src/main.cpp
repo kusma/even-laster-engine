@@ -579,7 +579,7 @@ int main(int argc, char *argv[])
 			postProcessRenderTargetImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 			postProcessRenderTargetImageInfo.imageView = postProcessRenderTarget.getImageView();
 
-			VkWriteDescriptorSet writeDescriptorSets[3] = {};
+			VkWriteDescriptorSet writeDescriptorSets[2] = {};
 			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[0].dstSet = postProcessDescriptorSet;
 			writeDescriptorSets[0].dstBinding = 0;
@@ -587,29 +587,22 @@ int main(int argc, char *argv[])
 			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			writeDescriptorSets[0].pImageInfo = &postProcessRenderTargetImageInfo;
 
+			vector<VkDescriptorImageInfo> descriptorImageInfos = {
+				{ arrayTextureSampler, colorArray.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+				{ arrayTextureSampler, offsetMaps.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
+			};
+
 			VkDescriptorImageInfo descriptorImageInfo1 = {};
-			descriptorImageInfo1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfo1.imageView = colorArray.getImageView();
 			descriptorImageInfo1.sampler = arrayTextureSampler;
+			descriptorImageInfo1.imageView = colorArray.getImageView();
+			descriptorImageInfo1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[1].dstSet = postProcessDescriptorSet;
 			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].descriptorCount = 1;
+			writeDescriptorSets[1].descriptorCount = descriptorImageInfos.size();
 			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[1].pImageInfo = &descriptorImageInfo1;
-
-			VkDescriptorImageInfo descriptorImageInfo2 = {};
-			descriptorImageInfo2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfo2.imageView = offsetMaps.getImageView();
-			descriptorImageInfo2.sampler = arrayTextureSampler;
-
-			writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[2].dstSet = postProcessDescriptorSet;
-			writeDescriptorSets[2].dstBinding = 2;
-			writeDescriptorSets[2].descriptorCount = 1;
-			writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[2].pImageInfo = &descriptorImageInfo2;
+			writeDescriptorSets[1].pImageInfo = descriptorImageInfos.data();
 
 			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
