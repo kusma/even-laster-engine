@@ -38,7 +38,7 @@ vec3 sampleBloom(vec2 pos, float shape)
 void main()
 {
 	vec3 color = texture(colorSampler, texCoord).rgb;
-	color += sampleBloom(texCoord, pushConstants.bloomShape) * pushConstants.bloomAmount;
+	// color += sampleBloom(texCoord, pushConstants.bloomShape) * pushConstants.bloomAmount;
 
 	outFragColor = vec4(color, 1);
 }

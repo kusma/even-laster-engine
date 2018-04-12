@@ -438,12 +438,14 @@ int main(int argc, char *argv[])
 
 	auto appName = "some excess demo";
 #ifndef _DEBUG
-	auto width = 1920, height = 1080;
+	// auto width = 1920, height = 1080;
+	auto width = 1280 / 2, height = 720 / 2;
 #else
 	auto width = 1280, height = 720;
 #endif
 #ifdef SYNC_PLAYER
-	auto fullscreen = true;
+	// auto fullscreen = true;
+	auto fullscreen = false;
 #else
 	auto fullscreen = false;
 #endif
@@ -1352,9 +1354,10 @@ int main(int argc, char *argv[])
 #endif
 		sync_destroy_device(rocket);
 
+#if 0
 		err = vkDeviceWaitIdle(device);
 		assert(err == VK_SUCCESS);
-
+#endif
 	} catch (const exception &e) {
 		if (win != nullptr)
 			glfwDestroyWindow(win);
