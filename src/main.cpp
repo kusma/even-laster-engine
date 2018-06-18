@@ -27,6 +27,7 @@ const auto beatsPerMinute = 174.0f;
 const auto rowsPerBeat = 8;
 const auto rowRate = (beatsPerMinute / 60.0) * rowsPerBeat;
 
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
