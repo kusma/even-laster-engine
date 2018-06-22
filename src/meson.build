@@ -13,18 +13,28 @@ sources = files(
 	'vkInstance.cpp'
 )
 
+demo_deps = [
+	assimp_dep,
+	bass_dep,
+	freeimage_dep,
+	glfw_dep,
+	glm_dep,
+	vulkan_dep
+]
 executable(
 	'demo',
 	sources,
-	dependencies : [
-		assimp_dep,
-		bass_dep,
-		freeimage_dep,
-		glfw_dep,
-		glm_dep,
-		vulkan_dep
-	],
+	dependencies : demo_deps,
 	cpp_args : '-DSYNC_PLAYER',
+	gui_app : true,
+	install : true,
+	install_dir : '/'
+)
+
+executable(
+	'editor',
+	sources,
+	dependencies : demo_deps,
 	gui_app : true,
 	install : true,
 	install_dir : '/'
