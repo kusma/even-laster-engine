@@ -494,7 +494,9 @@ int main(int argc, char *argv[])
 		if (err)
 			throw runtime_error("glfwCreateWindowSurface failed!");
 
-		auto swapChain = SwapChain(surface, width, height, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		int swapWidth = 0, swapHeight = 0;
+		glfwGetFramebufferSize(win, &swapWidth, &swapHeight);
+		auto swapChain = SwapChain(surface, swapWidth, swapHeight, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 		vector<VkFormat> depthCandidates = {
 			VK_FORMAT_D32_SFLOAT,
@@ -1309,6 +1311,7 @@ int main(int argc, char *argv[])
 				postProcessRenderTarget.getImage(),
 				swapChainImage,
 				width, height,
+				swapWidth, swapHeight,
 				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
 				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 });
 

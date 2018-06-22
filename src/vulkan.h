@@ -221,26 +221,47 @@ namespace vulkan
 	inline void blitImage(
 		VkCommandBuffer commandBuffer,
 		VkImage srcImage, VkImage dstImage,
+		int srcWidth, int srcHeight,
+		int dstWidth, int dstHeight,
+		VkImageSubresourceLayers srcSubresourceLayers,
+		VkImageSubresourceLayers dstSubresourceLayers,
+		VkFilter filter = VK_FILTER_LINEAR,
+		VkImageLayout srcLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout dstLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		VkImageBlit imageBlit = {};
+		imageBlit.srcSubresource = srcSubresourceLayers;
+		imageBlit.srcOffsets[1].x = int32_t(srcWidth);
+		imageBlit.srcOffsets[1].y = int32_t(srcHeight);
+		imageBlit.srcOffsets[1].z = 1;
+
+		imageBlit.dstSubresource = dstSubresourceLayers;
+		imageBlit.dstOffsets[1].x = dstWidth;
+		imageBlit.dstOffsets[1].y = dstHeight;
+		imageBlit.dstOffsets[1].z = 1;
+
+		blitImage(commandBuffer,
+			srcImage, dstImage,
+			{ imageBlit }, filter,
+			srcLayout, dstLayout);
+	}
+
+	inline void blitImage(
+		VkCommandBuffer commandBuffer,
+		VkImage srcImage, VkImage dstImage,
 		int width, int height,
 		VkImageSubresourceLayers srcSubresourceLayers,
 		VkImageSubresourceLayers dstSubresourceLayers,
 		VkFilter filter = VK_FILTER_NEAREST,
 		VkImageLayout srcLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout dstLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
-		VkImageBlit imageBlit = {};
-		imageBlit.srcSubresource = srcSubresourceLayers;
-		imageBlit.srcOffsets[1].x = int32_t(width);
-		imageBlit.srcOffsets[1].y = int32_t(height);
-		imageBlit.srcOffsets[1].z = 1;
-
-		imageBlit.dstSubresource = dstSubresourceLayers;
-		imageBlit.dstOffsets[1].x = width;
-		imageBlit.dstOffsets[1].y = height;
-		imageBlit.dstOffsets[1].z = 1;
-
-		blitImage(commandBuffer,
+		blitImage(
+			commandBuffer,
 			srcImage, dstImage,
-			{ imageBlit }, filter,
+			width, height,
+			width, height,
+			srcSubresourceLayers,
+			dstSubresourceLayers,
+			filter,
 			srcLayout, dstLayout);
 	}
 
