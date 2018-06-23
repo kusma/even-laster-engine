@@ -1149,7 +1149,7 @@ int main(int argc, char *argv[])
 
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,  wavePlanePipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, wavePlanePipelineLayout, 0, 1, &wavePlaneDescriptorSet, 0, nullptr);
-	
+
 				for (int i = 0; i < size; ++i)
 					vkCmdDraw(commandBuffer, 2 + 2 * size, 1, (1 << 16) * i, 0);
 			}
