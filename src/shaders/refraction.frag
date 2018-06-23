@@ -45,8 +45,7 @@ vec3 sampleSpectrum(vec2 uvA, vec2 uvB)
 
 	vec3 sumcol = vec3(0.0);
 	vec3 sumw = vec3(0.0);
-	for (int i = 0; i < num_iter; ++i)
-	{
+	for (int i = 0; i < num_iter; ++i) {
 		vec3 w = spectrum_offset(t);
 		sumw += w;
 
