@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
 #endif
 
 	auto appName = "some excess demo";
-#ifndef _DEBUG
+#ifdef NDEBUG
 	auto width = 1920, height = 1080;
 #else
 	auto width = 1280, height = 720;
