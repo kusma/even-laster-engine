@@ -10,7 +10,7 @@ sources = [
 ]
 
 foreach s : sources
-	infile = '../../src/shaders/' + s
+	infile = join_paths('..', '..', 'src', 'shaders', s)
 	outfile = s + '.spv'
 	custom_target(outfile, input : infile, output : outfile,
 		command : [glslang, '-V', '@INPUT@', '-o', '@OUTPUT@'],
