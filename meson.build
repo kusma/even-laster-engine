@@ -50,7 +50,3 @@ subdir('src')
 subdir('data')
 
 install_subdir('assets', install_dir : '/')
-
-meson.add_install_script(
-	join_paths(meson.source_root(), 'bin/install_tracks.py'),
-	join_paths(meson.source_root(), 'sync.rocket'))
