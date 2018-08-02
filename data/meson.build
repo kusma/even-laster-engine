@@ -12,7 +12,7 @@ custom_target('fbm.raw', output : 'fbm.raw',
 	install : true,
 	install_dir : '/data/')
 
-dump_tracks = files(join_paths(meson.source_root(), 'bin/dump_tracks.py'))
+dump_tracks = files(join_paths(meson.source_root(), 'bin', 'dump_tracks.py'))
 outdir = meson.current_build_dir()
 
 custom_target('sync.rocket',
@@ -25,5 +25,5 @@ custom_target('sync.rocket',
    build_by_default : true)
 
 meson.add_install_script(
-	join_paths(meson.source_root(), 'bin/install_tracks.py'),
+	join_paths(meson.source_root(), 'bin', 'install_tracks.py'),
 	meson.current_build_dir())
