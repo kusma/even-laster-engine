@@ -39,3 +39,8 @@ executable(
 	install : true,
 	install_dir : '/'
 )
+
+executable(
+	'gen-fbm',
+	files('gen-fbm.cpp', 'FastNoise.cpp', 'FastNoise.h')
+)
