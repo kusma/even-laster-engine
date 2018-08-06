@@ -15,14 +15,22 @@ meson.add_postconf_script(
 cxx = meson.get_compiler('cpp')
 
 vulkan_sdk = get_option('vulkan-sdk')
-vulkan_inc = include_directories(join_paths(vulkan_sdk, 'include'))
-vulkan_lib = cxx.find_library('vulkan', dirs : join_paths(vulkan_sdk, 'lib'), required : false)
-if not vulkan_lib.found()
-	vulkan_lib = cxx.find_library('vulkan-1', dirs : join_paths(vulkan_sdk, 'lib'), required : false)
+if vulkan_sdk != ''
+	vulkan_inc = include_directories(join_paths(vulkan_sdk, 'include'))
+	vulkan_lib = cxx.find_library('vulkan', dirs : join_paths(vulkan_sdk, 'lib'), required : false)
+	if not vulkan_lib.found()
+		vulkan_lib = cxx.find_library('vulkan-1', dirs : join_paths(vulkan_sdk, 'lib'), required : false)
+	endif
+	vulkan_dep = declare_dependency(dependencies : vulkan_lib,
+	                                include_directories : vulkan_inc)
+
+	glslang = find_program('glslangValidator',
+	                       join_paths(vulkan_sdk, 'bin', 'glslangValidator'))
+else
+	vulkan_dep = dependency('vulkan')
+	glslang = find_program('glslangValidator')
 endif
 
-vulkan_dep = declare_dependency(dependencies : vulkan_lib,
-                                include_directories : vulkan_inc)
 
 glfw_dep = dependency('glfw3', version : '>=3.2', required : false)
 glm_dep = dependency('glm', required : false)
@@ -47,9 +55,6 @@ else
 	bass_dep = declare_dependency(dependencies : bass_lib,
 	                              include_directories : bass_inc)
 endif
-
-glslang = find_program('glslangValidator',
-                       join_paths(vulkan_sdk, 'bin', 'glslangValidator'))
 
 subdir('src')
 subdir('data')
