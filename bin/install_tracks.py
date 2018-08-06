@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description='Convert Rocket XML files into track-files.')
     parser.add_argument('dir', metavar='DIR')
     args = parser.parse_args()
-    destdir = os.path.join(os.environ['DESTDIR'], 'data')
+    destdir = os.path.join(os.getenv('DESTDIR'), os.environ['MESON_INSTALL_PREFIX'], 'data')
     tracks = glob(os.path.join(args.dir, '*.track'))
     for track in tracks:
         shutil.copy2(track, destdir)

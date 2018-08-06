@@ -16,5 +16,5 @@ foreach s : sources
 		command : [glslang, '-V', '@INPUT@', '-o', '@OUTPUT@'],
 		build_by_default : true,
 		install : true,
-		install_dir : '/data/shaders/')
+		install_dir : 'data/shaders/')
 endforeach

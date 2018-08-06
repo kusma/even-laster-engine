@@ -59,4 +59,4 @@ endif
 subdir('src')
 subdir('data')
 
-install_subdir('assets', install_dir : '/')
+install_subdir('assets', install_dir : '')
