@@ -28,16 +28,14 @@ executable(
 	cpp_args : '-DSYNC_PLAYER',
 	gui_app : true,
 	install : true,
-	install_dir : '/'
+	install_dir : ''
 )
 
 executable(
 	'editor',
 	sources,
 	dependencies : demo_deps,
-	gui_app : true,
-	install : true,
-	install_dir : '/'
+	gui_app : true
 )
 
 gen_fbm = executable(
