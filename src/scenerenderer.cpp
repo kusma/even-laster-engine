@@ -179,7 +179,6 @@ void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMat
 	auto transforms = scene->getTransforms();
 	auto ptr = uniformBuffer->map(0, uniformBufferSpacing * transforms.size());
 
-	auto viewProjectionMatrix = projectionMatrix * viewMatrix;
 	for (auto transform : transforms) {
 		auto modelMatrix = glm::mat4(1); //  transform->getAbsoluteMatrix();
 		auto modelViewMatrix = viewMatrix * modelMatrix;
