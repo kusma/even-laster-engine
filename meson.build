@@ -3,7 +3,8 @@ project('engine', 'cpp', 'c',
 		'cpp_std=c++11',
 		'default_library=static',
 		'b_ndebug=if-release'
-	])
+	],
+	meson_version: '>=0.47')
 
 add_global_arguments('-mf16c', language : 'cpp')
 
