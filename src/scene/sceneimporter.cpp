@@ -137,7 +137,7 @@ void SceneImporter::traverseNode(const aiNode *node, Transform *parentTransform)
 //		auto material = source->mMaterials[mesh->mMaterialIndex];
 		auto material = new Material();
 		auto model = new Model(mesh, material);
-		auto object = result->createObject(model, parentTransform);
+		result->createObject(model, parentTransform);
 
 		/*
 		auto mesh = Mesh(vertices, indices);
