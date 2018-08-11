@@ -22,8 +22,8 @@ IndexedBatch meshToIndexedBatch(const Mesh &mesh)
 	auto indexBuffer = new Buffer(indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 	indexBuffer->uploadMemory(0, indices.data(), indices.size());
 
-	VkIndexType indexType;
-	int indexCount;
+	VkIndexType indexType = VK_INDEX_TYPE_UINT16; // dummy
+	uint32_t indexCount = 0;
 	switch (mesh.getIndexType()) {
 	case INDEX_TYPE_UINT16:
 		indexType = VK_INDEX_TYPE_UINT16;

@@ -251,7 +251,7 @@ private:
 struct IndexedBatch
 {
 public:
-	IndexedBatch(const std::vector<VkBuffer> &vertexBuffers, const std::vector<VkDeviceSize> &vertexBufferOffsets, VkBuffer indexBuffer, VkIndexType indexType, int indexCount) :
+	IndexedBatch(const std::vector<VkBuffer> &vertexBuffers, const std::vector<VkDeviceSize> &vertexBufferOffsets, VkBuffer indexBuffer, VkIndexType indexType, uint32_t indexCount) :
 		vertexBuffers(vertexBuffers),
 		vertexBufferOffsets(vertexBufferOffsets),
 		indexBuffer(indexBuffer),

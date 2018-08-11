@@ -67,6 +67,7 @@ static int getBpp(FIBITMAP *dib)
 	default:
 		unreachable("unsupported type!");
 	}
+	return 0;
 }
 
 inline uint16_t float_to_half(float input)
@@ -176,7 +177,7 @@ Texture2D importTexture2D(string filename, TextureImportFlags flags)
 Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 {
 	VkFormat firstFormat = VK_FORMAT_UNDEFINED;
-	unsigned int firstWidth, firstHeight;
+	unsigned int firstWidth = 0, firstHeight = 0;
 
 	vector<FIBITMAP *> bitmaps;
 	for (int i = 0; true; ++i) {
@@ -193,6 +194,7 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 
 		auto width = FreeImage_GetWidth(dib);
 		auto height = FreeImage_GetHeight(dib);
+		assert(width != 0 && height != 0);
 
 		if (i == 0) {
 			firstFormat = format;
