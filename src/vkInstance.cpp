@@ -32,7 +32,6 @@ VkDebugReportCallbackEXT vulkan::debugReportCallback;
 static const char *validationLayerNames[] = {
 	"VK_LAYER_LUNARG_standard_validation"
 };
-#endif
 
 static VkBool32 messageCallback(
 	VkDebugReportFlagsEXT flags,
@@ -63,6 +62,7 @@ static VkBool32 messageCallback(
 	delete[] message;
 	return false;
 }
+#endif
 
 void vulkan::instanceInit(const char *appName, const vector<const char *> &enabledExtensions)
 {
