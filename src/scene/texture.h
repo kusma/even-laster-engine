@@ -54,8 +54,7 @@ public:
 	void *map(VkDeviceSize offset, VkDeviceSize size)
 	{
 		void *ret;
-		VkResult err = vkMapMemory(vulkan::device, deviceMemory, offset, size, 0, &ret);
-		assert(err == VK_SUCCESS);
+		vulkan::assumeSuccess(vkMapMemory(vulkan::device, deviceMemory, offset, size, 0, &ret));
 		return ret;
 	}
 

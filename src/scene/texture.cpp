@@ -37,8 +37,7 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	if (useStaging)
 		imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-	VkResult err = vkCreateImage(device, &imageCreateInfo, nullptr, &image);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkCreateImage(device, &imageCreateInfo, nullptr, &image));
 
 	VkMemoryRequirements memoryRequirements;
 	vkGetImageMemoryRequirements(device, image, &memoryRequirements);
@@ -46,8 +45,7 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	auto memoryTypeIndex = getMemoryTypeIndex(memoryRequirements, useStaging ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 	deviceMemory = allocateDeviceMemory(memoryRequirements.size, memoryTypeIndex);
 
-	err = vkBindImageMemory(device, image, deviceMemory, 0);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkBindImageMemory(device, image, deviceMemory, 0));
 
 	VkImageSubresourceRange subresourceRange;
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -69,8 +67,7 @@ void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipL
 	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	VkResult err = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
 	VkImageSubresourceRange subresourceRange = {
 		VK_IMAGE_ASPECT_COLOR_BIT,
@@ -99,15 +96,12 @@ void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipL
 
 	vkCmdCopyBufferToImage(commandBuffer, stagingBuffer->getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-	err = vkEndCommandBuffer(commandBuffer);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkEndCommandBuffer(commandBuffer));
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	// Submit draw command buffer
-	err = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 }

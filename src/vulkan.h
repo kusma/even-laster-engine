@@ -27,6 +27,13 @@ namespace vulkan
 
 	extern VkDebugReportCallbackEXT debugReportCallback;
 
+	inline void assumeSuccess(VkResult result)
+	{
+		assert(result == VK_SUCCESS);
+		if (result != VK_SUCCESS)
+			throw std::runtime_error("unexpected return code");
+	}
+
 	void instanceInit(const char *appName, const std::vector<const char *> &enabledExtensions);
 	void deviceInit(VkPhysicalDevice physicalDevice, std::function<bool(VkInstance, VkPhysicalDevice, uint32_t)> usableQueue);
 
@@ -64,8 +71,7 @@ namespace vulkan
 		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
 		VkDeviceMemory deviceMemory;
-		VkResult err = vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &deviceMemory);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &deviceMemory));
 
 		return deviceMemory;
 	}
@@ -80,8 +86,7 @@ namespace vulkan
 
 		std::vector<VkCommandBuffer> commandBuffers;
 		commandBuffers.resize(commandBufferCount);
-		VkResult err = vkAllocateCommandBuffers(device, &commandAllocInfo, commandBuffers.data());
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkAllocateCommandBuffers(device, &commandAllocInfo, commandBuffers.data()));
 
 		return commandBuffers;
 	}
@@ -116,8 +121,7 @@ namespace vulkan
 		fenceCreateInfo.flags = flags;
 
 		VkFence ret;
-		VkResult err = vkCreateFence(device, &fenceCreateInfo, nullptr, &ret);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreateFence(device, &fenceCreateInfo, nullptr, &ret));
 		return ret;
 	}
 
@@ -126,8 +130,7 @@ namespace vulkan
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		VkSemaphore ret;
-		VkResult err = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &ret);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &ret));
 		return ret;
 	}
 
@@ -274,9 +277,7 @@ namespace vulkan
 		descriptorPoolCreateInfo.maxSets = maxSets;
 
 		VkDescriptorPool descriptorPool;
-		auto err = vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool);
-		assert(err == VK_SUCCESS);
-
+		assumeSuccess(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
 		return descriptorPool;
 	}
 
@@ -288,9 +289,7 @@ namespace vulkan
 		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		VkCommandPool commandPool;
-		auto err = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
-		assert(err == VK_SUCCESS);
-
+		assumeSuccess(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool));
 		return commandPool;
 	}
 
@@ -303,9 +302,7 @@ namespace vulkan
 		descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
 
 		VkDescriptorSet descriptorSet;
-		auto err = vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet);
-		assert(err == VK_SUCCESS);
-
+		assumeSuccess(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
 		return descriptorSet;
 	}
 
@@ -328,9 +325,7 @@ namespace vulkan
 		imageViewCreateInfo.subresourceRange = subresourceRange;
 
 		VkImageView imageView;
-		auto err = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView);
-		assert(err == VK_SUCCESS);
-
+		assumeSuccess(vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
 		return imageView;
 	}
 
@@ -356,9 +351,7 @@ namespace vulkan
 		}
 
 		VkSampler textureSampler;
-		VkResult err = vkCreateSampler(device, &samplerCreateInfo, nullptr, &textureSampler);
-		assert(err == VK_SUCCESS);
-
+		assumeSuccess(vkCreateSampler(device, &samplerCreateInfo, nullptr, &textureSampler));
 		return textureSampler;
 	}
 
@@ -379,8 +372,7 @@ namespace vulkan
 		framebufferCreateInfo.layers = uint32_t(layers);
 
 		VkFramebuffer framebuffer;
-		auto err = vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer));
 		return framebuffer;
 	}
 
@@ -396,8 +388,7 @@ namespace vulkan
 		pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
 
 		VkPipelineLayout pipelineLayout;
-		auto err = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 		return pipelineLayout;
 	}
 
@@ -412,9 +403,7 @@ namespace vulkan
 		desciptorSetLayoutCreateInfo.pBindings = layoutBindings.data();
 
 		VkDescriptorSetLayout descriptorSetLayout;
-		auto err = vkCreateDescriptorSetLayout(device, &desciptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout);
-		assert(err == VK_SUCCESS);
-
+		assumeSuccess(vkCreateDescriptorSetLayout(device, &desciptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
 		return descriptorSetLayout;
 	}
 

@@ -86,11 +86,9 @@ void vulkan::instanceInit(const char *appName, const vector<const char *> &enabl
 #endif
 
 	VkResult err = vkCreateInstance(&instanceCreateInfo, nullptr, &vulkan::instance);
-
 	if (err == VK_ERROR_INCOMPATIBLE_DRIVER)
 		throw runtime_error("Your GPU is from Hønefoss!");
-
-	assert(err == VK_SUCCESS);
+	assumeSuccess(err);
 
 	instanceFuncsInit(vulkan::instance);
 
@@ -99,9 +97,8 @@ void vulkan::instanceInit(const char *appName, const vector<const char *> &enabl
 	debugReportCallbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
 	debugReportCallbackCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)messageCallback;
 	debugReportCallbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-	err = instanceFuncs.vkCreateDebugReportCallbackEXT(instance, &debugReportCallbackCreateInfo,
-	                                                   nullptr, &debugReportCallback);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(instanceFuncs.vkCreateDebugReportCallbackEXT(instance, &debugReportCallbackCreateInfo,
+	                                                           nullptr, &debugReportCallback));
 
 	// SELF-TEST:
 	// instanceFuncs.vkDebugReportMessageEXT(instance, VK_DEBUG_REPORT_WARNING_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT, nullptr, 0, 0, "self-test", "This is a dummy warning");
@@ -166,8 +163,7 @@ void vulkan::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkInstanc
 	deviceCreateInfo.enabledLayerCount = ARRAY_SIZE(validationLayerNames);
 #endif
 
-	VkResult err = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device));
 
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
 	vkGetDeviceQueue(device, graphicsQueueIndex, 0, &graphicsQueue);

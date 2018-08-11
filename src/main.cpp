@@ -69,8 +69,7 @@ static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule 
 	computePipelineCreateInfo.layout = layout;
 
 	VkPipeline computePipeline;
-	auto err = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &computePipeline);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &computePipeline));
 	return computePipeline;
 }
 
@@ -78,14 +77,12 @@ VkPhysicalDevice choosePhysicalDevice()
 {
 	// Get number of available physical devices
 	uint32_t physicalDeviceCount = 0;
-	auto err = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
 	assert(physicalDeviceCount > 0);
 
 	// Enumerate devices
 	auto physicalDevices = new VkPhysicalDevice[physicalDeviceCount];
-	err = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices));
 	assert(physicalDeviceCount > 0);
 
 	auto physicalDevice = physicalDevices[0];
@@ -196,9 +193,7 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 	pipelineCreateInfo.pStages = shaderStages.data();
 
 	VkPipeline pipeline;
-	auto err = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
-	assert(err == VK_SUCCESS);
-
+	assumeSuccess(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
 	return pipeline;
 }
 
@@ -511,8 +506,7 @@ int main(int argc, char *argv[])
 		sceneRenderPassCreateInfo.pSubpasses = &sceneSubpass;
 
 		VkRenderPass sceneRenderPass;
-		err = vkCreateRenderPass(device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreateRenderPass(device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass));
 
 		auto sceneFramebuffer = createFramebuffer(
 			width, height, 1,
@@ -547,8 +541,7 @@ int main(int argc, char *argv[])
 		bloomRenderPassCreateInfo.pSubpasses = &bloomSubpass;
 
 		VkRenderPass bloomRenderPass;
-		err = vkCreateRenderPass(device, &bloomRenderPassCreateInfo, nullptr, &bloomRenderPass);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreateRenderPass(device, &bloomRenderPassCreateInfo, nullptr, &bloomRenderPass));
 
 		auto bloomDescriptorSetLayout = createDescriptorSetLayout({
 			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
@@ -638,8 +631,7 @@ int main(int argc, char *argv[])
 		bloomUpscaleRenderPassCreateInfo.pSubpasses = &bloomUpscaleSubpass;
 
 		VkRenderPass bloomUpscaleRenderPass;
-		err = vkCreateRenderPass(device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreateRenderPass(device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass));
 
 		auto bloomUpscaleFramebuffer = createFramebuffer(width, height, 1, { bloomUpscaleRenderTarget.getImageView() }, bloomUpscaleRenderPass);
 		auto bloomUpscaleDescriptorSet = allocateDescriptorSet(bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
@@ -896,8 +888,7 @@ int main(int argc, char *argv[])
 		for (auto i = 0u; i < commandBuffers.size(); ++i)
 			commandBufferFences[i] = createFence(VK_FENCE_CREATE_SIGNALED_BIT);
 
-		err = vkQueueWaitIdle(graphicsQueue);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkQueueWaitIdle(graphicsQueue));
 
 		auto rocket = sync_create_device("data/sync");
 		if (!rocket)
@@ -998,19 +989,15 @@ int main(int argc, char *argv[])
 			int arrayBufferFrame = nextArrayBufferFrame++;
 			uint32_t arrayBufferFrameWrapped = arrayBufferFrame % colorArray.getArrayLayers();
 
-			err = vkWaitForFences(device, 1, &commandBufferFences[currentSwapImage], VK_TRUE, UINT64_MAX);
-			assert(err == VK_SUCCESS);
-
-			err = vkResetFences(device, 1, &commandBufferFences[currentSwapImage]);
-			assert(err == VK_SUCCESS);
+			assumeSuccess(vkWaitForFences(device, 1, &commandBufferFences[currentSwapImage], VK_TRUE, UINT64_MAX));
+			assumeSuccess(vkResetFences(device, 1, &commandBufferFences[currentSwapImage]));
 
 			auto commandBuffer = commandBuffers[currentSwapImage];
 			VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 			commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-			err = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-			assert(err == VK_SUCCESS);
+			assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
 			VkClearValue clearValues[2];
 			clearValues[0].depthStencil = { 1.0f, 0 };
@@ -1272,8 +1259,7 @@ int main(int argc, char *argv[])
 				VK_ACCESS_TRANSFER_WRITE_BIT, 0,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-			err = vkEndCommandBuffer(commandBuffer);
-			assert(err == VK_SUCCESS);
+			assumeSuccess(vkEndCommandBuffer(commandBuffer));
 
 			VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_BIND_POINT_COMPUTE;
 
@@ -1288,8 +1274,7 @@ int main(int argc, char *argv[])
 			submitInfo.pCommandBuffers = &commandBuffer;
 
 			// Submit draw command buffer
-			err = vkQueueSubmit(graphicsQueue, 1, &submitInfo, commandBufferFences[currentSwapImage]);
-			assert(err == VK_SUCCESS);
+			assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, commandBufferFences[currentSwapImage]));
 
 			swapChain.queuePresent(currentSwapImage, &presentCompleteSemaphore, 1);
 
@@ -1306,8 +1291,7 @@ int main(int argc, char *argv[])
 #endif
 		sync_destroy_device(rocket);
 
-		err = vkDeviceWaitIdle(device);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkDeviceWaitIdle(device));
 
 	} catch (const exception &e) {
 		if (win != nullptr)

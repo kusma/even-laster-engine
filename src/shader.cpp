@@ -1,6 +1,8 @@
 #include "shader.h"
 #include "core/memorymappedfile.h"
 
+using namespace vulkan;
+
 VkShaderModule loadShaderModule(const char *path)
 {
 	MemoryMappedFile shaderCode(path);
@@ -12,8 +14,7 @@ VkShaderModule loadShaderModule(const char *path)
 	moduleCreateInfo.pCode = static_cast<const uint32_t *>(shaderCode.getData());
 
 	VkShaderModule shaderModule;
-	VkResult err = vkCreateShaderModule(vulkan::device, &moduleCreateInfo, nullptr, &shaderModule);
-	assert(!err);
+	assumeSuccess(vkCreateShaderModule(device, &moduleCreateInfo, nullptr, &shaderModule));
 
 	return shaderModule;
 }

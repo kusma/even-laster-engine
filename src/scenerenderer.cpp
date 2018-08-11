@@ -84,8 +84,7 @@ static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass r
 	pipelineCreateInfo.pStages = shaderStages.data();
 
 	VkPipeline pipeline;
-	auto err = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
 
 	return pipeline;
 }

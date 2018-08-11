@@ -26,8 +26,7 @@ protected:
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		VkResult err = vkCreateImage(device, &imageCreateInfo, nullptr, &image);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkCreateImage(device, &imageCreateInfo, nullptr, &image));
 
 		VkMemoryRequirements memoryRequirements;
 		vkGetImageMemoryRequirements(device, image, &memoryRequirements);
@@ -35,8 +34,7 @@ protected:
 		auto memoryTypeIndex = getMemoryTypeIndex(memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		auto deviceMemory = allocateDeviceMemory(memoryRequirements.size, memoryTypeIndex);
 
-		err = vkBindImageMemory(device, image, deviceMemory, 0);
-		assert(err == VK_SUCCESS);
+		assumeSuccess(vkBindImageMemory(device, image, deviceMemory, 0));
 
 		VkImageSubresourceRange subresourceRange;
 		subresourceRange.aspectMask = aspect;

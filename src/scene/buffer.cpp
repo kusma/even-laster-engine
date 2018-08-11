@@ -10,8 +10,7 @@ Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropert
 	bufferCreateInfo.size = size;
 	bufferCreateInfo.usage = usageFlags;
 
-	VkResult err = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer));
 
 	VkMemoryRequirements memoryRequirements;
 	vkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
@@ -19,8 +18,7 @@ Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropert
 	auto memoryTypeIndex = getMemoryTypeIndex(memoryRequirements, memoryPropertyFlags);
 	deviceMemory = allocateDeviceMemory(memoryRequirements.size, memoryTypeIndex);
 
-	err = vkBindBufferMemory(device, buffer, deviceMemory, 0);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkBindBufferMemory(device, buffer, deviceMemory, 0));
 }
 
 Buffer::~Buffer()
@@ -39,8 +37,7 @@ void Buffer::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize 
 	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	VkResult err = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
 	VkBufferCopy bufferCopy = {};
 	bufferCopy.srcOffset = srcOffset;
@@ -48,15 +45,12 @@ void Buffer::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize 
 	bufferCopy.size = size;
 	vkCmdCopyBuffer(commandBuffer, stagingBuffer->getBuffer(), buffer, 1, &bufferCopy);
 
-	err = vkEndCommandBuffer(commandBuffer);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkEndCommandBuffer(commandBuffer));
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	// Submit draw command buffer
-	err = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	assert(err == VK_SUCCESS);
+	assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 }
