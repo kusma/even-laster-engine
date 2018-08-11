@@ -251,7 +251,7 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 
 Texture3D importCubeFile(const std::string &filename)
 {
-	int size;
+	int size = 0;
 
 	StagingBuffer *stagingBuffer = nullptr;
 	float *ptr = nullptr;
@@ -277,6 +277,8 @@ Texture3D importCubeFile(const std::string &filename)
 				size = strtol(sizeString.c_str(), &end, 10);
 				if (end == nullptr)
 					throw runtime_error("expected integer size");
+				if (size < 1)
+					throw runtime_error("size needs to be at least one");
 
 				auto textureSize = sizeof(float) * 4 * size * size * size;
 				stagingBuffer = new StagingBuffer(textureSize);
@@ -333,6 +335,9 @@ Texture3D importCubeFile(const std::string &filename)
 
 		throw runtime_error("unrecognized line");
 	}
+
+	if (!size)
+		throw runtime_error("no LUT_3D_SIZE found");
 
 	if (colorsRead != size * size * size)
 		throw runtime_error("wrong amount of colors");
