@@ -68,14 +68,14 @@ public:
 
 	void setParent(Transform *parent)
 	{
-		if (this->parent != nullptr) {
+		if (this->parent) {
 			this->parent = nullptr;
 			unrooted();
 		}
 
 		this->parent = parent;
 
-		if (parent != nullptr)
+		if (parent)
 			rooted();
 	}
 
@@ -84,7 +84,7 @@ public:
 		glm::mat4 absoluteMatrix = getLocalMatrix();
 
 		const Transform *curr = getParent();
-		while (nullptr != curr) {
+		while (curr) {
 			absoluteMatrix = curr->getLocalMatrix() * absoluteMatrix;
 			curr = curr->getParent();
 		}
@@ -95,7 +95,7 @@ public:
 	const Transform *getRootTransform() const
 	{
 		const Transform *curr = this;
-		while (nullptr != curr->parent)
+		while (curr->parent)
 			curr = curr->parent;
 
 		return curr;
