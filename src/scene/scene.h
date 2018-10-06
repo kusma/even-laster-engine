@@ -194,7 +194,7 @@ public:
 		return obj;
 	}
 
-	const Transform *getRootTransform() const { return &rootTransform; }
+	const Transform &getRootTransform() const { return rootTransform; }
 
 	const std::list<Object*> &getObjects() const { return objects; }
 	const std::list<Transform*> &getTransforms() const { return transforms; }
