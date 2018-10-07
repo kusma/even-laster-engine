@@ -352,7 +352,7 @@ std::vector<Texture3D> importColorLuts(string folder)
 
 		struct stat st;
 		if (stat(path, &st) < 0 ||
-		    !S_ISREG(st.st_mode))
+		    (st.st_mode & S_IFMT) != S_IFREG)
 			break;
 
 		auto colorLut = importCubeFile(path);
@@ -750,7 +750,7 @@ int main(int argc, char *argv[])
 
 			struct stat st;
 			if (stat(path, &st) < 0 ||
-			    !S_ISREG(st.st_mode))
+			    (st.st_mode & S_IFMT) != S_IFREG)
 				break;
 
 			scenes.push_back(SceneImporter::import(path));
