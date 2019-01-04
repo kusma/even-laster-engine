@@ -1,0 +1,79 @@
+{
+    "app-id": "xyz.kusma.aurora",
+    "runtime": "org.freedesktop.Platform",
+    "runtime-version": "18.08",
+    "sdk": "org.freedesktop.Sdk",
+    "command": "aurora.sh",
+    "modules": [{
+        "name": "glslang",
+        "buildsystem": "cmake",
+        "sources": [{
+            "type": "git",
+            "url": "https://github.com/KhronosGroup/glslang.git"
+        }]
+    },{
+        "name": "glfw",
+        "buildsystem": "cmake",
+        "config-opts": ["-DBUILD_SHARED_LIBS=1", "-DGLFW_BUILD_TESTS=0", "-DGLFW_BUILD_DOCS=0"],
+	"sources": [{
+            "type": "git",
+            "url": "https://github.com/glfw/glfw.git"
+        }]
+    },{
+        "name": "glm",
+        "buildsystem": "cmake",
+        "config-opts": ["-DGLM_TEST_ENABLE=0", "-DCMAKE_INSTALL_LIBDIR=lib"],
+        "sources": [{
+            "type": "git",
+            "url": "https://github.com/g-truc/glm.git"
+        }]
+    },{
+        "name": "freeimage",
+        "buildsystem": "simple",
+        "sources": [{
+            "type": "archive",
+            "url": "http://downloads.sourceforge.net/freeimage/FreeImage3180.zip",
+            "sha256": "f41379682f9ada94ea7b34fe86bf9ee00935a3147be41b6569c9605a53e438fd"
+        }, {
+            "type": "patch",
+            "path": "freeimage.patch"
+        }],
+        "build-commands" : ["make -j", "INCDIR=/app/include INSTALLDIR=/app/lib make install"]
+    },{
+        "name": "assimp",
+        "buildsystem": "cmake",
+        "config-opts": ["-DASSIMP_BUILD_ASSIMP_TOOLS=0", "-DASSIMP_BUILD_TESTS=0", "-DINJECT_DEBUG_POSTFIX=0"],
+        "sources": [{
+            "type": "git",
+            "url": "https://github.com/assimp/assimp.git"
+        }]
+    },{
+        "name": "bass",
+        "buildsystem": "simple",
+        "sources": [{
+            "type": "archive",
+	    "strip-components": 0,
+            "url": "http://us.un4seen.com/files/bass24-linux.zip",
+            "sha256": "3bab61aa062eeab72de0891ce5c0063203464b21d2403e627f565571fa5ee0f1"
+        }],
+	"build-commands" : ["install -m 644 bass.h /app/include", "install -m755 x64/libbass.so /app/lib"]
+    },{
+        "name": "demo",
+        "buildsystem": "meson",
+        "config-opts": ["--buildtype=release"],
+        "sources": [{
+            "type": "dir",
+            "path": "../../"
+        }]
+    },{
+        "name": "aurora",
+        "buildsystem": "simple",
+        "sources": [{
+            "type": "file",
+            "path": "aurora.sh"
+	}],
+        "build-commands" : ["install -m755 aurora.sh /app/bin"]
+    }],
+    "finish-args": ["--socket=x11", "--socket=wayland", "--device=dri", "--socket=pulseaudio"],
+    "cleanup": ["/include", "/bin/glslangValidator", "/bin/spirv-remap", "*.a", "*.cmake", "*.pc"]
+}
