@@ -47,14 +47,17 @@ endif
 freeimage_dep = cxx.find_library('freeimage')
 assimp_dep = cxx.find_library('assimp')
 
-bass_sdk = get_option('bass-sdk')
-if bass_sdk == ''
-	bass_dep = dependency('bass')
-else
-	bass_inc = include_directories(join_paths(bass_sdk))
-	bass_lib = cxx.find_library('bass', dirs : [ join_paths(bass_sdk, 'x64'), bass_sdk ] )
-	bass_dep = declare_dependency(dependencies : bass_lib,
-	                              include_directories : bass_inc)
+bass_dep = cxx.find_library('bass', required: false)
+if not bass_dep.found()
+	bass_sdk = get_option('bass-sdk')
+	if bass_sdk == ''
+		bass_dep = dependency('bass')
+	else
+		bass_inc = include_directories(join_paths(bass_sdk))
+		bass_lib = cxx.find_library('bass', dirs : [ join_paths(bass_sdk, 'x64'), bass_sdk ] )
+		bass_dep = declare_dependency(dependencies : bass_lib,
+		                              include_directories : bass_inc)
+	endif
 endif
 
 subdir('src')
