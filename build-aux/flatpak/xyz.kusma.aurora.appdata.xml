@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2019 Erik Faye-Lund <kusmabitr@gmail.com> -->
+<component type="desktop-application">
+  <id>xyz.kusma.aurora</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Aurora</name>
+  <summary>Aurora by Excess</summary>
+
+  <description>
+    <p>
+      "Aurora" is a demo by Excess, first released at Revision 2018, where it placed
+      4th. The demo uses Vulkan.
+    </p>
+  </description>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Aurora</caption>
+      <image>http://content.pouet.net/files/screenshots/00075/00075791.jpg</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/excess-demogroup/even-laster-engine</url>
+
+  <releases>
+    <release version="1.0.0" date="2019-01-06">
+      <description>
+        <p>First release</p>
+      </description>
+    </release>
+  </releases>
+</component>

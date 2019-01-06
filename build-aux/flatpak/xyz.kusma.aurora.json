@@ -93,6 +93,14 @@
             "path": "xyz.kusma.aurora.desktop"
 	}],
         "build-commands" : ["mkdir -p /app/share/applications/", "install -m644 xyz.kusma.aurora.desktop /app/share/applications/"]
+    },{
+        "name": "appdata-file",
+        "buildsystem": "simple",
+        "sources": [{
+            "type": "file",
+            "path": "xyz.kusma.aurora.appdata.xml"
+	}],
+        "build-commands" : ["mkdir -p /app/share/metainfo/", "install -m644 xyz.kusma.aurora.appdata.xml /app/share/metainfo/"]
     }],
     "finish-args": ["--socket=x11", "--socket=wayland", "--device=dri", "--socket=pulseaudio"],
     "cleanup": ["/include", "/bin/glslangValidator", "/bin/spirv-remap", "*.a", "*.cmake", "*.pc"]
