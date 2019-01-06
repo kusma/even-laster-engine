@@ -77,6 +77,14 @@
             "path": "aurora.sh"
 	}],
         "build-commands" : ["install -m755 aurora.sh /app/bin"]
+    },{
+        "name": "desktop-file",
+        "buildsystem": "simple",
+        "sources": [{
+            "type": "file",
+            "path": "xyz.kusma.aurora.desktop"
+	}],
+        "build-commands" : ["mkdir -p /app/share/applications/", "install -m644 xyz.kusma.aurora.desktop /app/share/applications/"]
     }],
     "finish-args": ["--socket=x11", "--socket=wayland", "--device=dri", "--socket=pulseaudio"],
     "cleanup": ["/include", "/bin/glslangValidator", "/bin/spirv-remap", "*.a", "*.cmake", "*.pc"]
