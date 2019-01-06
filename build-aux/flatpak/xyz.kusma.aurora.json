@@ -77,6 +77,14 @@
             "path": "aurora.sh"
 	}],
         "build-commands" : ["install -m755 aurora.sh /app/bin"]
+     },{
+        "name": "icon",
+        "buildsystem": "simple",
+        "sources": [{
+            "type": "file",
+            "path": "xyz.kusma.aurora.svg"
+	}],
+        "build-commands" : ["mkdir -p /app/share/icons/hicolor/scalable/apps", "install -m644 xyz.kusma.aurora.svg /app/share/icons/hicolor/scalable/apps"]
     },{
         "name": "desktop-file",
         "buildsystem": "simple",
