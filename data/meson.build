@@ -1,10 +1,7 @@
 subdir('shaders')
 
-configure_file(
-   input : files('soundtrack.mp3'),
-   output : '@PLAINNAME@',
-   install_dir : 'data/',
-   copy : true)
+install_data(files('soundtrack.mp3'),
+   install_dir : 'data/')
 
 custom_target('fbm.raw', output : 'fbm.raw',
 	command : [gen_fbm, '@OUTPUT@'],
