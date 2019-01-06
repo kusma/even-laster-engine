@@ -9,7 +9,8 @@
         "buildsystem": "cmake",
         "sources": [{
             "type": "git",
-            "url": "https://github.com/KhronosGroup/glslang.git"
+            "url": "https://github.com/KhronosGroup/glslang.git",
+            "tag": "7.10.2984"
         }]
     },{
         "name": "glfw",
@@ -17,7 +18,8 @@
         "config-opts": ["-DBUILD_SHARED_LIBS=1", "-DGLFW_BUILD_TESTS=0", "-DGLFW_BUILD_DOCS=0"],
 	"sources": [{
             "type": "git",
-            "url": "https://github.com/glfw/glfw.git"
+            "url": "https://github.com/glfw/glfw.git",
+            "tag": "3.2.1"
         }]
     },{
         "name": "glm",
@@ -25,7 +27,8 @@
         "config-opts": ["-DGLM_TEST_ENABLE=0", "-DCMAKE_INSTALL_LIBDIR=lib"],
         "sources": [{
             "type": "git",
-            "url": "https://github.com/g-truc/glm.git"
+            "url": "https://github.com/g-truc/glm.git",
+            "tag": "0.9.9.3"
         }]
     },{
         "name": "freeimage",
@@ -45,7 +48,8 @@
         "config-opts": ["-DASSIMP_BUILD_ASSIMP_TOOLS=0", "-DASSIMP_BUILD_TESTS=0", "-DINJECT_DEBUG_POSTFIX=0"],
         "sources": [{
             "type": "git",
-            "url": "https://github.com/assimp/assimp.git"
+            "url": "https://github.com/assimp/assimp.git",
+            "tag": "v4.1.0"
         }]
     },{
         "name": "bass",
