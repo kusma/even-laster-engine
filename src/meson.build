@@ -28,7 +28,7 @@ executable(
 	cpp_args : '-DSYNC_PLAYER',
 	gui_app : true,
 	install : true,
-	install_dir : ''
+	install_dir : 'bin'
 )
 
 executable(
