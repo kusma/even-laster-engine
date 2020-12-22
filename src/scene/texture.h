@@ -23,7 +23,8 @@ public:
 	int getMipLevels() const { return mipLevels; }
 	int getArrayLayers() const { return arrayLayers; }
 
-	void uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel = 0, int arrayLayer = 0);
+	void uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel = 0, int arrayLayer = 0,
+                                 VkImageLayout finalLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	VkImageView getImageView()
 	{

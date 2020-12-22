@@ -236,7 +236,8 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 	fclose(fp);
 
 	stagingBuffer->unmap();
-	texture.uploadFromStagingBuffer(stagingBuffer, 0);
+	texture.uploadFromStagingBuffer(stagingBuffer, 0, 0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 	return texture;
 }
 
@@ -244,7 +245,7 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 #include <sstream>
 #include <sys/stat.h>
 
-Texture3D importCubeFile(const std::string &filename)
+Texture3D importCubeFile(const std::string &filename, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 {
 	int size = 0;
 
@@ -339,7 +340,7 @@ Texture3D importCubeFile(const std::string &filename)
 
 	Texture3D texture(VK_FORMAT_R32G32B32A32_SFLOAT, size, size, size, 1);
 	stagingBuffer->unmap();
-	texture.uploadFromStagingBuffer(stagingBuffer, 0);
+	texture.uploadFromStagingBuffer(stagingBuffer, 0, 0, finalLayout);
 	return texture;
 }
 

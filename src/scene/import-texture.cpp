@@ -146,7 +146,8 @@ static void uploadMipChain(TextureBase &texture, FIBITMAP *dib, int mipLevels, i
 		assert(int(FreeImage_GetHeight(dib)) == mipHeight);
 
 		auto stagingBuffer = copyToStagingBuffer(dib);
-		texture.uploadFromStagingBuffer(stagingBuffer, mipLevel, arrayLayer);
+		texture.uploadFromStagingBuffer(stagingBuffer, mipLevel, arrayLayer,
+		                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		// TODO: delete staging buffer
 	}
 
