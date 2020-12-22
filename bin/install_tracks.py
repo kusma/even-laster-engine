@@ -5,7 +5,7 @@ from glob import glob
 import os
 
 def main():
-    parser = argparse.ArgumentParser(description='Convert Rocket XML files into track-files.')
+    parser = argparse.ArgumentParser(description='Install Rocket track-files.')
     parser.add_argument('dir', metavar='DIR')
     args = parser.parse_args()
     destdir = os.path.join(os.getenv('DESTDIR'), os.environ['MESON_INSTALL_PREFIX'], 'data')
