@@ -11,16 +11,22 @@ so here's a small guide:
 2. Install these dependencies (most distros have them all):
   - GLFW: http://www.glfw.org/
     - fedora: dnf install glfw-devel
+    - ubuntu: apt install libglfw3-dev
   - GLM: https://glm.g-truc.net/
     - fedora: dnf install glm-devel
+    - ubuntu: apt install libglm-dev
   - Assimp: http://www.assimp.org/
     - fedora: dnf install assimp-devel
+    - ubuntu: apt install libassimp-dev
   - FreeImage: http://freeimage.sourceforge.net/
     - fedora: dnf install freeimage-devel
+    - ubuntu: apt install libfreeimage-dev
   - Vulkan Loader and Validation Layers: https://github.com/KhronosGroup/Vulkan-Loader
     - fedora: dnf install vulkan-devel vulkan-validation-layers
+    - ubuntu: apt install libvulkan-dev vulkan-validationlayers
   - glslang: https://github.com/KhronosGroup/glslang
     - fedora: dnf install glslang
+    - ubuntu: apt install glslang-tools
 3. Download and uncompress BASS somewhere convenient
 4. Run meson. Something like `meson -Dbass-sdk=<path-to-bass> build` should do.
 5. Compile. I usually do `ninja -C build`
