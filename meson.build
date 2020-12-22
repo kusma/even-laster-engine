@@ -13,6 +13,11 @@ meson.add_postconf_script(
 	join_paths(meson.source_root(), 'assets'),
 	join_paths(meson.build_root(), 'assets'))
 
+meson.add_postconf_script(
+	join_paths(meson.source_root(), 'bin/create_link.py'),
+	join_paths(meson.source_root(), 'data', 'soundtrack.mp3'),
+	join_paths(meson.build_root(), 'data', 'soundtrack.mp3'))
+
 cxx = meson.get_compiler('cpp')
 
 vulkan_sdk = get_option('vulkan-sdk')
