@@ -6,8 +6,6 @@ project('engine', 'cpp', 'c',
 	],
 	meson_version: '>=0.47')
 
-add_global_arguments('-mf16c', language : 'cpp')
-
 meson.add_postconf_script(
 	join_paths(meson.source_root(), 'bin/create_link.py'),
 	join_paths(meson.source_root(), 'assets'),

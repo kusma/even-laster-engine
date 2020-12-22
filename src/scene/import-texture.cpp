@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <vector>
+#include <cmath>
 
 #include <sys/stat.h>
 
@@ -72,9 +73,78 @@ static int getBpp(FIBITMAP *dib)
 
 inline uint16_t float_to_half(float input)
 {
-	__m128 single = _mm_set_ss(input);
-	__m128i half = _mm_cvtps_ph(single, 0);
-	return static_cast<uint16_t>(_mm_cvtsi128_si32(half));
+   int32_t fi;
+   memcpy(&fi, &input, sizeof(input));
+
+   const int flt_m = fi & 0x7fffff;
+   const int flt_e = (fi >> 23) & 0xff;
+   const int flt_s = (fi >> 31) & 0x1;
+   int s, e, m = 0;
+   uint16_t result;
+
+   /* sign bit */
+   s = flt_s;
+
+   /* handle special cases */
+   if ((flt_e == 0) && (flt_m == 0)) {
+      /* zero */
+      /* m = 0; - already set */
+      e = 0;
+   }
+   else if ((flt_e == 0) && (flt_m != 0)) {
+      /* denorm -- denorm float maps to 0 half */
+      /* m = 0; - already set */
+      e = 0;
+   }
+   else if ((flt_e == 0xff) && (flt_m == 0)) {
+      /* infinity */
+      /* m = 0; - already set */
+      e = 31;
+   }
+   else if ((flt_e == 0xff) && (flt_m != 0)) {
+      /* NaN */
+      m = 1;
+      e = 31;
+   }
+   else {
+      /* regular number */
+      const int new_exp = flt_e - 127;
+      if (new_exp < -14) {
+         /* The float32 lies in the range (0.0, min_normal16) and is rounded
+          * to a nearby float16 value. The result will be either zero, subnormal,
+          * or normal.
+          */
+         e = 0;
+         m = lrintf((1 << 24) * fabsf(input));
+      }
+      else if (new_exp > 15) {
+         /* map this value to infinity */
+         /* m = 0; - already set */
+         e = 31;
+      }
+      else {
+         /* The float32 lies in the range
+          *   [min_normal16, max_normal16 + max_step16)
+          * and is rounded to a nearby float16 value. The result will be
+          * either normal or infinite.
+          */
+         e = new_exp + 15;
+         m = lrintf(flt_m / (float) (1 << 13));
+      }
+   }
+
+   assert(0 <= m && m <= 1024);
+   if (m == 1024) {
+      /* The float32 was rounded upwards into the range of the next exponent,
+       * so bump the exponent. This correctly handles the case where f32
+       * should be rounded up to float16 infinity.
+       */
+      ++e;
+      m = 0;
+   }
+
+   result = (s << 15) | (e << 10) | m;
+   return result;
 }
 
 static StagingBuffer *copyToStagingBuffer(FIBITMAP *dib)
