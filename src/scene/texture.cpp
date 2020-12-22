@@ -57,7 +57,8 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	imageView = createImageView(image, imageViewType, format, subresourceRange);
 }
 
-void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel, int arrayLayer)
+void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel, int arrayLayer,
+                                          VkImageLayout finalLayout)
 {
 	assert(stagingBuffer != nullptr);
 
@@ -96,6 +97,12 @@ void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipL
 	copyRegion.imageExtent.depth = mipSize(baseDepth, mipLevel);
 
 	vkCmdCopyBufferToImage(commandBuffer, stagingBuffer->getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+	if (finalLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		imageBarrier(commandBuffer, image, subresourceRange,
+		             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+		             0, VK_ACCESS_TRANSFER_WRITE_BIT,
+		             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, finalLayout);
 
 	err = vkEndCommandBuffer(commandBuffer);
 	assert(err == VK_SUCCESS);
