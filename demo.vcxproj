@@ -296,8 +296,8 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\glfw.3.2.1.5\build\native\glfw.targets" Condition="Exists('packages\glfw.3.2.1.5\build\native\glfw.targets')" />
     <Import Project="packages\glm.0.9.8.5\build\native\glm.targets" Condition="Exists('packages\glm.0.9.8.5\build\native\glm.targets')" />
-    <Import Project="packages\FreeImage.redist.3.17.0\build\native\FreeImage.redist.targets" Condition="Exists('packages\FreeImage.redist.3.17.0\build\native\FreeImage.redist.targets')" />
-    <Import Project="packages\FreeImage.3.17.0\build\native\FreeImage.targets" Condition="Exists('packages\FreeImage.3.17.0\build\native\FreeImage.targets')" />
+    <Import Project="packages\FreeImageNative.redist.3.17.0\build\native\FreeImageNative.redist.targets" Condition="Exists('packages\FreeImageNative.redist.3.17.0\build\native\FreeImageNative.redist.targets')" />
+    <Import Project="packages\FreeImageNative.3.17.0\build\native\FreeImageNative.targets" Condition="Exists('packages\FreeImageNative.3.17.0\build\native\FreeImageNative.targets')" />
     <Import Project="packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
     <Import Project="packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" />
     <Import Project="packages\BASS.redist.2.4.12.1\build\native\BASS.redist.targets" Condition="Exists('packages\BASS.redist.2.4.12.1\build\native\BASS.redist.targets')" />
@@ -309,8 +309,8 @@
     </PropertyGroup>
     <Error Condition="!Exists('packages\glfw.3.2.1.5\build\native\glfw.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\glfw.3.2.1.5\build\native\glfw.targets'))" />
     <Error Condition="!Exists('packages\glm.0.9.8.5\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\glm.0.9.8.5\build\native\glm.targets'))" />
-    <Error Condition="!Exists('packages\FreeImage.redist.3.17.0\build\native\FreeImage.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\FreeImage.redist.3.17.0\build\native\FreeImage.redist.targets'))" />
-    <Error Condition="!Exists('packages\FreeImage.3.17.0\build\native\FreeImage.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\FreeImage.3.17.0\build\native\FreeImage.targets'))" />
+    <Error Condition="!Exists('packages\FreeImageNative.redist.3.17.0\build\native\FreeImageNative.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\FreeImageNative.redist.3.17.0\build\native\FreeImageNative.redist.targets'))" />
+    <Error Condition="!Exists('packages\FreeImageNative.3.17.0\build\native\FreeImageNative.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\FreeImageNative.3.17.0\build\native\FreeImageNative.targets'))" />
     <Error Condition="!Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
     <Error Condition="!Exists('packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
     <Error Condition="!Exists('packages\BASS.redist.2.4.12.1\build\native\BASS.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\BASS.redist.2.4.12.1\build\native\BASS.redist.targets'))" />
