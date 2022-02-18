@@ -26,7 +26,7 @@ def main():
         for track in root.iter('track'):
             path = os.path.join(args.outdir, track_path("sync", track.attrib['name']))
             file = open(path, 'wb')
-            keys = track.getchildren()
+            keys = list(track)
 
             file.write(pack('<I', len(keys)))
 
