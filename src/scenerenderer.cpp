@@ -158,7 +158,7 @@ SceneRenderer::SceneRenderer(Scene *scene, VkRenderPass renderPass) :
 
 	descriptorSet = allocateDescriptorSet(descriptorPool, descriptorSetLayout);
 
-	VkDescriptorBufferInfo descriptorBufferInfo = uniformBuffer->getDescriptorBufferInfo();
+	VkDescriptorBufferInfo descriptorBufferInfo = uniformBuffer->getDescriptorBufferInfo(0, uniformBufferSpacing);
 
 	VkWriteDescriptorSet writeDescriptorSets[1] = {};
 	writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
