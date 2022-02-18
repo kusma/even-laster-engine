@@ -25,7 +25,7 @@ public:
 
 	void uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel = 0, int arrayLayer = 0);
 
-	VkImageView getImageView()
+	VkImageView getImageView() const
 	{
 		return imageView;
 	}
