@@ -30,6 +30,11 @@ public:
 		return imageView;
 	}
 
+	VkImage getImage() const
+	{
+		return image;
+	}
+
 	VkSubresourceLayout getSubresourceLayout(int mipLevel = 0, int arrayLayer = 0)
 	{
 		VkImageSubresource subRes = {};
