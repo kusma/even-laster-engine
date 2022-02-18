@@ -20,7 +20,7 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 
 	if (imageViewType == VK_IMAGE_VIEW_TYPE_CUBE)
 		imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-	else if (imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY)
+	else if (imageViewType == VK_IMAGE_VIEW_TYPE_2D_ARRAY && imageType == VK_IMAGE_TYPE_3D)
 		imageCreateInfo.flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR;
 
 	imageCreateInfo.imageType = imageType;
