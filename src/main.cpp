@@ -237,6 +237,7 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 
 	stagingBuffer->unmap();
 	texture.uploadFromStagingBuffer(stagingBuffer, 0);
+	setImageName(texture.getImage(), filename);
 	return texture;
 }
 
@@ -424,6 +425,7 @@ int main(int argc, char *argv[])
 		auto enabledExtensions = getRequiredInstanceExtensions();
 #ifndef NDEBUG
 		enabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+		enabledExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
 		instanceInit(appName, enabledExtensions);

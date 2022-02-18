@@ -42,6 +42,7 @@ namespace vulkan
 		PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
 		PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
 		PFN_vkDebugReportMessageEXT vkDebugReportMessageEXT;
+		PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
 	} instanceFuncs;
 
 	inline VkDeviceSize alignSize(VkDeviceSize value, VkDeviceSize alignment)
@@ -406,6 +407,22 @@ namespace vulkan
 		VkDescriptorSetLayout descriptorSetLayout;
 		assumeSuccess(vkCreateDescriptorSetLayout(device, &desciptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
 		return descriptorSetLayout;
+	}
+
+	inline void setImageName(VkImage image, const std::string &name)
+	{
+#ifndef NDEBUG
+		const VkDebugUtilsObjectNameInfoEXT imageNameInfo =
+		{
+			VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+			NULL,
+			VK_OBJECT_TYPE_IMAGE,
+			(uint64_t)image,
+			name.c_str(),
+		};
+
+		instanceFuncs.vkSetDebugUtilsObjectNameEXT(device, &imageNameInfo);
+#endif
 	}
 
 	void instanceFuncsInit(VkInstance instance);
