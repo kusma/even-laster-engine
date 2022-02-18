@@ -9,6 +9,7 @@
 #include <functional>
 #include <vector>
 #include <cassert>
+#include <stdexcept>
 
 #include "core/core.h"
 
