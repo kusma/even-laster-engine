@@ -1,4 +1,4 @@
 [wrap-git]
 directory=glfw
-url=https://github.com/henry4k/glfw-meson.git
-revision=head
+url=https://github.com/glfw/glfw.git
+revision=3.3.6

@@ -19,7 +19,7 @@
 	"sources": [{
             "type": "git",
             "url": "https://github.com/glfw/glfw.git",
-            "tag": "3.2.1"
+            "tag": "3.3.6"
         }]
     },{
         "name": "glm",

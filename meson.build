@@ -4,7 +4,7 @@ project('engine', 'cpp', 'c',
 		'default_library=static',
 		'b_ndebug=if-release'
 	],
-	meson_version: '>=0.47')
+	meson_version: '>=0.51')
 
 add_global_arguments('-mf16c', language : 'cpp')
 
@@ -37,7 +37,8 @@ glfw_dep = dependency('glfw3', version : '>=3.2', required : false)
 glm_dep = dependency('glm', required : false)
 
 if not glfw_dep.found()
-	glfw_dep = subproject('glfw').get_variable('glfw_dep')
+	cmake = import('cmake')
+	glfw_dep = cmake.subproject('glfw').dependency('glfw')
 endif
 
 if not glm_dep.found()
