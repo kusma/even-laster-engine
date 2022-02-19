@@ -58,7 +58,7 @@
             "type": "archive",
             "strip-components": 0,
             "url": "http://us.un4seen.com/files/bass24-linux.zip",
-            "sha256": "3bab61aa062eeab72de0891ce5c0063203464b21d2403e627f565571fa5ee0f1"
+            "sha256": "77f387762a9ee4b72da3c6581c22e50456ab7aeb7c9a7154564530a9468db655"
         }],
         "build-commands" : ["install -m 644 bass.h /app/include", "install -m755 x64/libbass.so /app/lib"]
     },{
