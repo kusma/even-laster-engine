@@ -41,7 +41,7 @@
             "type": "patch",
             "path": "freeimage.patch"
         }],
-        "build-commands" : ["make -j", "INCDIR=/app/include INSTALLDIR=/app/lib make install"]
+        "build-commands" : ["CXXFLAGS=-std=c++03 make -j", "INCDIR=/app/include INSTALLDIR=/app/lib make install"]
     },{
         "name": "assimp",
         "buildsystem": "cmake",
