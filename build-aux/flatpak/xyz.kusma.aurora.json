@@ -1,7 +1,7 @@
 {
     "app-id": "xyz.kusma.aurora",
     "runtime": "org.freedesktop.Platform",
-    "runtime-version": "18.08",
+    "runtime-version": "21.08",
     "sdk": "org.freedesktop.Sdk",
     "command": "aurora.sh",
     "modules": [{
