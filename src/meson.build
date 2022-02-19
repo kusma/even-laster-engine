@@ -26,7 +26,7 @@ executable(
 	sources,
 	dependencies : demo_deps,
 	cpp_args : '-DSYNC_PLAYER',
-	gui_app : true,
+	win_subsystem : 'windows',
 	install : true,
 	install_dir : 'bin'
 )
@@ -35,7 +35,7 @@ executable(
 	'editor',
 	sources,
 	dependencies : demo_deps,
-	gui_app : true
+	win_subsystem : 'windows'
 )
 
 gen_fbm = executable(
