@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
 {
 #endif
 
-	auto appName = "some excess demo";
+	auto appName = "Excess - Aurora";
 #ifdef NDEBUG
 	auto width = 1920, height = 1080;
 #else
