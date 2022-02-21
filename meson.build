@@ -42,7 +42,8 @@ if not glfw_dep.found()
 endif
 
 if not glm_dep.found()
-	glm_dep = subproject('glm').get_variable('glm_dep')
+	cmake = import('cmake')
+	glm_dep = cmake.subproject('glm').dependency('glm')
 endif
 
 freeimage_dep = cxx.find_library('freeimage')
