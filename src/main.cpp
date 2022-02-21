@@ -1361,6 +1361,7 @@ int main(int argc, char *argv[])
 		sync_destroy_device(rocket);
 
 		assumeSuccess(vkDeviceWaitIdle(device));
+		glfwDestroyWindow(win);
 
 	} catch (const exception &e) {
 		if (win != nullptr)
