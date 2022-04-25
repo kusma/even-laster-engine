@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Aurora
-Comment="Aurora" by Excess
-Exec=/app/bin/aurora.sh
-Icon=xyz.kusma.aurora
-Categories=Graphics;X-Demoscene-Production
-Terminal=false
