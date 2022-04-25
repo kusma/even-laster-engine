@@ -1,0 +1,8 @@
+[wrap-file]
+directory=freeimage
+
+source_url=https://downloads.sourceforge.net/project/freeimage/Binary%20Distribution/3.18.0/FreeImage3180Win32Win64.zip
+source_filename=FreeImage3180Win32Win64.zip
+source_hash=d546d5f3314da5dbf6a6e5686585da9b2a7fad3dc6da8f96f252348742247d8e
+
+patch_directory=freeimage

@@ -52,7 +52,12 @@ if not glm_dep.found()
 	glm_dep = cmake.subproject('glm').dependency('glm')
 endif
 
-freeimage_dep = cxx.find_library('freeimage')
+freeimage_dep = cxx.find_library('freeimage', required: false)
+if not freeimage_dep.found()
+	freeimage_proj = subproject('freeimage')
+	freeimage_dep = freeimage_proj.get_variable('freeimage_dep')
+endif
+
 assimp_dep = cxx.find_library('assimp')
 
 gst_dep = dependency('gstreamer-1.0')
