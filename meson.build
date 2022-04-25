@@ -6,14 +6,14 @@ project('engine', 'cpp', 'c',
 	],
 	meson_version: '>=0.56')
 
-add_global_arguments('-mf16c', language : 'cpp')
-
 meson.add_postconf_script(
 	join_paths(meson.project_source_root(), 'bin/create_link.py'),
 	join_paths(meson.project_source_root(), 'assets'),
 	join_paths(meson.project_build_root(), 'assets'))
 
 cxx = meson.get_compiler('cpp')
+
+add_project_arguments(cxx.get_supported_arguments('-mf16c'), language : 'cpp')
 
 vulkan_sdk = get_option('vulkan-sdk')
 if vulkan_sdk != ''
