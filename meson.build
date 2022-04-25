@@ -15,6 +15,9 @@ cxx = meson.get_compiler('cpp')
 
 add_project_arguments(cxx.get_supported_arguments('-mf16c'), language : 'cpp')
 
+
+python = import('python').find_installation('python3')
+
 vulkan_sdk = get_option('vulkan-sdk')
 if vulkan_sdk != ''
 	vulkan_inc = include_directories(join_paths(vulkan_sdk, 'include'))

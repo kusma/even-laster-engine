@@ -16,7 +16,7 @@ custom_target('sync.rocket',
    input : files(join_paths('..', 'sync.rocket')),
    output : '.sync.rocket.timestamp',
    command : [
-      dump_tracks, '@INPUT@',
+      python, dump_tracks, '@INPUT@',
       '--timestamp', '@OUTPUT@',
       '--outdir', meson.current_build_dir() ],
    build_by_default : true)
