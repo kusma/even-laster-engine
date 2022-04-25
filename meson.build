@@ -72,7 +72,22 @@ if not assimp_dep.found()
 	assimp_dep = cmake.subproject('assimp', options: opt_var).dependency('assimp')
 endif
 
-gst_dep = dependency('gstreamer-1.0')
+if host_machine.system() == 'windows'
+	bass_sdk = get_option('bass-sdk')
+	libdirs = [
+		join_paths(bass_sdk, 'c', 'x64'),
+		join_paths(bass_sdk, 'c')
+	]
+	bass_inc = include_directories(join_paths(bass_sdk, 'c'))
+	bass_lib = cxx.find_library('bass', dirs : libdirs)
+	bass_dep = declare_dependency(dependencies : bass_lib,
+								include_directories : bass_inc)
+	add_project_arguments('-DUSE_BASS', language : 'cpp')
+	gst_dep = dependency('', required: false)
+else
+	gst_dep = dependency('gstreamer-1.0')
+	bass_dep = dependency('', required: false)
+endif
 
 subdir('src')
 subdir('data')
