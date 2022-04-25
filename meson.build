@@ -58,7 +58,16 @@ if not freeimage_dep.found()
 	freeimage_dep = freeimage_proj.get_variable('freeimage_dep')
 endif
 
-assimp_dep = cxx.find_library('assimp')
+assimp_dep = cxx.find_library('assimp', required: false)
+if not assimp_dep.found()
+	cmake = import('cmake')
+	opt_var = cmake.subproject_options()
+	opt_var.add_cmake_defines({
+		'ASSIMP_BUILD_ASSIMP_TOOLS': false,
+		'ASSIMP_BUILD_TESTS': false
+	})
+	assimp_dep = cmake.subproject('assimp', options: opt_var).dependency('assimp')
+endif
 
 gst_dep = dependency('gstreamer-1.0')
 
