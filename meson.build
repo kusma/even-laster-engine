@@ -18,6 +18,9 @@ add_project_arguments(cxx.get_supported_arguments('-mf16c'), language : 'cpp')
 
 python = import('python').find_installation('python3')
 
+if host_machine.system() == 'windows'
+	add_project_arguments('-DNOMINMAX', language : 'cpp')
+endif
 
 python = import('python').find_installation('python3')
 
