@@ -36,7 +36,7 @@ executable(
 executable(
 	'editor',
 	sources,
-	dependencies : demo_deps,
+	dependencies : [demo_deps, wsock2_dep],
 	win_subsystem : 'windows'
 )
 

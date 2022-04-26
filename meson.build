@@ -41,6 +41,7 @@ else
 	glslang = find_program('glslangValidator')
 endif
 
+wsock2_dep = cxx.find_library('ws2_32', required: false)
 
 glfw_dep = dependency('glfw3', version : '>=3.2', required : false)
 glm_dep = dependency('glm', required : false)
