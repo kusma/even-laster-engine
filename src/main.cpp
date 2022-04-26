@@ -1035,15 +1035,14 @@ int main(int argc, char *argv[])
 					else
 						BASS_ChannelPlay(h, false);
 				},
-					// set row
-					[](void *d, int row) {
+				// set row
+				[](void *d, int row) {
 					HSTREAM h = *((HSTREAM *)d);
 					QWORD pos = BASS_ChannelSeconds2Bytes(h, (row + 0.01) / rowRate);
 					BASS_ChannelSetPosition(h, pos, BASS_POS_BYTE);
 				},
-
-					// is playing
-					[](void *d) -> int {
+				// is playing
+				[](void *d) -> int {
 					HSTREAM h = *((HSTREAM *)d);
 					return BASS_ChannelIsActive(h) == BASS_ACTIVE_PLAYING;
 				},
