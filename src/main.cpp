@@ -36,7 +36,12 @@ const auto rowRate = (beatsPerMinute / 60.0) * rowsPerBeat;
 #include <glm/gtc/type_ptr.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
+
+#ifdef USE_BASS
 #include <bass.h>
+#else
+#include <gst/gst.h>
+#endif
 
 using namespace vulkan;
 
@@ -427,14 +432,39 @@ int main(int argc, char *argv[])
 		if (fullscreen)
 			glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+#ifdef USE_BASS
 		if (!BASS_Init(-1, 44100, 0, 0, 0))
 			throw runtime_error("failed to init bass");
 
 		auto stream = BASS_StreamCreateFile(false, "data/soundtrack.mp3", 0, 0, BASS_MP3_SETPOS | BASS_STREAM_PRESCAN);
 		if (!stream)
 			throw runtime_error("failed to open tune");
+#else
+		gst_init(&argc, &argv);
+		auto play = gst_element_factory_make("playbin", "play");
+		if (!play)
+			throw runtime_error("failed to create gst playbin object");
+		auto uri = gst_filename_to_uri("./data/soundtrack.mp3", NULL);
+		g_object_set(G_OBJECT(play), "uri", uri, NULL);
+		g_free(uri);
 
-		glfwSetKeyCallback(win, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		gst_bus_add_watch(gst_pipeline_get_bus(GST_PIPELINE(play)), [](GstBus *bus, GstMessage *msg, gpointer data) -> gboolean {
+			GLFWwindow *window = reinterpret_cast<GLFWwindow *>(data);
+			switch(GST_MESSAGE_TYPE(msg)) {
+#ifdef SYNC_PLAYER
+			case GST_MESSAGE_EOS:
+#endif
+			case GST_MESSAGE_ERROR:
+				glfwSetWindowShouldClose(window, GLFW_TRUE);
+			default:
+				break;
+			}
+			return TRUE;
+		}, win);
+
+#endif
+
+		glfwSetKeyCallback(win, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
 			if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
 				glfwSetWindowShouldClose(window, GLFW_TRUE);
 			});
@@ -1044,17 +1074,32 @@ int main(int argc, char *argv[])
 		auto wavePlaneScaleYTrack = sync_get_track(rocket, "waveplane:scale.y");
 		auto wavePlaneTimeTrack = sync_get_track(rocket, "waveplane:time");
 
+#ifdef USE_BASS
 		BASS_Start();
 		BASS_ChannelPlay(stream, false);
+#else
+		auto ret = gst_element_set_state(play, GST_STATE_PLAYING);
+		if (ret == GST_STATE_CHANGE_ASYNC)
+			ret = gst_element_get_state(play, NULL, NULL, GST_CLOCK_TIME_NONE);
+		assert(ret == GST_STATE_CHANGE_SUCCESS);
+#endif
 
 		int validFrames = 0;
 		while (!glfwWindowShouldClose(win)) {
+#ifdef USE_BASS
 			auto pos = BASS_ChannelGetPosition(stream, BASS_POS_BYTE);
 			auto time = BASS_ChannelBytes2Seconds(stream, pos);
+#else
+			gint64 time_ns = 0;
+			gst_element_query_position(play, GST_FORMAT_TIME, &time_ns);
+			auto time = (double)time_ns / GST_SECOND;
+#endif
 			auto row = time * rowRate;
 
 #ifndef SYNC_PLAYER
-			static sync_cb bassCallbacks = {
+
+#ifdef USE_BASS
+			static sync_cb syncCallbacks = {
 				// pause
 				[](void *d, int flag) {
 					HSTREAM h = *((HSTREAM *)d);
@@ -1075,8 +1120,37 @@ int main(int argc, char *argv[])
 					return BASS_ChannelIsActive(h) == BASS_ACTIVE_PLAYING;
 				},
 			};
-
-			if (sync_update(rocket, int(floor(row)), &bassCallbacks, (void *)&stream))
+			void *syncCallbackData = (void *)&stream;
+#else
+			static sync_cb syncCallbacks = {
+				// pause
+				[](void *d, int flag) {
+					GstElement *play = reinterpret_cast<GstElement *>(d);
+					auto ret = gst_element_set_state(play, flag ? GST_STATE_PAUSED : GST_STATE_PLAYING);
+					if (ret == GST_STATE_CHANGE_ASYNC)
+						ret = gst_element_get_state(play, NULL, NULL, GST_CLOCK_TIME_NONE);
+					assert(ret == GST_STATE_CHANGE_SUCCESS);
+				},
+				// set row
+				[](void *d, int row) {
+					GstElement *play = reinterpret_cast<GstElement *>(d);
+					gint64 pos = ((row + 0.01) / rowRate) * GST_SECOND;
+					auto flags = (int)GST_SEEK_FLAG_FLUSH | (int)GST_SEEK_FLAG_KEY_UNIT;
+					auto ret = gst_element_seek_simple(play, GST_FORMAT_TIME, (GstSeekFlags)flags, pos);
+					assert(ret == TRUE);
+				},
+				// is playing
+				[](void *d) -> int {
+					GstElement *play = reinterpret_cast<GstElement *>(d);
+					GstState state;
+					auto ret = gst_element_get_state(play, &state, NULL, GST_CLOCK_TIME_NONE);
+					assert(ret == GST_STATE_CHANGE_SUCCESS);
+					return state != GST_STATE_PAUSED;
+				},
+			};
+			void *syncCallbackData = play;
+#endif
+			if (sync_update(rocket, int(floor(row)), &syncCallbacks, syncCallbackData))
 				sync_tcp_connect(rocket, "localhost", SYNC_DEFAULT_PORT);
 #endif
 
@@ -1396,8 +1470,10 @@ int main(int argc, char *argv[])
 			glfwPollEvents();
 
 #ifdef SYNC_PLAYER
+#ifdef USE_BASS
 			if (BASS_ChannelIsActive(stream) == BASS_ACTIVE_STOPPED)
 				break;
+#endif
 #endif
 		}
 
