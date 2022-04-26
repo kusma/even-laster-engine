@@ -25,6 +25,7 @@ executable(
 	'demo',
 	sources,
 	dependencies : demo_deps,
+	c_args : '-DSYNC_PLAYER',
 	cpp_args : '-DSYNC_PLAYER',
 	win_subsystem : 'windows',
 	install : true,
