@@ -15,7 +15,7 @@ sources = files(
 
 demo_deps = [
 	assimp_dep,
-	bass_dep,
+	gst_dep,
 	freeimage_dep,
 	glfw_dep,
 	glm_dep,
