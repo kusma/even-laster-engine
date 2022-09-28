@@ -805,7 +805,7 @@ int main(int argc, char *argv[])
 			0, VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		for (int i = 0; i < colorLuts.size(); ++i)
+		for (size_t i = 0; i < colorLuts.size(); ++i)
 			imageBarrier(
 				commandBuffer,
 				colorLuts[i].getImage(),
