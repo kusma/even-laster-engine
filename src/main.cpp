@@ -1,11 +1,3 @@
-#ifdef _WIN32
-#define _CRT_SECURE_NO_WARNINGS
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
-#include <windows.h>
-#endif
-
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
 #include <list>
@@ -14,18 +6,8 @@
 
 #include "vulkan.h"
 #include "core/core.h"
-#include "core/blobbuilder.h"
 #include "swapchain.h"
 #include "shader.h"
-#include "scene/import-texture.h"
-#include "scene/sceneimporter.h"
-#include "scenerenderer.h"
-
-#include "sync/sync.h"
-
-const auto beatsPerMinute = 174.0f;
-const auto rowsPerBeat = 8;
-const auto rowRate = (beatsPerMinute / 60.0) * rowsPerBeat;
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -36,12 +18,6 @@ const auto rowRate = (beatsPerMinute / 60.0) * rowsPerBeat;
 #include <glm/gtc/type_ptr.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
-
-#ifdef USE_BASS
-#include <bass.h>
-#else
-#include <gst/gst.h>
-#endif
 
 using namespace vulkan;
 
@@ -60,7 +36,6 @@ static vector<const char *> getRequiredInstanceExtensions()
 	return vector<const char *>(tmp, tmp + requiredExtentionCount);
 }
 
-#include "scene/scene.h"
 #include "scene/rendertarget.h"
 
 static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule shaderModule, const char *name = "main")
@@ -78,7 +53,7 @@ static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule 
 	return computePipeline;
 }
 
-VkPhysicalDevice choosePhysicalDevice()
+static VkPhysicalDevice choosePhysicalDevice()
 {
 	// Get number of available physical devices
 	uint32_t physicalDeviceCount = 0;
@@ -107,298 +82,11 @@ VkPhysicalDevice choosePhysicalDevice()
 	return physicalDevice;
 }
 
-enum BlendMode {
-	None,
-	Additive
-};
-
-static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPass renderPass, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
-{
-	VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
-	pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 0;
-	pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = nullptr;
-	pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = 0;
-	pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = nullptr;
-
-	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {};
-	pipelineInputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	pipelineInputAssemblyStateCreateInfo.topology = topology;
-	pipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
-
-	VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {};
-	pipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-	pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
-	pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
-
-	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState[1] = { { 0 } };
-	pipelineColorBlendAttachmentState[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	switch (blendMode) {
-	case BlendMode::None:
-		pipelineColorBlendAttachmentState[0].blendEnable = VK_FALSE;
-		break;
-	case BlendMode::Additive:
-		pipelineColorBlendAttachmentState[0].blendEnable = VK_TRUE;
-		pipelineColorBlendAttachmentState[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].colorBlendOp = VK_BLEND_OP_ADD;
-		pipelineColorBlendAttachmentState[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].alphaBlendOp = VK_BLEND_OP_ADD;
-		break;
-	}
-
-	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
-	pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pipelineColorBlendStateCreateInfo.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState);
-	pipelineColorBlendStateCreateInfo.pAttachments = pipelineColorBlendAttachmentState;
-
-	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
-	pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {};
-	pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	pipelineViewportStateCreateInfo.viewportCount = 1;
-	pipelineViewportStateCreateInfo.pViewports = nullptr;
-	pipelineViewportStateCreateInfo.scissorCount = 1;
-	pipelineViewportStateCreateInfo.pScissors = nullptr;
-
-	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
-	pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	pipelineDepthStencilStateCreateInfo.depthTestEnable = depthWrite;
-	pipelineDepthStencilStateCreateInfo.depthWriteEnable = depthWrite;
-	pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-
-	VkDynamicState dynamicStateEnables[] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
-	pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStateEnables;
-	pipelineDynamicStateCreateInfo.dynamicStateCount = ARRAY_SIZE(dynamicStateEnables);
-
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.layout = layout;
-	pipelineCreateInfo.renderPass = renderPass;
-	pipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
-	pipelineCreateInfo.pInputAssemblyState = &pipelineInputAssemblyStateCreateInfo;
-	pipelineCreateInfo.pRasterizationState = &pipelineRasterizationStateCreateInfo;
-	pipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
-	pipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
-	pipelineCreateInfo.pViewportState = &pipelineViewportStateCreateInfo;
-	pipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
-	pipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo;
-	pipelineCreateInfo.stageCount = shaderStages.size();
-	pipelineCreateInfo.pStages = shaderStages.data();
-
-	VkPipeline pipeline;
-	assumeSuccess(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
-	return pipeline;
-}
-
-static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkShaderModule fragmentShader)
-{
-	vector<VkPipelineShaderStageCreateInfo> shaderStages = { {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		loadShaderModule("data/shaders/fullscreenquad.vert.spv"),
-		"main",
-		nullptr
-	}, {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		fragmentShader,
-		"main",
-		nullptr
-	} };
-
-	return createGeometrylessPipeline(layout, renderPass, shaderStages);
-}
-
-static Texture3D loadFractalNoise(const std::string &filename, int width, int height, int depth)
-{
-	Texture3D texture(VK_FORMAT_R32G32B32A32_SFLOAT, width, height, depth, 1);
-
-	auto size = sizeof(float) * 4 * width * height * depth;
-	auto stagingBuffer = new StagingBuffer(size);
-	void *ptr = stagingBuffer->map(0, size);
-
-	FILE *fp = fopen(filename.c_str(), "rb");
-	if (!fp)
-		throw runtime_error("failed to open FBM cache");
-	if (fread(ptr, 1, size, fp) != size)
-		throw runtime_error("too small file!");
-	fclose(fp);
-
-	stagingBuffer->unmap();
-	texture.uploadFromStagingBuffer(stagingBuffer, 0);
-	setImageName(texture.getImage(), filename);
-	return texture;
-}
-
-#include <fstream>
-#include <sstream>
-#include <sys/stat.h>
-
-Texture3D importCubeFile(const std::string &filename)
-{
-	int size = 0;
-
-	StagingBuffer *stagingBuffer = nullptr;
-	float *ptr = nullptr;
-	int colorsRead = 0;
-
-	std::ifstream stream(filename);
-	std::string line;
-	while (getline(stream, line)) {
-		if (line.empty() || line[0] == '#')
-			continue;
-
-		if (isalpha(line[0])) {
-			auto sep = line.find(" ");
-			auto verb = line.substr(0, sep);
-
-			if (verb == "TITLE")
-				continue; // ignore title
-
-			if (verb == "LUT_3D_SIZE") {
-				auto sizeString = line.substr(sep + 1);
-
-				char *end = nullptr;
-				size = strtol(sizeString.c_str(), &end, 10);
-				if (end == nullptr)
-					throw runtime_error("expected integer size");
-				if (size < 1)
-					throw runtime_error("size needs to be at least one");
-
-				auto textureSize = sizeof(float) * 4 * size * size * size;
-				stagingBuffer = new StagingBuffer(textureSize);
-				ptr = static_cast<float *>(stagingBuffer->map(0, textureSize));
-
-				continue;
-			}
-
-			if (verb == "DOMAIN_MIN") {
-				if (line != "DOMAIN_MIN 0.0 0.0 0.0")
-					throw runtime_error("expected DOMAIN_MIN");
-				continue;
-			}
-
-			if (verb == "DOMAIN_MAX") {
-				if (line != "DOMAIN_MAX 1.0 1.0 1.0")
-					throw runtime_error("expected DOMAIN_MAX");
-				continue;
-			}
-
-			throw runtime_error("unrecognized verb");
-		}
-
-		if (isdigit(line[0])) {
-			if (ptr == nullptr)
-				throw runtime_error("expected size before color values");
-
-			std::stringstream ss(line);
-
-			float r = 0, g = 0, b = 0;
-
-			ss >> r;
-			if (ss.peek() != ' ')
-				throw runtime_error("unexpected character");
-			ss.ignore();
-
-			ss >> g;
-			if (ss.peek() != ' ')
-				throw runtime_error("unexpected character");
-			ss.ignore();
-
-			ss >> b;
-
-			if (!ss.eof())
-				throw runtime_error("unexpected character");
-
-			ptr[colorsRead * 4 + 0] = r;
-			ptr[colorsRead * 4 + 1] = g;
-			ptr[colorsRead * 4 + 2] = b;
-			ptr[colorsRead * 4 + 3] = 1.0f;
-			++colorsRead;
-			continue;
-		}
-
-		throw runtime_error("unrecognized line");
-	}
-
-	if (!size)
-		throw runtime_error("no LUT_3D_SIZE found");
-
-	if (colorsRead != size * size * size)
-		throw runtime_error("wrong amount of colors");
-
-	Texture3D texture(VK_FORMAT_R32G32B32A32_SFLOAT, size, size, size, 1);
-	stagingBuffer->unmap();
-	texture.uploadFromStagingBuffer(stagingBuffer, 0);
-	return texture;
-}
-
-std::vector<Texture3D> importColorLuts(string folder)
-{
-	std::vector<Texture3D> colorLuts;
-	for (int i = 0; true; ++i) {
-		char path[256];
-		snprintf(path, sizeof(path), "%s/%04d.CUBE", folder.c_str(), i);
-
-		struct stat st;
-		if (stat(path, &st) < 0 ||
-		    (st.st_mode & S_IFMT) != S_IFREG)
-			break;
-
-		auto colorLut = importCubeFile(path);
-		colorLuts.push_back(colorLut);
-	}
-
-	if (colorLuts.size() == 0)
-		throw runtime_error("no color-luts!");
-
-	return colorLuts;
-}
-
-
-#ifdef WIN32
-
-int APIENTRY WinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR lpCmdLine,
-                     _In_ int nCmdShow)
-{
-	UNREFERENCED_PARAMETER(hInstance);
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
-	UNREFERENCED_PARAMETER(nCmdShow);
-#else
 int main(int argc, char *argv[])
 {
-#endif
-
-	auto appName = "Excess - Aurora";
-#ifdef NDEBUG
+	auto appName = "cs-rast";
 	auto width = 1920, height = 1080;
-#else
-	auto width = 1280, height = 720;
-#endif
-#ifdef SYNC_PLAYER
-	auto fullscreen = true;
-#else
 	auto fullscreen = false;
-#endif
 	GLFWwindow *win = nullptr;
 
 	try {
@@ -413,38 +101,6 @@ int main(int argc, char *argv[])
 		win = glfwCreateWindow(width, height, appName, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
 		if (fullscreen)
 			glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-#ifdef USE_BASS
-		if (!BASS_Init(-1, 44100, 0, 0, 0))
-			throw runtime_error("failed to init bass");
-
-		auto stream = BASS_StreamCreateFile(false, "data/soundtrack.mp3", 0, 0, BASS_MP3_SETPOS | BASS_STREAM_PRESCAN);
-		if (!stream)
-			throw runtime_error("failed to open tune");
-#else
-		gst_init(&argc, &argv);
-		auto play = gst_element_factory_make("playbin", "play");
-		if (!play)
-			throw runtime_error("failed to create gst playbin object");
-		auto uri = gst_filename_to_uri("./data/soundtrack.mp3", NULL);
-		g_object_set(G_OBJECT(play), "uri", uri, NULL);
-		g_free(uri);
-
-		gst_bus_add_watch(gst_pipeline_get_bus(GST_PIPELINE(play)), [](GstBus *bus, GstMessage *msg, gpointer data) -> gboolean {
-			GLFWwindow *window = reinterpret_cast<GLFWwindow *>(data);
-			switch(GST_MESSAGE_TYPE(msg)) {
-#ifdef SYNC_PLAYER
-			case GST_MESSAGE_EOS:
-#endif
-			case GST_MESSAGE_ERROR:
-				glfwSetWindowShouldClose(window, GLFW_TRUE);
-			default:
-				break;
-			}
-			return TRUE;
-		}, win);
-
-#endif
 
 		glfwSetKeyCallback(win, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
 			if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
@@ -474,455 +130,14 @@ int main(int argc, char *argv[])
 		glfwGetFramebufferSize(win, &swapWidth, &swapHeight);
 		auto swapChain = SwapChain(surface, swapWidth, swapHeight, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-		vector<VkFormat> depthCandidates = {
-			VK_FORMAT_D32_SFLOAT,
-			VK_FORMAT_X8_D24_UNORM_PACK32,
-			VK_FORMAT_D16_UNORM,
-		};
-
-		auto depthFormat = findBestFormat(depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height);
-		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-
-		int bloomLevels = 32 - clz(max(width, height));
-		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-		ColorRenderTarget bloomUpscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-
-		Texture2DArrayRenderTarget colorArray(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 128, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-
-		vector<VkAttachmentDescription> sceneRenderPassAttachments;
-		VkAttachmentDescription sceneDepthAttachment;
-		sceneDepthAttachment.flags = 0;
-		sceneDepthAttachment.format = depthFormat;
-		sceneDepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		sceneDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		sceneDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneDepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		sceneDepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		sceneDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		sceneRenderPassAttachments.push_back(sceneDepthAttachment);
-
-		VkAttachmentDescription sceneColorAttachment;
-		sceneColorAttachment.flags = 0;
-		sceneColorAttachment.format = sceneColorRenderTarget.getFormat();
-		sceneColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		sceneColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		sceneColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		sceneColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		sceneColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		sceneColorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		sceneRenderPassAttachments.push_back(sceneColorAttachment);
-
-		VkAttachmentReference sceneDepthAttachmentReference = {};
-		sceneDepthAttachmentReference.attachment = 0;
-		sceneDepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference sceneColorAttachmentReference = {};
-		sceneColorAttachmentReference.attachment = 1;
-		sceneColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription sceneSubpass = {};
-		sceneSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		sceneSubpass.colorAttachmentCount = 1;
-		sceneSubpass.pColorAttachments = &sceneColorAttachmentReference;
-		sceneSubpass.pDepthStencilAttachment = &sceneDepthAttachmentReference;
-
-		VkRenderPassCreateInfo sceneRenderPassCreateInfo = {};
-		sceneRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		sceneRenderPassCreateInfo.attachmentCount = sceneRenderPassAttachments.size();
-		sceneRenderPassCreateInfo.pAttachments = sceneRenderPassAttachments.data();
-		sceneRenderPassCreateInfo.subpassCount = 1;
-		sceneRenderPassCreateInfo.pSubpasses = &sceneSubpass;
-
-		VkRenderPass sceneRenderPass;
-		assumeSuccess(vkCreateRenderPass(device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass));
-
-		auto sceneFramebuffer = createFramebuffer(
-			width, height, 1,
-			{ sceneDepthRenderTarget.getImageView(), sceneColorRenderTarget.getImageView() },
-			sceneRenderPass);
-
-		VkAttachmentDescription bloomColorAttachment;
-		bloomColorAttachment.flags = 0;
-		bloomColorAttachment.format = bloomRenderTarget.getFormat();
-		bloomColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		bloomColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		bloomColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		bloomColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		bloomColorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		VkAttachmentReference bloomColorAttachmentReference = {};
-		bloomColorAttachmentReference.attachment = 0;
-		bloomColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription bloomSubpass = {};
-		bloomSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		bloomSubpass.colorAttachmentCount = 1;
-		bloomSubpass.pColorAttachments = &bloomColorAttachmentReference;
-
-		VkRenderPassCreateInfo bloomRenderPassCreateInfo = {};
-		bloomRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		bloomRenderPassCreateInfo.attachmentCount = 1;
-		bloomRenderPassCreateInfo.pAttachments = &bloomColorAttachment;
-		bloomRenderPassCreateInfo.subpassCount = 1;
-		bloomRenderPassCreateInfo.pSubpasses = &bloomSubpass;
-
-		VkRenderPass bloomRenderPass;
-		assumeSuccess(vkCreateRenderPass(device, &bloomRenderPassCreateInfo, nullptr, &bloomRenderPass));
-
-		auto bloomDescriptorSetLayout = createDescriptorSetLayout({
-			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-		});
-
-		auto bloomUpscaleDescriptorSetLayout = createDescriptorSetLayout({
-			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-		});
-
-		auto bloomDescriptorPool = createDescriptorPool({
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(bloomLevels + 2) },
-		}, bloomLevels + 1);
-
-		vector<VkFramebuffer> bloomFramebuffers;
-		vector<VkDescriptorSet> bloomDescriptorSets;
-		vector<VkImageView> bloomImageViews;
-
-		VkSampler bloomInputSampler = createSampler(0.0f, false, false);
-		for (int mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
-			VkImageSubresourceRange subresourceRange;
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.baseMipLevel = mipLevel;
-			subresourceRange.baseArrayLayer = 0;
-			subresourceRange.levelCount = 1;
-			subresourceRange.layerCount = 1;
-			auto imageView = createImageView(bloomRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomRenderTarget.getFormat(), subresourceRange);
-			bloomImageViews.push_back(imageView);
-
-			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
-			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);
-			auto framebuffer = createFramebuffer(mipWidth, mipHeight, 1, { imageView }, bloomRenderPass);
-			bloomFramebuffers.push_back(framebuffer);
-
-			auto descriptorSet = allocateDescriptorSet(bloomDescriptorPool, bloomDescriptorSetLayout);
-
-			VkDescriptorImageInfo descriptorImageInfo = {};
-			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			if (mipLevel == 0)
-				descriptorImageInfo.imageView = sceneColorRenderTarget.getImageView();
-			else
-				descriptorImageInfo.imageView = bloomImageViews[mipLevel - 1];
-			descriptorImageInfo.sampler = bloomInputSampler;
-
-			VkWriteDescriptorSet writeDescriptorSet = {};
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.dstSet = descriptorSet;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSet.pBufferInfo = nullptr;
-			writeDescriptorSet.pImageInfo = &descriptorImageInfo;
-			writeDescriptorSet.dstBinding = 0;
-			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-
-			bloomDescriptorSets.push_back(descriptorSet);
-		}
-
-		auto bloomPipelineLayout = createPipelineLayout({ bloomDescriptorSetLayout }, {});
-		auto bloomFragmentShader = loadShaderModule("data/shaders/bloom.frag.spv");
-		auto bloomPipeline = createFullScreenQuadPipeline(bloomPipelineLayout, bloomRenderPass, bloomFragmentShader);
-
-		VkAttachmentDescription bloomUpscaleColorAttachment;
-		bloomUpscaleColorAttachment.flags = 0;
-		bloomUpscaleColorAttachment.format = bloomUpscaleRenderTarget.getFormat();
-		bloomUpscaleColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		bloomUpscaleColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomUpscaleColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		bloomUpscaleColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomUpscaleColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		bloomUpscaleColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		bloomUpscaleColorAttachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-
-		VkAttachmentReference bloomUpscaleColorAttachmentReference = {};
-		bloomUpscaleColorAttachmentReference.attachment = 0;
-		bloomUpscaleColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription bloomUpscaleSubpass = {};
-		bloomUpscaleSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		bloomUpscaleSubpass.colorAttachmentCount = 1;
-		bloomUpscaleSubpass.pColorAttachments = &bloomUpscaleColorAttachmentReference;
-
-		VkRenderPassCreateInfo bloomUpscaleRenderPassCreateInfo = {};
-		bloomUpscaleRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		bloomUpscaleRenderPassCreateInfo.attachmentCount = 1;
-		bloomUpscaleRenderPassCreateInfo.pAttachments = &bloomUpscaleColorAttachment;
-		bloomUpscaleRenderPassCreateInfo.subpassCount = 1;
-		bloomUpscaleRenderPassCreateInfo.pSubpasses = &bloomUpscaleSubpass;
-
-		VkRenderPass bloomUpscaleRenderPass;
-		assumeSuccess(vkCreateRenderPass(device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass));
-
-		auto bloomUpscaleFramebuffer = createFramebuffer(width, height, 1, { bloomUpscaleRenderTarget.getImageView() }, bloomUpscaleRenderPass);
-		auto bloomUpscaleDescriptorSet = allocateDescriptorSet(bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
-		VkSampler bloomSampler = createSampler(float(bloomLevels), false, false);
-
-		{
-			VkWriteDescriptorSet writeDescriptorSet = {};
-
-			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ bloomSampler, sceneColorRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-				{ bloomSampler, bloomRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
-			};
-
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.dstSet = bloomUpscaleDescriptorSet;
-			writeDescriptorSet.dstBinding = 0;
-			writeDescriptorSet.descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSet.pImageInfo = descriptorImageInfos.data();
-
-			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-		}
-
-		struct {
-			float bloomAmount;
-			float bloomShape;
-			float seed;
-		} bloomUpscalePushConstants;
-
-		VkPushConstantRange bloomUpscalePushConstantRange = {
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(bloomUpscalePushConstants)
-		};
-		auto bloomUpscalePipelineLayout = createPipelineLayout({ bloomUpscaleDescriptorSetLayout }, { bloomUpscalePushConstantRange });
-		auto bloomUpscaleFragmentShader = loadShaderModule("data/shaders/bloom_upscale.frag.spv");
-		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader);
-
-		struct {
-			glm::mat4 modelViewMatrix;
-			glm::mat4 modelViewInverseMatrix;
-			glm::mat4 modelViewProjectionMatrix;
-			glm::vec2 offset;
-			glm::vec2 scale;
-			float time;
-		} wavePlaneUniforms;
-		auto wavePlaneUniformBuffer = new Buffer(sizeof(wavePlaneUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-		auto wavePlaneDescriptorSetLayout = createDescriptorSetLayout({
-			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT },
-		});
-		auto wavePlanePipelineLayout = createPipelineLayout({ wavePlaneDescriptorSetLayout }, {});
-		vector<VkPipelineShaderStageCreateInfo> wavePlaneShaderStages = { {
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				nullptr,
-				0,
-				VK_SHADER_STAGE_VERTEX_BIT,
-				loadShaderModule("data/shaders/plane.vert.spv"),
-				"main",
-				nullptr
-			},{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				nullptr,
-				0,
-				VK_SHADER_STAGE_FRAGMENT_BIT,
-				loadShaderModule("data/shaders/plane.frag.spv"),
-				"main",
-				nullptr
-			} };
-
-		auto wavePlanePipeline = createGeometrylessPipeline(wavePlanePipelineLayout, sceneRenderPass, wavePlaneShaderStages, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, false, BlendMode::Additive);
-
-		auto wavePlaneDescriptorPool = createDescriptorPool({
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
-			}, 1);
-
-		auto wavePlaneDescriptorSet = allocateDescriptorSet(wavePlaneDescriptorPool, wavePlaneDescriptorSetLayout);
-
-		Texture3D fractalNoise = loadFractalNoise("data/fbm.raw", 64, 64, 64);
-		VkSampler fractalNoiseSampler = createSampler(0.0f, true, false);
-
-		{
-			VkWriteDescriptorSet writeDescriptorSets[2] = {};
-
-			auto descriptorBufferInfo = wavePlaneUniformBuffer->getDescriptorBufferInfo();
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = wavePlaneDescriptorSet;
-			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].descriptorCount = 1;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSets[0].pBufferInfo = &descriptorBufferInfo;
-
-			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ fractalNoiseSampler, fractalNoise.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
-			};
-
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = wavePlaneDescriptorSet;
-			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[1].pImageInfo = descriptorImageInfos.data();
-
-			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
-		}
-
-		vector<Scene *> scenes;
-		for (int i = 0; true; ++i) {
-			char path[256];
-			snprintf(path, sizeof(path), "assets/scenes/%04d.dae", i);
-
-			struct stat st;
-			if (stat(path, &st) < 0 ||
-			    (st.st_mode & S_IFMT) != S_IFREG)
-				break;
-
-			scenes.push_back(SceneImporter::import(path));
-		}
-
-		vector<SceneRenderer> sceneRenderers;
-		for (auto scene : scenes)
-			sceneRenderers.push_back(SceneRenderer(scene, sceneRenderPass));
-
-		auto planes = importTexture2DArray("assets/planes", TextureImportFlags::NONE);
-		auto offsetMaps = importTexture2DArray("assets/offset-maps", TextureImportFlags::NONE);
-		auto overlays = importTexture2DArray("assets/overlays", TextureImportFlags::PREMULTIPLY_ALPHA);
-		auto cubeTexture = importTextureCube("assets/cubemap.hdr", TextureImportFlags::GENERATE_MIPMAPS);
-		auto colorLuts = importColorLuts("assets/luts");
-
-		auto commandBuffer = allocateCommandBuffers(setupCommandPool, 1)[0];
-
-		VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
-
-		imageBarrier(
-			commandBuffer,
-			planes.getImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		imageBarrier(
-			commandBuffer,
-			offsetMaps.getImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		imageBarrier(
-			commandBuffer,
-			overlays.getImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		imageBarrier(
-			commandBuffer,
-			cubeTexture.getImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		for (size_t i = 0; i < colorLuts.size(); ++i)
-			imageBarrier(
-				commandBuffer,
-				colorLuts[i].getImage(),
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		imageBarrier(
-			commandBuffer,
-			fractalNoise.getImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		assumeSuccess(vkEndCommandBuffer(commandBuffer));
-
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
-
-
-		VkSampler textureSampler = createSampler(float(planes.getMipLevels()), false, false);
-
-		struct {
-			float planeIndex;
-			float fade;
-			float refractiveIndex;
-		} refractionUniforms;
-		auto refractionUniformBuffer = new Buffer(sizeof(refractionUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-		for (SceneRenderer &sceneRenderer : sceneRenderers) {
-			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				planes.getDescriptorImageInfo(textureSampler),
-				cubeTexture.getDescriptorImageInfo(textureSampler)
-			};
-
-			VkWriteDescriptorSet writeDescriptorSets[2] = {};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = sceneRenderer.getDescriptorSet();
-			writeDescriptorSets[0].dstBinding = 1;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[0].descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSets[0].pImageInfo = descriptorImageInfos.data();
-
-			auto descriptorBufferInfo = refractionUniformBuffer->getDescriptorBufferInfo();
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = sceneRenderer.getDescriptorSet();
-			writeDescriptorSets[1].descriptorCount = 1;
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSets[1].pBufferInfo = &descriptorBufferInfo;
-			writeDescriptorSets[1].dstBinding = 3;
-
-			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
-		}
-
-		auto arrayTextureSampler = createSampler(0.0f, false, false);
-		auto colorLutSampler = createSampler(0.0f, false, false);
 
 		auto postProcessDescriptorSetLayout = createDescriptorSetLayout({
 			{ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0 },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			});
+		});
 
 		struct {
-			uint32_t arrayBufferFrame;
-			uint32_t validFrames;
-			uint32_t delayImage;
-			uint32_t overlayIndex;
-			float delayAmount;
-			float delayChroma;
-			float overlayAlpha;
-			float fade;
-			float flash;
-			float patternAmount;
-			float kaleidoCount;
-			uint32_t patternScale;
-			float gradeBlend;
-			float gradeAmount;
+			float time;
 		} postProcessPushConstantData;
 
 		VkPushConstantRange postProcessPushConstantRange = {
@@ -938,7 +153,6 @@ int main(int argc, char *argv[])
 		int swapChainImageCount = swapChain.getImageViews().size();
 		auto postProcessDescriptorPool = createDescriptorPool({
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, uint32_t(swapChainImageCount * 1) },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(swapChainImageCount * 6) },
 		}, swapChainImageCount);
 
 		vector<VkDescriptorSet> postProcessDescriptorSets;
@@ -951,26 +165,13 @@ int main(int argc, char *argv[])
 			postProcessRenderTargetImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 			postProcessRenderTargetImageInfo.imageView = postProcessRenderTarget.getImageView();
 
-			VkWriteDescriptorSet writeDescriptorSets[2] = {};
+			VkWriteDescriptorSet writeDescriptorSets[1] = {};
 			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[0].dstSet = descriptorSet;
 			writeDescriptorSets[0].dstBinding = 0;
 			writeDescriptorSets[0].descriptorCount = 1;
 			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			writeDescriptorSets[0].pImageInfo = &postProcessRenderTargetImageInfo;
-
-			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ arrayTextureSampler, colorArray.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-				{ arrayTextureSampler, offsetMaps.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-				{ arrayTextureSampler, overlays.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
-			};
-
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = descriptorSet;
-			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[1].pImageInfo = descriptorImageInfos.data();
 
 			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
@@ -989,139 +190,8 @@ int main(int argc, char *argv[])
 
 		assumeSuccess(vkQueueWaitIdle(graphicsQueue));
 
-		auto rocket = sync_create_device("data/sync");
-		if (!rocket)
-			throw runtime_error("sync_create_device() failed: out of memory?");
-
-#ifndef SYNC_PLAYER
-		if (sync_tcp_connect(rocket, "localhost", SYNC_DEFAULT_PORT))
-			throw runtime_error("failed to connect to host");
-#endif
-
-		auto sceneIndexTrack = sync_get_track(rocket, "scene.index");
-
-		auto clearRTrack = sync_get_track(rocket, "background:clear.r");
-		auto clearGTrack = sync_get_track(rocket, "background:clear.g");
-		auto clearBTrack = sync_get_track(rocket, "background:clear.b");
-
-		auto cameraFOVTrack = sync_get_track(rocket, "camera:fov");
-		auto cameraRotYTrack = sync_get_track(rocket, "camera:rot.y");
-		auto cameraDistTrack = sync_get_track(rocket, "camera:dist");
-		auto cameraRollTrack = sync_get_track(rocket, "camera:roll");
-		auto cameraUpTrack = sync_get_track(rocket, "camera:up");
-		auto cameraTargetXTrack = sync_get_track(rocket, "camera:target.x");
-		auto cameraTargetYTrack = sync_get_track(rocket, "camera:target.y");
-		auto cameraTargetZTrack = sync_get_track(rocket, "camera:target.z");
-
-		auto refractionPlaneIndexTrack = sync_get_track(rocket, "refraction:plane");
-		auto refractionFadeTrack = sync_get_track(rocket, "refraction:fade");
-		auto refractionIndexTrack = sync_get_track(rocket, "refraction:index");
-
-		auto delayImageTrack = sync_get_track(rocket, "postprocess:delay.image");
-		auto delayAmountTrack = sync_get_track(rocket, "postprocess:delay.amount");
-		auto delayChromaTrack = sync_get_track(rocket, "postprocess:delay.chroma");
-		auto delayResetTrack = sync_get_track(rocket, "postprocess:delay.reset");
-		auto delayPatternAmountTrack = sync_get_track(rocket, "postprocess:pattern.amount");
-		auto delayPatternScaleTrack = sync_get_track(rocket, "postprocess:pattern.scale");
-		auto bloomAmountTrack = sync_get_track(rocket, "postprocess:bloom.amount");
-		auto bloomShapeTrack = sync_get_track(rocket, "postprocess:bloom.shape");
-		auto kaleidoTrack = sync_get_track(rocket, "postprocess:kaleidoscope");
-
-		auto gradeIndex1Track = sync_get_track(rocket, "postprocess:grade.index1");
-		auto gradeIndex2Track = sync_get_track(rocket, "postprocess:grade.index2");
-		auto gradeBlendTrack = sync_get_track(rocket, "postprocess:grade.blend");
-		auto gradeAmountTrack = sync_get_track(rocket, "postprocess:grade.amount");
-
-
-		auto overlayIndexTrack = sync_get_track(rocket, "overlay.index");
-		auto overlayAlphaTrack = sync_get_track(rocket, "overlay.alpha");
-		auto fadeTrack = sync_get_track(rocket, "fade");
-		auto flashTrack = sync_get_track(rocket, "flash");
-		auto pulseAmountTrack = sync_get_track(rocket, "pulse.amount");
-		auto pulseSpeedTrack = sync_get_track(rocket, "pulse.speed");
-
-		auto wavePlaneOffsetXTrack = sync_get_track(rocket, "waveplane:offset.x");
-		auto wavePlaneOffsetYTrack = sync_get_track(rocket, "waveplane:offset.y");
-		auto wavePlaneScaleXTrack = sync_get_track(rocket, "waveplane:scale.x");
-		auto wavePlaneScaleYTrack = sync_get_track(rocket, "waveplane:scale.y");
-		auto wavePlaneTimeTrack = sync_get_track(rocket, "waveplane:time");
-
-#ifdef USE_BASS
-		BASS_Start();
-		BASS_ChannelPlay(stream, false);
-#else
-		gst_element_set_state(play, GST_STATE_PLAYING);
-#endif
-
-		int validFrames = 0;
 		while (!glfwWindowShouldClose(win)) {
-#ifdef USE_BASS
-			auto pos = BASS_ChannelGetPosition(stream, BASS_POS_BYTE);
-			auto time = BASS_ChannelBytes2Seconds(stream, pos);
-#else
-			gint64 time_ns = 0;
-			gst_element_query_position(play, GST_FORMAT_TIME, &time_ns);
-			auto time = (double)time_ns / GST_SECOND;
-#endif
-			auto row = time * rowRate;
-
-#ifndef SYNC_PLAYER
-
-#ifdef USE_BASS
-			static sync_cb syncCallbacks = {
-				// pause
-				[](void *d, int flag) {
-					HSTREAM h = *((HSTREAM *)d);
-					if (flag)
-						BASS_ChannelPause(h);
-					else
-						BASS_ChannelPlay(h, false);
-				},
-				// set row
-				[](void *d, int row) {
-					HSTREAM h = *((HSTREAM *)d);
-					QWORD pos = BASS_ChannelSeconds2Bytes(h, (row + 0.01) / rowRate);
-					BASS_ChannelSetPosition(h, pos, BASS_POS_BYTE);
-				},
-				// is playing
-				[](void *d) -> int {
-					HSTREAM h = *((HSTREAM *)d);
-					return BASS_ChannelIsActive(h) == BASS_ACTIVE_PLAYING;
-				},
-			};
-			void *syncCallbackData = (void *)&stream;
-#else
-			static sync_cb syncCallbacks = {
-				// pause
-				[](void *d, int flag) {
-					GstElement *play = reinterpret_cast<GstElement *>(d);
-					gst_element_set_state(play, flag ? GST_STATE_PAUSED : GST_STATE_PLAYING);
-				},
-				// set row
-				[](void *d, int row) {
-					GstElement *play = reinterpret_cast<GstElement *>(d);
-					gint64 pos = ((row + 0.01) / rowRate) * GST_SECOND;
-					auto flags = (int)GST_SEEK_FLAG_FLUSH | (int)GST_SEEK_FLAG_KEY_UNIT;
-					gst_element_seek_simple(play, GST_FORMAT_TIME, (GstSeekFlags)flags, pos);
-				},
-				// is playing
-				[](void *d) -> int {
-					GstElement *play = reinterpret_cast<GstElement *>(d);
-					GstState state;
-					gst_element_get_state(play, &state, NULL, GST_CLOCK_TIME_NONE);
-					return state == GST_STATE_PLAYING;
-				},
-			};
-			void *syncCallbackData = play;
-#endif
-			if (sync_update(rocket, int(floor(row)), &syncCallbacks, syncCallbackData))
-				sync_tcp_connect(rocket, "localhost", SYNC_DEFAULT_PORT);
-#endif
-
 			auto currentSwapImage = swapChain.aquireNextImage(backBufferSemaphore);
-			static int nextArrayBufferFrame = 0;
-			int arrayBufferFrame = nextArrayBufferFrame++;
-			uint32_t arrayBufferFrameWrapped = arrayBufferFrame % colorArray.getArrayLayers();
 
 			assumeSuccess(vkWaitForFences(device, 1, &commandBufferFences[currentSwapImage], VK_TRUE, UINT64_MAX));
 			assumeSuccess(vkResetFences(device, 1, &commandBufferFences[currentSwapImage]));
@@ -1133,198 +203,7 @@ int main(int argc, char *argv[])
 
 			assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-			VkClearValue clearValues[2];
-			clearValues[0].depthStencil = { 1.0f, 0 };
-			clearValues[1].color = {
-				float(sync_get_val(clearRTrack, row)),
-				float(sync_get_val(clearGTrack, row)),
-				float(sync_get_val(clearBTrack, row)),
-				1.0f
-			};
-
-			VkRenderPassBeginInfo sceneRenderPassBegin = {};
-			sceneRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			sceneRenderPassBegin.renderPass = sceneRenderPass;
-			sceneRenderPassBegin.renderArea.offset.x = 0;
-			sceneRenderPassBegin.renderArea.offset.y = 0;
-			sceneRenderPassBegin.renderArea.extent.width = width;
-			sceneRenderPassBegin.renderArea.extent.height = height;
-			sceneRenderPassBegin.clearValueCount = ARRAY_SIZE(clearValues);
-			sceneRenderPassBegin.pClearValues = clearValues;
-			sceneRenderPassBegin.framebuffer = sceneFramebuffer;
-
-			vkCmdBeginRenderPass(commandBuffer, &sceneRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-
-			setViewport(commandBuffer, 0, 0, float(width), float(height));
-			setScissor(commandBuffer, 0, 0, width, height);
-
-			auto th = sync_get_val(cameraRotYTrack, row) * (M_PI / 180);
-			auto dist = sync_get_val(cameraDistTrack, row);
-			auto roll = sync_get_val(cameraRollTrack, row) * (M_PI / 180);
-
-			auto cameraTargetX = sync_get_val(cameraTargetXTrack, row);
-			auto cameraTargetY = sync_get_val(cameraTargetYTrack, row);
-			auto cameraTargetZ = sync_get_val(cameraTargetZTrack, row);
-
-			auto targetPosition = glm::vec3(
-				float(cameraTargetX),
-				float(cameraTargetY),
-				float(cameraTargetZ));
-			auto viewPosition = glm::vec3(
-				cameraTargetX + sin(th) * dist,
-				cameraTargetY + sync_get_val(cameraUpTrack, row),
-				cameraTargetZ + cos(th) * dist);
-			auto lookAt = glm::lookAt(viewPosition, targetPosition, glm::vec3(0, 1, 0));
-			auto viewMatrix = glm::rotate(glm::mat4(1), float(roll), glm::vec3(0, 0, 1)) * lookAt;
-
-			auto fov = sync_get_val(cameraFOVTrack, row);
-			auto aspect = float(width) / height;
-			auto znear = 0.01f;
-			auto zfar = 100.0f;
-			auto projectionMatrix = glm::perspective(float(fov * M_PI / 180), aspect, znear, zfar);
-
-			int sceneIndex = int(sync_get_val(sceneIndexTrack, row));
-			if (sceneIndex >= 0) {
-				sceneIndex %= sceneRenderers.size();
-				SceneRenderer &sceneRenderer = sceneRenderers[sceneIndex];
-
-				refractionUniforms.planeIndex = float(sync_get_val(refractionPlaneIndexTrack, row));
-				refractionUniforms.fade = float(sync_get_val(refractionFadeTrack, row));
-				refractionUniforms.refractiveIndex = float(sync_get_val(refractionIndexTrack, row));
-
-				auto ptr = refractionUniformBuffer->map(0, sizeof(refractionUniforms));
-				memcpy(ptr, &refractionUniforms, sizeof(refractionUniforms));
-				refractionUniformBuffer->unmap();
-
-				sceneRenderer.draw(commandBuffer, viewMatrix, projectionMatrix);
-			} else {
-				int size = 256;
-
-				auto modelMatrix = glm::mat4(1);
-				auto modelViewMatrix = viewMatrix * modelMatrix;
-				auto modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
-				wavePlaneUniforms.modelViewMatrix = modelViewMatrix;
-				wavePlaneUniforms.modelViewInverseMatrix = glm::inverse(modelViewMatrix);
-				wavePlaneUniforms.modelViewProjectionMatrix = modelViewProjectionMatrix;
-
-				wavePlaneUniforms.offset = glm::vec2(sync_get_val(wavePlaneOffsetXTrack, row),
-				                                     sync_get_val(wavePlaneOffsetYTrack, row));
-				wavePlaneUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
-				                                    sync_get_val(wavePlaneScaleYTrack, row));
-				wavePlaneUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
-
-				auto ptr = wavePlaneUniformBuffer->map(0, sizeof(wavePlaneUniforms));
-				memcpy(ptr, &wavePlaneUniforms, sizeof(wavePlaneUniforms));
-				wavePlaneUniformBuffer->unmap();
-
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,  wavePlanePipeline);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, wavePlanePipelineLayout, 0, 1, &wavePlaneDescriptorSet, 0, nullptr);
-
-				for (int i = 0; i < size; ++i)
-					vkCmdDraw(commandBuffer, 2 + 2 * size, 1, (1 << 16) * i, 0);
-			}
-
-			vkCmdEndRenderPass(commandBuffer);
-
-			for (int i = 0; i < bloomLevels; ++i) {
-				int levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
-				int levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
-				VkRenderPassBeginInfo bloomRenderPassBegin = {};
-				bloomRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-				bloomRenderPassBegin.renderPass = bloomRenderPass;
-				bloomRenderPassBegin.renderArea.offset.x = 0;
-				bloomRenderPassBegin.renderArea.offset.y = 0;
-				bloomRenderPassBegin.renderArea.extent.width = levelWidth;
-				bloomRenderPassBegin.renderArea.extent.height = levelHeight;
-				bloomRenderPassBegin.framebuffer = bloomFramebuffers[i];
-
-				vkCmdBeginRenderPass(commandBuffer, &bloomRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-
-				setViewport(commandBuffer, 0, 0, float(levelWidth), float(levelHeight));
-				setScissor(commandBuffer, 0, 0, levelWidth, levelHeight);
-
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomPipeline);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomPipelineLayout, 0, 1, &bloomDescriptorSets[i], 0, nullptr);
-				vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-				vkCmdEndRenderPass(commandBuffer);
-			}
-
-			VkRenderPassBeginInfo bloomUpscaleRenderPassBegin = {};
-			bloomUpscaleRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			bloomUpscaleRenderPassBegin.renderPass = bloomUpscaleRenderPass;
-			bloomUpscaleRenderPassBegin.renderArea.offset.x = 0;
-			bloomUpscaleRenderPassBegin.renderArea.offset.y = 0;
-			bloomUpscaleRenderPassBegin.renderArea.extent.width = width;
-			bloomUpscaleRenderPassBegin.renderArea.extent.height = height;
-			bloomUpscaleRenderPassBegin.framebuffer = bloomUpscaleFramebuffer;
-
-			vkCmdBeginRenderPass(commandBuffer, &bloomUpscaleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-
-			setViewport(commandBuffer, 0, 0, float(width), float(height));
-			setScissor(commandBuffer, 0, 0, width, height);
-
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomUpscalePipeline);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomUpscalePipelineLayout, 0, 1, &bloomUpscaleDescriptorSet, 0, nullptr);
-
-			bloomUpscalePushConstants.bloomAmount = float(sync_get_val(bloomAmountTrack, row));
-			bloomUpscalePushConstants.bloomShape = float(sync_get_val(bloomShapeTrack, row));
-			bloomUpscalePushConstants.seed = float(rand()) / RAND_MAX;
-			vkCmdPushConstants(commandBuffer, bloomUpscalePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(bloomUpscalePushConstants), &bloomUpscalePushConstants);
-
-			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-			vkCmdEndRenderPass(commandBuffer);
-
-			imageBarrier(
-				commandBuffer,
-				colorArray.getImage(),
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-			blitImage(commandBuffer,
-				bloomUpscaleRenderTarget.getImage(),
-				colorArray.getImage(),
-				width, height,
-				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
-				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, arrayBufferFrameWrapped, 1 });
-
-			imageBarrier(
-				commandBuffer,
-				colorArray.getImage(),
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-				VK_ACCESS_TRANSFER_WRITE_BIT, 0,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-			if (sync_get_val(delayResetTrack, row) > 0.5)
-				validFrames = 0;
-			if (validFrames < colorArray.getArrayLayers())
-				validFrames++;
-
 			VkDescriptorSet &postProcessDescriptorSet = postProcessDescriptorSets[currentSwapImage];
-			{
-				auto gradeIndex1 = max(0, min(int(sync_get_val(gradeIndex1Track, row)), int(colorLuts.size() - 1)));
-				auto gradeIndex2 = max(0, min(int(sync_get_val(gradeIndex2Track, row)), int(colorLuts.size() - 1)));
-
-				VkWriteDescriptorSet writeDescriptorSet = {};
-				vector<VkDescriptorImageInfo> descriptorImageInfos = {
-					{ colorLutSampler, colorLuts[gradeIndex1].getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-					{ colorLutSampler, colorLuts[gradeIndex2].getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
-				};
-
-				writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				writeDescriptorSet.dstSet = postProcessDescriptorSet;
-				writeDescriptorSet.dstBinding = 4;
-				writeDescriptorSet.descriptorCount = descriptorImageInfos.size();
-				writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				writeDescriptorSet.pImageInfo = descriptorImageInfos.data();
-
-				vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-			}
-
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postProcessPipeline);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postProcessPipelineLayout, 0, 1, &postProcessDescriptorSet, 0, nullptr);
 
@@ -1336,29 +215,10 @@ int main(int argc, char *argv[])
 				0, VK_ACCESS_SHADER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-			auto fade = sync_get_val(fadeTrack, row);
-			auto pulseAmount = sync_get_val(pulseAmountTrack, row);
-			auto pulseSpeed = sync_get_val(pulseSpeedTrack, row);
-			auto pulse = cos(row * pulseSpeed * (M_PI / rowsPerBeat));
-			fade = max(0.0, fade - pulseAmount + pulse * pulseAmount);
-
-			postProcessPushConstantData.arrayBufferFrame = uint32_t(arrayBufferFrame);
-			postProcessPushConstantData.validFrames = uint32_t(validFrames);
-			postProcessPushConstantData.delayImage = uint32_t(sync_get_val(delayImageTrack, row));
-			postProcessPushConstantData.overlayIndex = uint32_t(sync_get_val(overlayIndexTrack, row));
-			postProcessPushConstantData.delayAmount = float(sync_get_val(delayAmountTrack, row));
-			postProcessPushConstantData.delayChroma = float(1.0 - min(max(0.0, sync_get_val(delayChromaTrack, row)), 1.0));
-			postProcessPushConstantData.overlayAlpha = float(sync_get_val(overlayAlphaTrack, row));
-			postProcessPushConstantData.fade = float(fade);
-			postProcessPushConstantData.flash = float(sync_get_val(flashTrack, row));
-			postProcessPushConstantData.patternAmount = float(sync_get_val(delayPatternAmountTrack, row));
-			postProcessPushConstantData.patternScale = int(sync_get_val(delayPatternScaleTrack, row));
-			postProcessPushConstantData.kaleidoCount = float(sync_get_val(kaleidoTrack, row));
-			postProcessPushConstantData.gradeBlend = float(sync_get_val(gradeBlendTrack, row));
-			postProcessPushConstantData.gradeAmount = float(sync_get_val(gradeAmountTrack, row));
-
+			
+			postProcessPushConstantData.time = glfwGetTime();
 			vkCmdPushConstants(commandBuffer, postProcessPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(postProcessPushConstantData), &postProcessPushConstantData);
-			vkCmdDispatch(commandBuffer, width / 16, height / 16, 1);
+			vkCmdDispatch(commandBuffer, (width + 15) / 16, (height + 15) / 16, 1);
 
 			imageBarrier(
 				commandBuffer,
@@ -1413,19 +273,7 @@ int main(int argc, char *argv[])
 			swapChain.queuePresent(currentSwapImage, &presentCompleteSemaphore, 1);
 
 			glfwPollEvents();
-
-#ifdef SYNC_PLAYER
-#ifdef USE_BASS
-			if (BASS_ChannelIsActive(stream) == BASS_ACTIVE_STOPPED)
-				break;
-#endif
-#endif
 		}
-
-#ifndef SYNC_PLAYER
-		sync_save_tracks(rocket);
-#endif
-		sync_destroy_device(rocket);
 
 		assumeSuccess(vkDeviceWaitIdle(device));
 		glfwDestroyWindow(win);
@@ -1433,12 +281,7 @@ int main(int argc, char *argv[])
 	} catch (const exception &e) {
 		if (win != nullptr)
 			glfwDestroyWindow(win);
-
-#ifdef WIN32
-		MessageBox(nullptr, e.what(), nullptr, MB_OK);
-#else
 		fprintf(stderr, "FATAL ERROR: %s\n", e.what());
-#endif
 	}
 
 	glfwTerminate();

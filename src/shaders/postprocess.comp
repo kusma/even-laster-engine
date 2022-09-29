@@ -8,114 +8,335 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba8, binding = 0) uniform writeonly image2D outputImage;
-layout (binding = 1) uniform sampler2DArray samplerColor;
-layout (binding = 2) uniform sampler2DArray samplerOffsets;
-layout (binding = 3) uniform sampler2DArray overlaySampler;
-layout (binding = 4) uniform sampler3D colorLut1;
-layout (binding = 5) uniform sampler3D colorLut2;
 
 layout(push_constant) uniform PushConstants {
-	int arrayBufferFrame;
-	int validFrames;
-	int delayImage;
-	int overlayIndex;
-	float delayAmount;
-	float delayChroma;
-	float overlayAlpha;
-	float fade;
-	float flash;
-	float patternAmount;
-	float kaleidoCount;
-	int patternScale;
-	float gradeBlend;
-	float gradeAmount;
+	float time;
 } pushConstants;
 
-vec3 sampleSpectrum(vec2 pos, float timeA, float timeB)
+const int SUBPIXEL_BITS = 4;
+const bool BACKFACE_CULL = true;
+
+ivec3 round_to_subpixel(vec3 v)
 {
-	// thanks to Hornet ;)
-	const int num_iter = 32;
-	const float stepsiz = 1.0 / (num_iter - 1);
-
-	float rnd = nrand(gl_GlobalInvocationID.xy + pushConstants.arrayBufferFrame * 0.1);
-	float t = rnd * stepsiz;
-
-	int slices = textureSize(samplerColor, 0).z;
-
-	vec3 sumcol = vec3(0.0);
-	vec3 sumw = vec3(0.0);
-	for (int i = 0; i < num_iter; ++i) {
-		vec3 w = spectrum_offset(t);
-		sumw += w;
-
-		float time = mix(timeA, timeB, t);
-		int slice = int(time);
-
-		vec3 a = textureLod(samplerColor, vec3(pos, (slice + 0) % slices), 0).xyz;
-		vec3 b = textureLod(samplerColor, vec3(pos, (slice + 1) % slices), 0).xyz;
-		vec3 color = mix(a, b, fract(time));
-
-		sumcol += w * color;
-		t += stepsiz;
-	}
-	return sumcol.rgb /= sumw;
+	return ivec3(floor(v * float(1 << SUBPIXEL_BITS) + 0.5));
 }
 
+struct primitive {
+	vec2 bmin, bmax; // bounding box
 
-vec2 kaleidoscope(vec2 pos, float count)
+	ivec3 e[3]; // edge functions
+
+	// z, w, and barycentric interpolants
+	vec3 fz, fw, fi, fj;
+};
+
+void calc_bbox_trivial(vec4 verts[3], out vec2 bmin, out vec2 bmax)
 {
-	float th = atan(pos.y, pos.x);
-	float r = length(pos);
+	bmin = imageSize(outputImage);
+	bmax = vec2(0);
+	for (int i = 0; i < 3; ++i) {
+		// assert(verts[i].w > 0);
+		bmin = min(bmin, verts[i].xy);
+		bmax = max(bmax, verts[i].xy);
+	}
+}
 
-	float f = 3.14159265 / count;
-	th += 3.14159265 * 0.5;
-	th = abs(mod(th, 2 * f) - f) + f;
-	th -= 3.14159265 * 0.5;
+void calc_bbox(vec4 verts[3], out vec2 bmin, out vec2 bmax)
+{
+	ivec2 iResolution = imageSize(outputImage);
+	bmin = iResolution;
+	bmax = vec2(0);
+	bvec2 xpos = bvec2(false), xneg = bvec2(false);
+	for (int i = 0; i < 3; ++i) {
+		if (verts[i].w > 0) {
+			bmin = min(bmin, verts[i].xy);
+			bmax = max(bmax, verts[i].xy);
+		} else {
+			int j = (i + 1) % 3;
+			if (verts[j].w > 0) {
+				bvec2 s = greaterThan(verts[j].xy, verts[i].xy);
+				xpos = bvec2(xpos.x || s.x, xpos.y || s.y);
+				xneg = bvec2(xneg.x || !s.x, xneg.y || !s.y);
+			}
 
-	return vec2(cos(th), sin(th)) * r;
+			int k = (i + 2) % 3;
+			if (verts[k].w > 0) {
+				bvec2 s = greaterThan(verts[k].xy, verts[i].xy);
+				xpos = bvec2(xpos.x || s.x, xpos.y || s.y);
+				xneg = bvec2(xneg.x || !s.x, xneg.y || !s.y);
+			}
+		}
+	}
+	for (int i = 0; i < 2; ++i) {
+		if (xpos[i])
+			bmax[i] = iResolution[i];
+		if (xneg[i])
+			bmin[i] = 0;
+	}
+}
+
+mat3 calc_adjoint(vec4 verts[3], vec3 tmp)
+{
+	mat3 adj;
+	for (int i = 0; i < 3; ++i) {
+		int j = (i + 1) % 3;
+		int k = (i + 2) % 3;
+		adj[i].x = verts[j].y - verts[k].y;
+		adj[i].y = verts[k].x - verts[j].x;
+		adj[i].z = tmp[i];
+	}
+	return adj;
+}
+
+ivec3 adjust_fill_rule(ivec3 e)
+{
+	if (e.x < 0)
+		e.z++; // top-rule
+	else if (e.x == 0) {
+		if (e.y < 0)
+			e.z++; // left-rule
+	}
+	return e;
+}
+
+void setup_interpolants(vec4 verts[3], mat3 adj, float det, inout primitive result)
+{
+	result.fw = adj[0] * verts[0].w;
+	result.fi = adj[1] * verts[1].w;
+	result.fj = adj[2] * verts[2].w;
+	result.fw += result.fi + result.fj;
+	result.fz = (adj[0] * verts[0].z +
+				 adj[1] * verts[1].z +
+				 adj[2] * verts[2].z) / det;
+}
+
+vec3 reduce_edge_range(vec3 ef)
+{
+	// reduce edge-function range to avoid 32-bit overflow later.
+	// we're still adding subpixel bits later, so this isn't as low as
+	// it sounds.
+
+	float mag = max(abs(ef.x), max(abs(ef.y), abs(ef.z)));
+	const float limit_log2 = 23;
+	if (mag >= exp2(limit_log2))
+		ef *= exp2(-floor(log2(mag)) + limit_log2);
+	return ef;
+}
+
+bool setup_tri_trivial(vec4 verts[3], out primitive result)
+{
+	// calculate enough of the adjoint to calculate the determinant
+	vec3 tmp = cross(vec3(verts[0].x, verts[1].x, verts[2].x),
+					 vec3(verts[0].y, verts[1].y, verts[2].y));
+
+	// backface culling
+	float det = tmp.x + tmp.y + tmp.z;
+	if (BACKFACE_CULL && det <= 0)
+		return false;
+	calc_bbox_trivial(verts, result.bmin, result.bmax);
+
+	mat3 adj = calc_adjoint(verts, tmp);
+
+	// edge-functions (snapped to subpixels)
+	for (int i = 0; i < 3; ++i) {
+		vec3 ef = reduce_edge_range(adj[i]);
+		ivec3 e = round_to_subpixel(ef);
+		result.e[i] = adjust_fill_rule(e);
+	}
+
+	setup_interpolants(verts, adj, det, result);
+	return true;
+}
+
+bool setup_tri(vec4 verts[3], out primitive result)
+{
+	if (verts[0].w > 0 && verts[1].w > 0 && verts[2].w > 0)
+		return setup_tri_trivial(verts, result);
+
+	// calculate enough of the adjoint to calculate the determinant
+	vec3 tmp = cross(vec3(verts[0].x, verts[1].x, verts[2].x),
+					 vec3(verts[0].y, verts[1].y, verts[2].y));
+
+	// backface culling
+	float det = tmp.x + tmp.y + tmp.z;
+	if (BACKFACE_CULL && det * verts[0].w * verts[1].w * verts[2].w <= 0)
+		return false;
+
+	calc_bbox(verts, result.bmin, result.bmax);
+
+	mat3 adj = calc_adjoint(verts, tmp);
+
+	bool inv_edge[3];
+	inv_edge[0] = verts[1].w * verts[2].w <= 0;
+	inv_edge[1] = verts[2].w * verts[0].w <= 0;
+	inv_edge[2] = verts[0].w * verts[1].w <= 0;
+
+	// edge-functions (snapped to subpixels)
+	for (int i = 0; i < 3; ++i) {
+		vec3 ef = reduce_edge_range(adj[i]);
+		ivec3 e = round_to_subpixel(ef);
+		if (inv_edge[i])
+			e = -e;
+		result.e[i] = adjust_fill_rule(e);
+	}
+
+	setup_interpolants(verts, adj, det, result);
+	return true;
+}
+
+int eval_edge(ivec3 e, ivec2 pos)
+{
+	return e.x * pos.x + e.y * pos.y + e.z;
+}
+
+void debugFrag(uvec2 fragCoord, vec4 color)
+{
+#if 1
+	imageStore(outputImage, ivec2(fragCoord), color);
+#endif
+}
+
+vec4 attrs[3] = vec4[3](
+	vec4( 1,  0, 0, 0),
+	vec4( 0,  1, 0, 0),
+	vec4( 0,  0, 1, 0)
+);
+
+void perFragment(in uvec2 fragCoord, in primitive prim)
+{
+	ivec2 pos = ivec2(fragCoord.xy);
+	int d0 = eval_edge(prim.e[0], pos);
+	int d1 = eval_edge(prim.e[1], pos);
+	int d2 = eval_edge(prim.e[2], pos);
+
+	if (min(min(d0, d1), d2) > 0) {
+		// depth-clip
+		float z = dot(prim.fz, vec3(pos, 1));
+#if 0
+		if (z < 0 || z > 1) {
+			debugFrag(fragCoord, vec4(0, 0, 0.5, 1));
+			return;
+		}
+#else
+		z = clamp(z, 0, 1);
+#endif
+
+		float i = dot(prim.fi, vec3(pos, 1));
+		float j = dot(prim.fj, vec3(pos, 1));
+		float w = 1 / dot(prim.fw, vec3(pos, 1));
+
+		i *= w;
+		j *= w;
+		float k = 1 - i - j;
+
+		// interpolate a single vec4 varying
+		vec4 var = attrs[0] * k + attrs[1] * i + attrs[2] * j;
+		vec4 fragColor = var;
+#if 0
+		vec4 tmp = vec4(textureLod(iChannel0, var.xy, 0).xyz, 1);
+		tmp.xyz = mix(tmp.xyz, vec3(0.5), 1 / (1 + z));
+		fragColor *= tmp;
+#endif
+		imageStore(outputImage, ivec2(fragCoord), fragColor);
+	}
+}
+
+void mainImage(in uvec2 fragCoord)
+{
+	float iTime = pushConstants.time;
+	ivec2 iResolution = imageSize(outputImage);
+#if 0
+	vec4 verts[3] = vec4[3](
+		vec4(-0.75, -0.75, 0, 1) * 1,
+		vec4( 0.75, -0.75, 0, 1) * 0.75,
+		vec4( 0.00,  0.75, 1, 1) * 0.25
+	);
+
+	for (int i = 0; i < 3; ++i)
+		verts[i].xy += vec2(sin(iTime * 0.25 + float(i)), cos(iTime * 0.25 - float(i))) * 0.3;
+#else
+	vec4 verts[3] = vec4[3](
+		vec4(-0.75, -0.75, 0, 1),
+		vec4( 0.75, -0.75, 0, 1),
+		vec4( 0.00,  0.75, 1, 1)
+	);
+
+	verts[2].w = 0.5 + 1.75 * sin(iTime);
+	// verts[2].w = 0.0025 * sin(iTime);
+#endif
+
+	// *** per vertex
+
+	// viewport map
+	for (int i = 0; i < 3; ++i) {
+		float w_rcp = 1 / verts[i].w;
+		// clamp 1 / w to avoid problems at infinity
+		const float w_rcp_range = exp2(20);
+		w_rcp = clamp(w_rcp, -w_rcp_range, w_rcp_range);
+
+		vec3 tmp = verts[i].xyz * w_rcp;
+		verts[i].xy = iResolution.xy * 0.5 + tmp.xy * iResolution.xy * 0.5;
+		verts[i].z = tmp.z;
+		verts[i].w = w_rcp;
+	}
+
+	// *** per primitive
+
+	primitive prim;
+	if (!setup_tri(verts, prim)) {
+		debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
+		return;
+	}
+
+
+	/* this really belongs elsewhere, but it's cleaner to color here */
+	if (any(lessThan(fragCoord.xy, floor(prim.bmin.xy))) ||
+		any(greaterThan(fragCoord.xy, ceil(prim.bmax.xy)))) {
+		debugFrag(fragCoord, vec4(0, 0.5, 0.5, 1));
+		return;
+	}
+
+	// *** per tile
+	debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
+
+	/* just proof-of-concept: conservative
+	 * block-rasterizing, for hierarchial
+	 * rasterization (and could be repurposed
+	 * for normal conservative rasterization)
+	 */
+	ivec3 de, ne;
+	for (int i = 0; i < 3; ++i) {
+		de[i] = max(prim.e[i].x, 0) + max(prim.e[i].y, 0);
+		ne[i] = prim.e[i].x + prim.e[i].y - de[i];
+	}
+
+	vec4 debugColor = vec4(1);
+	for (int i = 6; i > 0; i--) {
+		ivec2 hpos = ivec2(fragCoord.xy) & ~((1 << i) - 1);
+		ivec3 d;
+		for (int j = 0; j < 3; ++j)
+			d[j] = eval_edge(prim.e[j], hpos);
+
+		bool fully_outside = any(lessThan(d + (de << i), ivec3(0)));
+		if (fully_outside) {
+			debugColor[i % 3] *= 0.875 / float(1 + i / 3);
+			debugFrag(fragCoord, debugColor);
+			return;
+		}
+
+		bool fully_inside = all(greaterThan(d + (ne << i), ivec3(0)));
+		if (fully_inside) {
+			debugColor[i % 3] *= 0.875 / float(1 + i / 3);
+			break;
+		}
+	}
+	debugFrag(fragCoord, debugColor);
+
+	perFragment(fragCoord, prim);
 }
 
 void main()
 {
-	vec2 pos = (gl_GlobalInvocationID.xy + 0.5) / imageSize(outputImage);
-
-	vec2 kaleidoPos = pos;
-	if (pushConstants.kaleidoCount > 0) {
-		vec2 halfSize = imageSize(outputImage) * 0.5;
-		kaleidoPos = 0.5 + kaleidoscope(vec2(gl_GlobalInvocationID.xy) + 0.5 - halfSize, pushConstants.kaleidoCount) / halfSize;
-	}
-
-
-	float time = pushConstants.arrayBufferFrame;
-	float delay = textureLod(samplerOffsets, vec3(pos.xy, pushConstants.delayImage), 0).x;
-
-	uint r = rand(int(gl_GlobalInvocationID.x ^ gl_GlobalInvocationID.y) >> pushConstants.patternScale);
-	float delayPattern = float(r >> (32 - 23)) / ((1 << 23) - 1);
-	delay = mix(delay, delayPattern, pushConstants.patternAmount);
-
-	delay *= pushConstants.delayAmount;
-	delay *= textureSize(samplerColor, 0).z;
-	delay = clamp(delay, 0, pushConstants.validFrames - 1);
-
-	vec3 color = sampleSpectrum(kaleidoPos, time - delay, time - delay * pushConstants.delayChroma);
-
-	vec4 overlay = textureLod(overlaySampler, vec3(pos.xy, pushConstants.overlayIndex), 0);
-	color = color * (1 - overlay.a * pushConstants.overlayAlpha) + overlay.rgb * pushConstants.overlayAlpha;
-
-	// vignette
-	color *= 1.0 - distance(pos, vec2(0.5));
-
-	color = color * pushConstants.fade + pushConstants.flash;
-
-	uint pixelSeed = rand(137 + gl_GlobalInvocationID.x) | (rand(8 + gl_GlobalInvocationID.y) << 4);
-	uint frameSeed = rand(pushConstants.arrayBufferFrame);
-	color += randf(pixelSeed ^ frameSeed) * (4.0 / 255);
-
-	vec3 srgbColor = fromLinear(color);
-	vec3 gradeColor1 = toLinear(textureLod(colorLut1, srgbColor, 0).rgb);
-	vec3 gradeColor2 = toLinear(textureLod(colorLut2, srgbColor, 0).rgb);
-	vec3 gradeColor = mix(gradeColor1, gradeColor2, pushConstants.gradeBlend);
-	color = mix(color, gradeColor, pushConstants.gradeAmount);
-
-	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
+	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(0));
+	mainImage(gl_GlobalInvocationID.xy);
 }
