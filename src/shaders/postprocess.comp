@@ -9,6 +9,8 @@
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba8, binding = 0) uniform writeonly image2D outputImage;
 
+layout (binding=1) uniform samplerBuffer vertexBuffer;
+
 layout(push_constant) uniform PushConstants {
 	float time;
 } pushConstants;
@@ -245,26 +247,11 @@ void mainImage(in uvec2 fragCoord)
 {
 	float iTime = pushConstants.time;
 	ivec2 iResolution = imageSize(outputImage);
-#if 0
 	vec4 verts[3] = vec4[3](
-		vec4(-0.75, -0.75, 0, 1) * 1,
-		vec4( 0.75, -0.75, 0, 1) * 0.75,
-		vec4( 0.00,  0.75, 1, 1) * 0.25
+		texelFetch(vertexBuffer, 0),
+		texelFetch(vertexBuffer, 1),
+		texelFetch(vertexBuffer, 2)
 	);
-
-	for (int i = 0; i < 3; ++i)
-		verts[i].xy += vec2(sin(iTime * 0.25 + float(i)), cos(iTime * 0.25 - float(i))) * 0.3;
-#else
-	vec4 verts[3] = vec4[3](
-		vec4(-0.75, -0.75, 0, 1),
-		vec4( 0.75, -0.75, 0, 1),
-		vec4( 0.00,  0.75, 1, 1)
-	);
-
-	verts[2].w = 0.5 + 1.75 * sin(iTime);
-	// verts[2].w = 0.0025 * sin(iTime);
-#endif
-
 	// *** per vertex
 
 	// viewport map

@@ -9,6 +9,8 @@
 #include "swapchain.h"
 #include "shader.h"
 
+#include "scene/buffer.h"
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -134,6 +136,7 @@ int main(int argc, char *argv[])
 
 		auto postProcessDescriptorSetLayout = createDescriptorSetLayout({
 			{ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0 },
+			{ 1, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0 },
 		});
 
 		struct {
@@ -148,11 +151,17 @@ int main(int argc, char *argv[])
 
 		auto postProcessPipelineLayout = createPipelineLayout({ postProcessDescriptorSetLayout }, { postProcessPushConstantRange });
 
+		// VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT
+
+		Buffer vertexBuffer(sizeof(float) * 4 * 3, VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		VkBufferView vertexBufferView = createBufferView(vertexBuffer.getBuffer(), VK_FORMAT_R32G32B32A32_SFLOAT);
+
 		VkPipeline postProcessPipeline = createComputePipeline(postProcessPipelineLayout, loadShaderModule("data/shaders/postprocess.comp.spv"));
 
 		int swapChainImageCount = swapChain.getImageViews().size();
 		auto postProcessDescriptorPool = createDescriptorPool({
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, uint32_t(swapChainImageCount * 1) },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, uint32_t(swapChainImageCount * 1) },
 		}, swapChainImageCount);
 
 		vector<VkDescriptorSet> postProcessDescriptorSets;
@@ -165,13 +174,20 @@ int main(int argc, char *argv[])
 			postProcessRenderTargetImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 			postProcessRenderTargetImageInfo.imageView = postProcessRenderTarget.getImageView();
 
-			VkWriteDescriptorSet writeDescriptorSets[1] = {};
+			VkWriteDescriptorSet writeDescriptorSets[2] = {};
 			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[0].dstSet = descriptorSet;
 			writeDescriptorSets[0].dstBinding = 0;
 			writeDescriptorSets[0].descriptorCount = 1;
 			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			writeDescriptorSets[0].pImageInfo = &postProcessRenderTargetImageInfo;
+
+			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSets[1].dstSet = descriptorSet;
+			writeDescriptorSets[1].dstBinding = 1;
+			writeDescriptorSets[1].descriptorCount = 1;
+			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+			writeDescriptorSets[1].pTexelBufferView = &vertexBufferView;
 
 			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
@@ -202,6 +218,23 @@ int main(int argc, char *argv[])
 			commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 			assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+			float *data = (float *)vertexBuffer.map();
+			*data++ = -0.75;
+			*data++ = -0.75;
+			*data++ = 0;
+			*data++ = 1;
+
+			*data++ = 0.75;
+			*data++ = -0.75;
+			*data++ = 0;
+			*data++ = 1;
+
+			*data++ = 0;
+			*data++ = 0.75;
+			*data++ = 1;
+			*data++ = 0.5 + 1.75 * sin(glfwGetTime());
+			vertexBuffer.unmap();
 
 			VkDescriptorSet &postProcessDescriptorSet = postProcessDescriptorSets[currentSwapImage];
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postProcessPipeline);
