@@ -331,6 +331,21 @@ namespace vulkan
 		return imageView;
 	}
 
+	inline VkBufferView createBufferView(VkBuffer buffer, VkFormat format, VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE, VkBufferViewCreateFlags flags = 0)
+	{
+		VkBufferViewCreateInfo bufferViewCreateInfo = {};
+		bufferViewCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
+		bufferViewCreateInfo.flags = flags;
+		bufferViewCreateInfo.buffer = buffer;
+		bufferViewCreateInfo.format = format;
+		bufferViewCreateInfo.offset = offset;
+		bufferViewCreateInfo.range = range;
+
+		VkBufferView bufferView;
+		assumeSuccess(vkCreateBufferView(device, &bufferViewCreateInfo, nullptr, &bufferView));
+		return bufferView;
+	}
+
 	inline VkSampler createSampler(float maxLod, bool repeat, bool wantAnisotropy)
 	{
 		VkSamplerCreateInfo samplerCreateInfo = {};
