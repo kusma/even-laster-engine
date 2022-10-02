@@ -12,7 +12,7 @@ public:
 	Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags);
 	~Buffer();
 
-	void *map(VkDeviceSize offset, VkDeviceSize size)
+	void *map(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE)
 	{
 		void *ret;
 		vulkan::assumeSuccess(vkMapMemory(vulkan::device, deviceMemory, offset, size, 0, &ret));
