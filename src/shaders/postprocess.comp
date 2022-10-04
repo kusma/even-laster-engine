@@ -258,6 +258,7 @@ void perFragment(in uvec2 fragCoord, in primitive prim)
 }
 
 shared vec4 verts[3];
+shared primitive prims[1];
 
 void main()
 {
@@ -278,55 +279,66 @@ void main()
 
 	// *** per primitive
 
-	primitive prim;
-	if (!setup_tri(verts, prim)) {
-		debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
-		return;
-	}
-
-
-	/* this really belongs elsewhere, but it's cleaner to color here */
-	if (any(lessThan(fragCoord.xy, floor(prim.bmin.xy))) ||
-		any(greaterThan(fragCoord.xy, ceil(prim.bmax.xy)))) {
-		debugFrag(fragCoord, vec4(0, 0.5, 0.5, 1));
-		return;
-	}
-
-	// *** per tile
-	debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
-
-	/* just proof-of-concept: conservative
-	 * block-rasterizing, for hierarchial
-	 * rasterization (and could be repurposed
-	 * for normal conservative rasterization)
-	 */
-	ivec3 de, ne;
-	for (int i = 0; i < 3; ++i) {
-		de[i] = max(prim.e[i].x, 0) + max(prim.e[i].y, 0);
-		ne[i] = prim.e[i].x + prim.e[i].y - de[i];
-	}
-
-	vec4 debugColor = vec4(1);
-	for (int i = 6; i > 0; i--) {
-		ivec2 hpos = ivec2(fragCoord.xy) & ~((1 << i) - 1);
-		ivec3 d;
-		for (int j = 0; j < 3; ++j)
-			d[j] = eval_edge(prim.e[j], hpos);
-
-		bool fully_outside = any(lessThan(d + (de << i), ivec3(0)));
-		if (fully_outside) {
-			debugColor[i % 3] *= 0.875 / float(1 + i / 3);
-			debugFrag(fragCoord, debugColor);
+	if (gl_LocalInvocationID.x < 1) {
+		primitive prim;
+		// TODO: wire vertices based in primitive index here...
+		if (!setup_tri(verts, prim)) {
+			debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
 			return;
 		}
 
-		bool fully_inside = all(greaterThan(d + (ne << i), ivec3(0)));
-		if (fully_inside) {
-			debugColor[i % 3] *= 0.875 / float(1 + i / 3);
-			break;
-		}
+		prims[gl_LocalInvocationID.x] = prim;
 	}
-	debugFrag(fragCoord, debugColor);
 
-	perFragment(fragCoord, prim);
+	groupMemoryBarrier();
+	barrier();
+
+	// *** per tile
+	for (int i = 0; i < 1; ++i) {
+		primitive prim = prims[i];
+
+		/* this really belongs elsewhere, but it's cleaner to color here */
+		if (any(lessThan(fragCoord.xy, floor(prim.bmin.xy))) ||
+			any(greaterThan(fragCoord.xy, ceil(prim.bmax.xy)))) {
+			debugFrag(fragCoord, vec4(0, 0.5, 0.5, 1));
+			return;
+		}
+
+		debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
+
+		/* just proof-of-concept: conservative block-rasterizing, for
+		 * hierarchial rasterization (and could be repurposed for normal
+		 * conservative rasterization)
+		 */
+		ivec3 de, ne;
+		for (int i = 0; i < 3; ++i) {
+			de[i] = max(prim.e[i].x, 0) + max(prim.e[i].y, 0);
+			ne[i] = prim.e[i].x + prim.e[i].y - de[i];
+		}
+
+		vec4 debugColor = vec4(1);
+		for (int i = 6; i > 0; i--) {
+			ivec2 hpos = ivec2(fragCoord.xy) & ~((1 << i) - 1);
+			ivec3 d;
+			for (int j = 0; j < 3; ++j)
+				d[j] = eval_edge(prim.e[j], hpos);
+
+			bool fully_outside = any(lessThan(d + (de << i), ivec3(0)));
+			if (fully_outside) {
+				debugColor[i % 3] *= 0.875 / float(1 + i / 3);
+				debugFrag(fragCoord, debugColor);
+				return;
+			}
+
+			bool fully_inside = all(greaterThan(d + (ne << i), ivec3(0)));
+			if (fully_inside) {
+				debugColor[i % 3] *= 0.875 / float(1 + i / 3);
+				break;
+			}
+		}
+		debugFrag(fragCoord, debugColor);
+
+		perFragment(fragCoord, prim);
+	}
+
 }
