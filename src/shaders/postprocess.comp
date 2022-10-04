@@ -243,8 +243,10 @@ void perFragment(in uvec2 fragCoord, in primitive prim)
 	}
 }
 
-void mainImage(in uvec2 fragCoord)
+void main()
 {
+	uvec2 fragCoord = gl_GlobalInvocationID.xy;
+	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(0));
 	float iTime = pushConstants.time;
 	ivec2 iResolution = imageSize(outputImage);
 	vec4 verts[3] = vec4[3](
@@ -320,10 +322,4 @@ void mainImage(in uvec2 fragCoord)
 	debugFrag(fragCoord, debugColor);
 
 	perFragment(fragCoord, prim);
-}
-
-void main()
-{
-	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(0));
-	mainImage(gl_GlobalInvocationID.xy);
 }
