@@ -243,31 +243,35 @@ void perFragment(in uvec2 fragCoord, in primitive prim)
 	}
 }
 
+shared vec4 verts[3];
+
 void main()
 {
 	uvec2 fragCoord = gl_GlobalInvocationID.xy;
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(0));
 	float iTime = pushConstants.time;
 	ivec2 iResolution = imageSize(outputImage);
-	vec4 verts[3] = vec4[3](
-		texelFetch(vertexBuffer, 0),
-		texelFetch(vertexBuffer, 1),
-		texelFetch(vertexBuffer, 2)
-	);
-	// *** per vertex
 
-	// viewport map
-	for (int i = 0; i < 3; ++i) {
-		float w_rcp = 1 / verts[i].w;
+	// *** per vertex
+	if (gl_LocalInvocationID.x < 3) {
+		uint i = gl_LocalInvocationID.x;
+		vec4 vert = texelFetch(vertexBuffer, int(i));
+
+		// viewport map
+
+		float w_rcp = 1 / vert.w;
 		// clamp 1 / w to avoid problems at infinity
 		const float w_rcp_range = exp2(20);
 		w_rcp = clamp(w_rcp, -w_rcp_range, w_rcp_range);
 
-		vec3 tmp = verts[i].xyz * w_rcp;
+		vec3 tmp = vert.xyz * w_rcp;
 		verts[i].xy = iResolution.xy * 0.5 + tmp.xy * iResolution.xy * 0.5;
 		verts[i].z = tmp.z;
 		verts[i].w = w_rcp;
 	}
+
+	groupMemoryBarrier();
+	barrier();
 
 	// *** per primitive
 
