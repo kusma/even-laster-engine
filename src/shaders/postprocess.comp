@@ -30,6 +30,7 @@ struct primitive {
 
 	// z, w, and barycentric interpolants
 	vec3 fz, fw, fi, fj;
+	bool backface;
 };
 
 void calc_bbox_trivial(vec4 verts[3], out vec2 bmin, out vec2 bmax)
@@ -133,8 +134,14 @@ bool setup_tri_trivial(vec4 verts[3], out primitive result)
 
 	// backface culling
 	float det = tmp.x + tmp.y + tmp.z;
-	if (BACKFACE_CULL && det <= 0)
+	result.backface = det <= 0;
+
+	if (BACKFACE_CULL && result.backface) {
+		result.bmin = imageSize(outputImage);
+		result.bmax = vec2(0);
 		return false;
+	}
+
 	calc_bbox_trivial(verts, result.bmin, result.bmax);
 
 	mat3 adj = calc_adjoint(verts, tmp);
@@ -161,8 +168,13 @@ bool setup_tri(vec4 verts[3], out primitive result)
 
 	// backface culling
 	float det = tmp.x + tmp.y + tmp.z;
-	if (BACKFACE_CULL && det * verts[0].w * verts[1].w * verts[2].w <= 0)
+	result.backface = det * verts[0].w * verts[1].w * verts[2].w <= 0;
+
+	if (BACKFACE_CULL && result.backface) {
+		result.bmin = imageSize(outputImage);
+		result.bmax = vec2(0);
 		return false;
+	}
 
 	calc_bbox(verts, result.bmin, result.bmax);
 
@@ -278,17 +290,8 @@ void main()
 	barrier();
 
 	// *** per primitive
-
-	if (gl_LocalInvocationID.x < 1) {
-		primitive prim;
-		// TODO: wire vertices based in primitive index here...
-		if (!setup_tri(verts, prim)) {
-			debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
-			return;
-		}
-
-		prims[gl_LocalInvocationID.x] = prim;
-	}
+	if (gl_LocalInvocationID.x < 1)
+		setup_tri(verts, prims[gl_LocalInvocationID.x]);
 
 	groupMemoryBarrier();
 	barrier();
@@ -296,6 +299,11 @@ void main()
 	// *** per tile
 	for (int i = 0; i < 1; ++i) {
 		primitive prim = prims[i];
+
+		if (BACKFACE_CULL && prim.backface) {
+			debugFrag(fragCoord, vec4(0.5, 0, 0, 1));
+			continue;
+		}
 
 		/* this really belongs elsewhere, but it's cleaner to color here */
 		if (any(lessThan(fragCoord.xy, floor(prim.bmin.xy))) ||
