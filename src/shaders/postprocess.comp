@@ -198,12 +198,6 @@ void debugFrag(uvec2 fragCoord, vec4 color)
 #endif
 }
 
-vec4 attrs[3] = vec4[3](
-	vec4( 1,  0, 0, 0),
-	vec4( 0,  1, 0, 0),
-	vec4( 0,  0, 1, 0)
-);
-
 vec4 perVertex(vec4 vert) {
 	// viewport map
 	ivec2 iResolution = imageSize(outputImage);
@@ -246,6 +240,12 @@ void perFragment(in uvec2 fragCoord, in primitive prim)
 		float k = 1 - i - j;
 
 		// interpolate a single vec4 varying
+		const vec4 attrs[3] = vec4[3](
+			vec4(1, 0, 0, 0),
+			vec4(0, 1, 0, 0),
+			vec4(0, 0, 1, 0)
+		);
+
 		vec4 var = attrs[0] * k + attrs[1] * i + attrs[2] * j;
 		vec4 fragColor = var;
 #if 0
