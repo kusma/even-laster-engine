@@ -1314,7 +1314,7 @@ int main(int argc, char *argv[])
 			postProcessPushConstantData.gradeAmount = float(sync_get_val(gradeAmountTrack, row));
 
 			vkCmdPushConstants(commandBuffer, postProcessPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(postProcessPushConstantData), &postProcessPushConstantData);
-			vkCmdDispatch(commandBuffer, width / 16, height / 16, 1);
+			vkCmdDispatch(commandBuffer, (width + 15) / 16, (height + 15) / 16, 1);
 
 			imageBarrier(
 				commandBuffer,
