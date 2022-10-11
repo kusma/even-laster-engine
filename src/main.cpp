@@ -366,6 +366,24 @@ std::vector<Texture3D> importColorLuts(string folder)
 	return colorLuts;
 }
 
+VkRect2D makeLetterbox(int swapWidth, int swapHeight, float monitor_aspect, float demo_aspect)
+{
+	float w_ratio = 1.0f,
+	      h_ratio = monitor_aspect / demo_aspect;
+
+	if (h_ratio > 1.0f) {
+		/* pillar box, yo! */
+		w_ratio /= h_ratio;
+		h_ratio = 1.0f;
+	}
+
+	VkRect2D rect;
+	rect.extent.width = int(std::roundf(swapWidth * w_ratio));
+	rect.extent.height = int(std::roundf(swapHeight * h_ratio));
+	rect.offset.x = (swapWidth - rect.extent.width) / 2;
+	rect.offset.y = (swapHeight - rect.extent.height) / 2;
+	return rect;
+}
 
 #ifdef WIN32
 
@@ -443,6 +461,10 @@ int main(int argc, char *argv[])
 		int swapWidth = 0, swapHeight = 0;
 		glfwGetFramebufferSize(win, &swapWidth, &swapHeight);
 		auto swapChain = SwapChain(surface, swapWidth, swapHeight, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+		int width_mm, height_mm;
+		glfwGetMonitorPhysicalSize(glfwGetPrimaryMonitor(), &width_mm, &height_mm);
+		VkRect2D letterbox = makeLetterbox(swapWidth, swapHeight, float(width_mm) / height_mm, 16.0 / 9);
 
 		vector<VkFormat> depthCandidates = {
 			VK_FORMAT_D32_SFLOAT,
@@ -1311,11 +1333,30 @@ int main(int argc, char *argv[])
 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
+			if (letterbox.offset.x != 0 ||
+			    letterbox.offset.y != 0 ||
+				int(letterbox.extent.width) != width ||
+				int(letterbox.extent.height) != height) {
+				// clear yo
+				VkClearColorValue color = { 0 };
+				VkImageSubresourceRange range = {
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					0, 1, 0, 1
+				};
+				vkCmdClearColorImage(
+					commandBuffer,
+					swapChainImage,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					&color,
+					1,
+					&range);
+			}
+
 			blitImage(commandBuffer,
 				postProcessRenderTarget.getImage(),
 				swapChainImage,
 				width, height,
-				swapWidth, swapHeight,
+				letterbox,
 				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
 				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 });
 

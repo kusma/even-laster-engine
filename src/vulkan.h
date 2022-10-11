@@ -253,6 +253,36 @@ namespace vulkan
 	inline void blitImage(
 		VkCommandBuffer commandBuffer,
 		VkImage srcImage, VkImage dstImage,
+		int srcWidth, int srcHeight,
+		const VkRect2D &dstRect,
+		VkImageSubresourceLayers srcSubresourceLayers,
+		VkImageSubresourceLayers dstSubresourceLayers,
+		VkFilter filter = VK_FILTER_LINEAR,
+		VkImageLayout srcLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout dstLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		VkImageBlit imageBlit = {};
+		imageBlit.srcSubresource = srcSubresourceLayers;
+		imageBlit.srcOffsets[1].x = int32_t(srcWidth);
+		imageBlit.srcOffsets[1].y = int32_t(srcHeight);
+		imageBlit.srcOffsets[1].z = 1;
+
+		imageBlit.dstSubresource = dstSubresourceLayers;
+		imageBlit.dstOffsets[0].x = dstRect.offset.x;
+		imageBlit.dstOffsets[0].y = dstRect.offset.y;
+		imageBlit.dstOffsets[0].z = 0;
+		imageBlit.dstOffsets[1].x = dstRect.offset.x + dstRect.extent.width;
+		imageBlit.dstOffsets[1].y = dstRect.offset.y + dstRect.extent.height;
+		imageBlit.dstOffsets[1].z = 1;
+
+		blitImage(commandBuffer,
+			srcImage, dstImage,
+			{ imageBlit }, filter,
+			srcLayout, dstLayout);
+	}
+
+	inline void blitImage(
+		VkCommandBuffer commandBuffer,
+		VkImage srcImage, VkImage dstImage,
 		int width, int height,
 		VkImageSubresourceLayers srcSubresourceLayers,
 		VkImageSubresourceLayers dstSubresourceLayers,
