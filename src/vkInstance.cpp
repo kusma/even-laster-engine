@@ -29,10 +29,6 @@ VkCommandPool vulkan::setupCommandPool;
 VkDebugReportCallbackEXT vulkan::debugReportCallback;
 
 #ifndef NDEBUG
-static const char *validationLayerNames[] = {
-	"VK_LAYER_KHRONOS_validation"
-};
-
 static VkBool32 messageCallback(
 	VkDebugReportFlagsEXT flags,
 	VkDebugReportObjectTypeEXT objType,
@@ -81,8 +77,8 @@ void vulkan::instanceInit(const char *appName, const vector<const char *> &enabl
 	instanceCreateInfo.enabledExtensionCount = enabledExtensions.size();
 
 #ifndef NDEBUG
-	instanceCreateInfo.ppEnabledLayerNames = validationLayerNames;
-	instanceCreateInfo.enabledLayerCount = ARRAY_SIZE(validationLayerNames);
+	// instanceCreateInfo.ppEnabledLayerNames = validationLayerNames;
+	// instanceCreateInfo.enabledLayerCount = ARRAY_SIZE(validationLayerNames);
 #endif
 
 	VkResult err = vkCreateInstance(&instanceCreateInfo, nullptr, &vulkan::instance);
@@ -157,11 +153,6 @@ void vulkan::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkInstanc
 	};
 	deviceCreateInfo.enabledExtensionCount = ARRAY_SIZE(enabledExtensions);
 	deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
-
-#ifndef NDEBUG
-	deviceCreateInfo.ppEnabledLayerNames = validationLayerNames;
-	deviceCreateInfo.enabledLayerCount = ARRAY_SIZE(validationLayerNames);
-#endif
 
 	assumeSuccess(vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device));
 
