@@ -4,7 +4,7 @@ project('engine', 'cpp', 'c',
 		'default_library=static',
 		'b_ndebug=if-release'
 	],
-	meson_version: '>=0.56')
+	meson_version: '>=0.58')
 
 meson.add_postconf_script(
 	join_paths(meson.project_source_root(), 'bin/create_link.py'),
@@ -69,3 +69,7 @@ subdir('src')
 subdir('data')
 
 install_subdir('assets', install_dir : '')
+
+devenv = environment()
+devenv.set('VK_INSTANCE_LAYERS', 'VK_LAYER_KHRONOS_validation')
+meson.add_devenv(devenv)
