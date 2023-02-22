@@ -462,9 +462,15 @@ int main(int argc, char *argv[])
 		glfwGetFramebufferSize(win, &swapWidth, &swapHeight);
 		auto swapChain = SwapChain(surface, swapWidth, swapHeight, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-		int width_mm, height_mm;
-		glfwGetMonitorPhysicalSize(glfwGetPrimaryMonitor(), &width_mm, &height_mm);
-		VkRect2D letterbox = makeLetterbox(swapWidth, swapHeight, float(width_mm) / height_mm, 16.0 / 9);
+		const float demo_aspect = 16.0 / 9.0;
+		float monitor_aspect = demo_aspect;
+		if (fullscreen) {
+			int width_mm, height_mm;
+			glfwGetMonitorPhysicalSize(glfwGetPrimaryMonitor(), &width_mm, &height_mm);
+			monitor_aspect = float(width_mm) / height_mm;
+		}
+
+		VkRect2D letterbox = makeLetterbox(swapWidth, swapHeight, monitor_aspect, 16.0 / 9);
 
 		vector<VkFormat> depthCandidates = {
 			VK_FORMAT_D32_SFLOAT,
