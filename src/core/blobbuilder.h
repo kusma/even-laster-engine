@@ -13,7 +13,7 @@ public:
 			std::back_inserter(bytes));
 	}
 
-	std::vector<uint8_t> getBytes() { return bytes; }
+	const std::vector<uint8_t> &getBytes() const { return bytes; }
 
 private:
 	std::vector<uint8_t> bytes;
