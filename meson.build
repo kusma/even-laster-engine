@@ -66,6 +66,7 @@ if not bass_dep.found()
 endif
 
 subdir('src')
+subdir('tools')
 subdir('data')
 
 install_subdir('assets', install_dir : '')
