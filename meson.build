@@ -50,7 +50,7 @@ if not glm_dep.found()
 endif
 
 freeimage_dep = cxx.find_library('freeimage')
-assimp_dep = cxx.find_library('assimp')
+assimp_dep = dependency('assimp')
 
 bass_dep = dependency('bass', fallback: 'bass-' + host_machine.system())
 
