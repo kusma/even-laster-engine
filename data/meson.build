@@ -1,9 +1,8 @@
 subdir('shaders')
 
-configure_file(
-	input : 'soundtrack.mp3',
-	output : 'soundtrack.mp3',
-	copy : true,
+import('fs').copyfile(
+	'soundtrack.mp3',
+	'soundtrack.mp3',
 	install : true,
 	install_dir : 'data/')
 

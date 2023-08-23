@@ -4,7 +4,7 @@ project('engine', 'cpp', 'c',
 		'default_library=static',
 		'b_ndebug=if-release'
 	],
-	meson_version: '>=0.58')
+	meson_version: '>=1.2')
 
 meson.add_postconf_script(
 	join_paths(meson.project_source_root(), 'bin/create_link.py'),
