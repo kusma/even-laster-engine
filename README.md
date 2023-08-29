@@ -19,13 +19,13 @@ so here's a small guide:
    In case you're using Fedora or Debian, here's the exact commands:
    - Fedora:
      ```console
-     $ dnf install glfw-devel assimp-devel freeimage-devel vulkan-devel \
-                   vulkan-validation-layers glslang
+     dnf install glfw-devel assimp-devel freeimage-devel vulkan-devel \
+                 vulkan-validation-layers glslang
      ```
    - Debian:
      ```console
-     $ apt install libglfw3-dev libglm-dev libassimp-dev libfreeimage-dev \
-                   libvulkan-dev vulkan-validationlayers glslang-tools
+     apt install libglfw3-dev libglm-dev libassimp-dev libfreeimage-dev \
+                 libvulkan-dev vulkan-validationlayers glslang-tools
      ```
 
 3. Run meson. Something like `meson setup build` should do.
