@@ -22,9 +22,9 @@ so here's a small guide:
   - glslang: https://github.com/KhronosGroup/glslang
     - fedora: dnf install glslang
 3. Download and uncompress BASS somewhere convenient
-4. Run meson. Something like `meson build` should do.
-5. Compile. I usually do `ninja -C build`
-6. Run the demo. Something like this: `$(cd build && ./src/demo)`
+4. Run meson. Something like `meson setup build` should do.
+5. Compile. I usually do `meson compile -C build`
+6. Run the demo. Something like this: `meson devenv -C build ./src/demo`
 
 There's also an install-step. It behaves a bit differently than most other
 Unix-build systems, though; it doesn't install things globally, it's only
