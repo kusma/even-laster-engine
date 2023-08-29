@@ -22,7 +22,7 @@ so here's a small guide:
   - glslang: https://github.com/KhronosGroup/glslang
     - fedora: dnf install glslang
 3. Download and uncompress BASS somewhere convenient
-4. Run meson. Something like `meson -Dbass-sdk=<path-to-bass> build` should do.
+4. Run meson. Something like `meson build` should do.
 5. Compile. I usually do `ninja -C build`
 6. Run the demo. Something like this: `$(cd build && ./src/demo)`
 
