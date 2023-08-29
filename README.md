@@ -9,24 +9,25 @@ so here's a small guide:
 
 1. Install Meson (and Ninja): http://mesonbuild.com
 2. Install these dependencies (most distros have them all):
-  - GLFW: http://www.glfw.org/
-    - fedora: dnf install glfw-devel
-    - debian: apt install libglfw3-dev
-  - GLM: https://glm.g-truc.net/
-    - fedora: dnf install glm-devel
-    - debian: apt install libglm-dev
-  - Assimp: http://www.assimp.org/
-    - fedora: dnf install assimp-devel
-    - debian: apt install libassimp-dev
-  - FreeImage: http://freeimage.sourceforge.net/
-    - fedora: dnf install freeimage-devel
-    - debian: apt install libfreeimage-dev
-  - Vulkan Loader and Validation Layers: https://github.com/KhronosGroup/Vulkan-Loader
-    - fedora: dnf install vulkan-devel vulkan-validation-layers
-    - debian: apt install libvulkan-dev vulkan-validationlayers
-  - glslang: https://github.com/KhronosGroup/glslang
-    - fedora: dnf install glslang
-    - debian: apt install glslang-tools
+   - GLFW: http://www.glfw.org/
+   - GLM: https://glm.g-truc.net/
+   - Assimp: http://www.assimp.org/
+   - FreeImage: http://freeimage.sourceforge.net/
+   - Vulkan Loader and Validation Layers: https://github.com/KhronosGroup/Vulkan-Loader
+   - glslang: https://github.com/KhronosGroup/glslang
+
+   In case you're using Fedora or Debian, here's the exact commands:
+   - Fedora:
+     ```console
+     $ dnf install glfw-devel assimp-devel freeimage-devel vulkan-devel \
+                   vulkan-validation-layers glslang
+     ```
+   - Debian:
+     ```console
+     $ apt install libglfw3-dev libglm-dev libassimp-dev libfreeimage-dev \
+                   libvulkan-dev vulkan-validationlayers glslang-tools
+     ```
+
 3. Run meson. Something like `meson setup build` should do.
 4. Compile. I usually do `meson compile -C build`
 5. Run the demo. Something like this: `meson devenv -C build ./src/demo`
