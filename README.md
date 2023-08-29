@@ -11,16 +11,22 @@ so here's a small guide:
 2. Install these dependencies (most distros have them all):
   - GLFW: http://www.glfw.org/
     - fedora: dnf install glfw-devel
+    - debian: apt install libglfw3-dev
   - GLM: https://glm.g-truc.net/
     - fedora: dnf install glm-devel
+    - debian: apt install libglm-dev
   - Assimp: http://www.assimp.org/
     - fedora: dnf install assimp-devel
+    - debian: apt install libassimp-dev
   - FreeImage: http://freeimage.sourceforge.net/
     - fedora: dnf install freeimage-devel
+    - debian: apt install libfreeimage-dev
   - Vulkan Loader and Validation Layers: https://github.com/KhronosGroup/Vulkan-Loader
     - fedora: dnf install vulkan-devel vulkan-validation-layers
+    - debian: apt install libvulkan-dev vulkan-validationlayers
   - glslang: https://github.com/KhronosGroup/glslang
     - fedora: dnf install glslang
+    - debian: apt install glslang-tools
 3. Download and uncompress BASS somewhere convenient
 4. Run meson. Something like `meson setup build` should do.
 5. Compile. I usually do `meson compile -C build`
