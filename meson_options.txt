@@ -1,1 +1,0 @@
-option('vulkan-sdk', type : 'string')
