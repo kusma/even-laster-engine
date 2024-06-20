@@ -1,4 +1,5 @@
 #include "buffer.h"
+#include "vulkan.h"
 
 using namespace vulkan;
 

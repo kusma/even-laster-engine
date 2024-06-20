@@ -1,6 +1,8 @@
 #include "shader.h"
 #include "core/memorymappedfile.h"
 
+#include "vulkan.h"
+
 using namespace vulkan;
 
 VkShaderModule loadShaderModule(const char *path)

@@ -1,4 +1,5 @@
 #include "texture.h"
+#include "vulkan.h"
 
 using namespace vulkan;
 
