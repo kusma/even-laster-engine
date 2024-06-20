@@ -3,6 +3,8 @@ Release/
 /.vs/
 /ipch/
 /packages/
+/subprojects/glfw/
+/subprojects/glm/
 *.opensdf
 *.sdf
 *.spv
