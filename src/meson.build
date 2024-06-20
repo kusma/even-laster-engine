@@ -10,7 +10,7 @@ sources = files(
 	'scenerenderer.cpp',
 	'shader.cpp',
 	'swapchain.cpp',
-	'vkInstance.cpp'
+	'vkinstance.cpp'
 )
 
 demo_deps = [

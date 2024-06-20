@@ -1,32 +1,34 @@
+#include "vkinstance.h"
+
 #include "core/core.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <cstring>
 
-#include "vulkan.h"
+#include "vkhelpers.h"
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
-using namespace vulkan;
+using namespace vkHelpers;
 
 using std::vector;
 using std::function;
 using std::runtime_error;
 
-VkInstance vulkan::instance;
-VkDevice vulkan::device;
-VkPhysicalDevice vulkan::physicalDevice;
-VkPhysicalDeviceFeatures vulkan::enabledFeatures = { 0 };
-VkPhysicalDeviceProperties vulkan::deviceProperties;
-VkPhysicalDeviceMemoryProperties vulkan::deviceMemoryProperties;
-uint32_t vulkan::graphicsQueueIndex = UINT32_MAX;
-VkQueue vulkan::graphicsQueue;
-VkCommandPool vulkan::setupCommandPool;
-VkDebugReportCallbackEXT vulkan::debugReportCallback;
+VkInstance vkInstance::instance;
+VkDevice vkInstance::device;
+VkPhysicalDevice vkInstance::physicalDevice;
+VkPhysicalDeviceFeatures vkInstance::enabledFeatures = { 0 };
+VkPhysicalDeviceProperties vkInstance::deviceProperties;
+VkPhysicalDeviceMemoryProperties vkInstance::deviceMemoryProperties;
+uint32_t vkInstance::graphicsQueueIndex = UINT32_MAX;
+VkQueue vkInstance::graphicsQueue;
+VkCommandPool vkInstance::setupCommandPool;
+VkDebugReportCallbackEXT vkInstance::debugReportCallback;
 
 #ifndef NDEBUG
 static VkBool32 messageCallback(
@@ -60,7 +62,7 @@ static VkBool32 messageCallback(
 }
 #endif
 
-void vulkan::instanceInit(const char *appName, const vector<const char *> &enabledExtensions)
+void vkInstance::instanceInit(const char *appName, const vector<const char *> &enabledExtensions)
 {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -81,12 +83,12 @@ void vulkan::instanceInit(const char *appName, const vector<const char *> &enabl
 	// instanceCreateInfo.enabledLayerCount = ARRAY_SIZE(validationLayerNames);
 #endif
 
-	VkResult err = vkCreateInstance(&instanceCreateInfo, nullptr, &vulkan::instance);
+	VkResult err = vkCreateInstance(&instanceCreateInfo, nullptr, &vkInstance::instance);
 	if (err == VK_ERROR_INCOMPATIBLE_DRIVER)
 		throw runtime_error("Your GPU is from Hønefoss!");
 	assumeSuccess(err);
 
-	instanceFuncsInit(vulkan::instance);
+	instanceFuncsInit(vkInstance::instance);
 
 #ifndef NDEBUG
 	VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
@@ -111,7 +113,7 @@ static uint32_t findQueue(VkPhysicalDevice physicalDevice, VkQueueFlags required
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, props);
 
 	for (uint32_t i = 0; i < queueCount; i++) {
-		if ((props[i].queueFlags & requiredFlags) == requiredFlags && usableQueue(instance, physicalDevice, i)) {
+		if ((props[i].queueFlags & requiredFlags) == requiredFlags && usableQueue(vkInstance::instance, physicalDevice, i)) {
 			delete[] props;
 			return i;
 		}
@@ -121,9 +123,9 @@ static uint32_t findQueue(VkPhysicalDevice physicalDevice, VkQueueFlags required
 	throw runtime_error("failed to find queue!");
 }
 
-void vulkan::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkInstance, VkPhysicalDevice, uint32_t)> usableQueue)
+void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkInstance, VkPhysicalDevice, uint32_t)> usableQueue)
 {
-	vulkan::physicalDevice = physicalDevice;
+	vkInstance::physicalDevice = physicalDevice;
 
 	VkPhysicalDeviceFeatures physicalDeviceFeatures;
 	vkGetPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
@@ -159,7 +161,7 @@ void vulkan::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkInstanc
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
 	vkGetDeviceQueue(device, graphicsQueueIndex, 0, &graphicsQueue);
 
-	setupCommandPool = createCommandPool(graphicsQueueIndex);
+	setupCommandPool = createCommandPool(device, graphicsQueueIndex);
 }
 
 template <typename T>
@@ -170,7 +172,7 @@ static T getDeviceProc(VkDevice device, const char *entrypoint)
 	return ret;
 }
 
-struct vulkan::instance_funcs vulkan::instanceFuncs;
+struct vkInstance::instance_funcs vkInstance::instanceFuncs;
 
 template <typename T>
 static T getInstanceProc(VkInstance instance, const char *entrypoint)
@@ -180,7 +182,7 @@ static T getInstanceProc(VkInstance instance, const char *entrypoint)
 	return ret;
 }
 
-void vulkan::instanceFuncsInit(VkInstance instance)
+void vkInstance::instanceFuncsInit(VkInstance instance)
 {
 	instanceFuncs.vkCreateDebugReportCallbackEXT = getInstanceProc<PFN_vkCreateDebugReportCallbackEXT>(instance, "vkCreateDebugReportCallbackEXT");
 	instanceFuncs.vkDestroyDebugReportCallbackEXT = getInstanceProc<PFN_vkDestroyDebugReportCallbackEXT>(instance, "vkDestroyDebugReportCallbackEXT");

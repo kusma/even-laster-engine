@@ -43,7 +43,7 @@ public:
 		subRes.arrayLayer = arrayLayer;
 
 		VkSubresourceLayout ret;
-		vkGetImageSubresourceLayout(vulkan::device, image, &subRes, &ret);
+		vkGetImageSubresourceLayout(vkInstance::device, image, &subRes, &ret);
 		return ret;
 	}
 
@@ -59,13 +59,13 @@ public:
 	void *map(VkDeviceSize offset, VkDeviceSize size)
 	{
 		void *ret;
-		vulkan::assumeSuccess(vkMapMemory(vulkan::device, deviceMemory, offset, size, 0, &ret));
+		vkHelpers::assumeSuccess(vkMapMemory(vkInstance::device, deviceMemory, offset, size, 0, &ret));
 		return ret;
 	}
 
 	void unmap()
 	{
-		vkUnmapMemory(vulkan::device, deviceMemory);
+		vkUnmapMemory(vkInstance::device, deviceMemory);
 	}
 
 protected:

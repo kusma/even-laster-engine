@@ -6,28 +6,14 @@
 #include <vulkan/vulkan.h>
 
 #include <algorithm>
-#include <functional>
 #include <vector>
 #include <cassert>
 #include <stdexcept>
 
 #include "core/core.h"
 
-namespace vulkan
+namespace vkHelpers
 {
-	extern VkInstance instance;
-	extern VkDevice device;
-	extern VkPhysicalDevice physicalDevice;
-	extern VkPhysicalDeviceFeatures enabledFeatures;
-	extern VkPhysicalDeviceProperties deviceProperties;
-	extern VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
-	extern VkQueue graphicsQueue;
-	extern uint32_t graphicsQueueIndex;
-
-	extern VkCommandPool setupCommandPool;
-
-	extern VkDebugReportCallbackEXT debugReportCallback;
-
 	inline void assumeSuccess(VkResult result)
 	{
 		// Success codes are non-negative
@@ -38,22 +24,12 @@ namespace vulkan
 			throw std::runtime_error("unexpected return code");
 	}
 
-	void instanceInit(const char *appName, const std::vector<const char *> &enabledExtensions);
-	void deviceInit(VkPhysicalDevice physicalDevice, std::function<bool(VkInstance, VkPhysicalDevice, uint32_t)> usableQueue);
-
-	extern struct instance_funcs {
-		PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
-		PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
-		PFN_vkDebugReportMessageEXT vkDebugReportMessageEXT;
-		PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
-	} instanceFuncs;
-
 	inline VkDeviceSize alignSize(VkDeviceSize value, VkDeviceSize alignment)
 	{
 		return ((value + alignment - 1) / alignment) * alignment;
 	}
 
-	inline uint32_t getMemoryTypeIndex(const VkMemoryRequirements &memoryRequirements, VkMemoryPropertyFlags propertyFlags)
+	inline uint32_t getMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties deviceMemoryProperties, const VkMemoryRequirements &memoryRequirements, VkMemoryPropertyFlags propertyFlags)
 	{
 		for (auto i = 0u; i < VK_MAX_MEMORY_TYPES; i++) {
 			if (((memoryRequirements.memoryTypeBits >> i) & 1) == 1) {
@@ -68,7 +44,7 @@ namespace vulkan
 		throw std::runtime_error("invalid memory type!");
 	}
 
-	inline VkDeviceMemory allocateDeviceMemory(VkDeviceSize size, uint32_t memoryTypeIndex)
+	inline VkDeviceMemory allocateDeviceMemory(VkDevice device, VkDeviceSize size, uint32_t memoryTypeIndex)
 	{
 		VkMemoryAllocateInfo memoryAllocateInfo = {};
 		memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -81,7 +57,7 @@ namespace vulkan
 		return deviceMemory;
 	}
 
-	inline std::vector<VkCommandBuffer> allocateCommandBuffers(VkCommandPool commandPool, int commandBufferCount)
+	inline std::vector<VkCommandBuffer> allocateCommandBuffers(VkDevice device, VkCommandPool commandPool, int commandBufferCount)
 	{
 		VkCommandBufferAllocateInfo commandAllocInfo = {};
 		commandAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -96,7 +72,7 @@ namespace vulkan
 		return commandBuffers;
 	}
 
-	inline VkFormat findBestFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+	inline VkFormat findBestFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 	{
 		for (auto format : candidates) {
 			VkFormatProperties props;
@@ -119,7 +95,7 @@ namespace vulkan
 		throw std::runtime_error("no supported format!");
 	}
 
-	inline VkFence createFence(VkFenceCreateFlags flags)
+	inline VkFence createFence(VkDevice device, VkFenceCreateFlags flags)
 	{
 		VkFenceCreateInfo fenceCreateInfo = {};
 		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -130,7 +106,7 @@ namespace vulkan
 		return ret;
 	}
 
-	inline VkSemaphore createSemaphore()
+	inline VkSemaphore createSemaphore(VkDevice device)
 	{
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -303,7 +279,7 @@ namespace vulkan
 			srcLayout, dstLayout);
 	}
 
-	inline VkDescriptorPool createDescriptorPool(const std::vector<VkDescriptorPoolSize> &poolSizes, int maxSets)
+	inline VkDescriptorPool createDescriptorPool(VkDevice device, const std::vector<VkDescriptorPoolSize> &poolSizes, int maxSets)
 	{
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
 		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -316,7 +292,7 @@ namespace vulkan
 		return descriptorPool;
 	}
 
-	inline VkCommandPool createCommandPool(uint32_t queueFamilyIndex)
+	inline VkCommandPool createCommandPool(VkDevice device, uint32_t queueFamilyIndex)
 	{
 		VkCommandPoolCreateInfo commandPoolCreateInfo = {};
 		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -328,7 +304,7 @@ namespace vulkan
 		return commandPool;
 	}
 
-	inline VkDescriptorSet allocateDescriptorSet(VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+	inline VkDescriptorSet allocateDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
 	{
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -349,7 +325,7 @@ namespace vulkan
 	VK_COMPONENT_SWIZZLE_A  \
 }
 
-	inline VkImageView createImageView(VkImage image, VkImageViewType viewType, VkFormat format, const VkImageSubresourceRange &subresourceRange, VkComponentMapping components = IDENTITY_SWIZZLE)
+	inline VkImageView createImageView(VkDevice device, VkImage image, VkImageViewType viewType, VkFormat format, const VkImageSubresourceRange &subresourceRange, VkComponentMapping components = IDENTITY_SWIZZLE)
 	{
 		VkImageViewCreateInfo imageViewCreateInfo = {};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -364,7 +340,7 @@ namespace vulkan
 		return imageView;
 	}
 
-	inline VkSampler createSampler(float maxLod, bool repeat, bool wantAnisotropy)
+	inline VkSampler createSampler(VkDevice device, VkPhysicalDeviceFeatures deviceFeatures, VkPhysicalDeviceProperties deviceProperties, float maxLod, bool repeat, bool wantAnisotropy)
 	{
 		VkSamplerCreateInfo samplerCreateInfo = {};
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -380,8 +356,8 @@ namespace vulkan
 		samplerCreateInfo.maxLod = maxLod;
 		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 
-		if (wantAnisotropy && vulkan::enabledFeatures.samplerAnisotropy) {
-			samplerCreateInfo.maxAnisotropy = std::min(8.0f, vulkan::deviceProperties.limits.maxSamplerAnisotropy);
+		if (wantAnisotropy && deviceFeatures.samplerAnisotropy) {
+			samplerCreateInfo.maxAnisotropy = std::min(8.0f, deviceProperties.limits.maxSamplerAnisotropy);
 			samplerCreateInfo.anisotropyEnable = VK_TRUE;
 		}
 
@@ -390,7 +366,7 @@ namespace vulkan
 		return textureSampler;
 	}
 
-	inline VkFramebuffer createFramebuffer(int width, int height, int layers, std::vector<VkImageView> attachments, VkRenderPass renderPass)
+	inline VkFramebuffer createFramebuffer(VkDevice device, int width, int height, int layers, std::vector<VkImageView> attachments, VkRenderPass renderPass)
 	{
 		assert(width > 0);
 		assert(height > 0);
@@ -411,7 +387,7 @@ namespace vulkan
 		return framebuffer;
 	}
 
-	inline VkPipelineLayout createPipelineLayout(const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts, const std::vector<VkPushConstantRange> &pushConstantRanges)
+	inline VkPipelineLayout createPipelineLayout(VkDevice device, const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts, const std::vector<VkPushConstantRange> &pushConstantRanges)
 	{
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -427,7 +403,7 @@ namespace vulkan
 		return pipelineLayout;
 	}
 
-	inline VkDescriptorSetLayout createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &layoutBindings, VkDescriptorSetLayoutCreateFlags flags = 0)
+	inline VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &layoutBindings, VkDescriptorSetLayoutCreateFlags flags = 0)
 	{
 		VkDescriptorSetLayoutCreateInfo desciptorSetLayoutCreateInfo = {};
 		desciptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -442,9 +418,10 @@ namespace vulkan
 		return descriptorSetLayout;
 	}
 
-	inline void setImageName(VkImage image, const std::string &name)
+	inline void setImageName(VkDevice device, VkImage image, const std::string &name)
 	{
 #ifndef NDEBUG
+/*
 		const VkDebugUtilsObjectNameInfoEXT imageNameInfo =
 		{
 			VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
@@ -454,11 +431,11 @@ namespace vulkan
 			name.c_str(),
 		};
 
-		instanceFuncs.vkSetDebugUtilsObjectNameEXT(device, &imageNameInfo);
+		// HACK!
+		// instanceFuncs.vkSetDebugUtilsObjectNameEXT(device, &imageNameInfo);
+*/
 #endif
 	}
-
-	void instanceFuncsInit(VkInstance instance);
 };
 
 #endif // VULKAN_H

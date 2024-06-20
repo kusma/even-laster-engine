@@ -1,6 +1,6 @@
 #include "scenerenderer.h"
 
-#include "vulkan.h"
+#include "vkhelpers.h"
 #include "shader.h"
 
 #include "scene/import-texture.h" // HACK!
@@ -8,7 +8,7 @@
 #include <utility>
 #include <map>
 
-using namespace vulkan;
+using namespace vkHelpers;
 
 using std::map;
 
@@ -84,7 +84,7 @@ static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass r
 	pipelineCreateInfo.pStages = shaderStages.data();
 
 	VkPipeline pipeline;
-	assumeSuccess(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
+	assumeSuccess(vkCreateGraphicsPipelines(vkInstance::device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
 
 	return pipeline;
 }
@@ -92,13 +92,13 @@ static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass r
 SceneRenderer::SceneRenderer(Scene *scene, VkRenderPass renderPass) :
 	scene(scene)
 {
-	auto descriptorSetLayout = createDescriptorSetLayout({
+	auto descriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 		{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 		{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
 		{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
 		{ 3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT }
 		});
-	pipelineLayout = createPipelineLayout({ descriptorSetLayout }, {});
+	pipelineLayout = createPipelineLayout(vkInstance::device, { descriptorSetLayout }, {});
 
 	for (auto object : scene->getObjects()) {
 		// transform meshes to indexed batches
@@ -145,18 +145,18 @@ SceneRenderer::SceneRenderer(Scene *scene, VkRenderPass renderPass) :
 		}
 	}
 
-	auto descriptorPool = createDescriptorPool({
+	auto descriptorPool = createDescriptorPool(vkInstance::device, {
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1 },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 }
 		}, 1);
 
-	uniformBufferSpacing = uint32_t(alignSize(sizeof(PerObjectUniforms), deviceProperties.limits.minUniformBufferOffsetAlignment));
+	uniformBufferSpacing = uint32_t(alignSize(sizeof(PerObjectUniforms), vkInstance::deviceProperties.limits.minUniformBufferOffsetAlignment));
 	auto uniformBufferSize = VkDeviceSize(uniformBufferSpacing * scene->getTransforms().size());
 
 	uniformBuffer = new Buffer(uniformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-	descriptorSet = allocateDescriptorSet(descriptorPool, descriptorSetLayout);
+	descriptorSet = allocateDescriptorSet(vkInstance::device, descriptorPool, descriptorSetLayout);
 
 	VkDescriptorBufferInfo descriptorBufferInfo = uniformBuffer->getDescriptorBufferInfo(0, uniformBufferSpacing);
 
@@ -168,7 +168,7 @@ SceneRenderer::SceneRenderer(Scene *scene, VkRenderPass renderPass) :
 	writeDescriptorSets[0].pBufferInfo = &descriptorBufferInfo;
 	writeDescriptorSets[0].dstBinding = 0;
 
-	vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
+	vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 }
 
 void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMatrix, const glm::mat4 &projectionMatrix)

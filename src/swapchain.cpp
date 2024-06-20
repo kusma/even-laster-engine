@@ -1,11 +1,13 @@
 #include "swapchain.h"
 
-#include "vulkan.h"
+#include "vkhelpers.h"
+#include "vkinstance.h"
+
 #include <assert.h>
 #include <algorithm>
 #include <stdexcept>
 
-using namespace vulkan;
+using namespace vkHelpers;
 
 using std::vector;
 using std::runtime_error;
@@ -13,12 +15,12 @@ using std::runtime_error;
 static vector<VkSurfaceFormatKHR> getSurfaceFormats(VkSurfaceKHR surface)
 {
 	uint32_t surfaceFormatCount = 0;
-	assumeSuccess(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, nullptr));
+	assumeSuccess(vkGetPhysicalDeviceSurfaceFormatsKHR(vkInstance::physicalDevice, surface, &surfaceFormatCount, nullptr));
 	assert(surfaceFormatCount > 0);
 
 	vector<VkSurfaceFormatKHR> surfaceFormats;
 	surfaceFormats.resize(surfaceFormatCount);
-	assumeSuccess(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, surfaceFormats.data()));
+	assumeSuccess(vkGetPhysicalDeviceSurfaceFormatsKHR(vkInstance::physicalDevice, surface, &surfaceFormatCount, surfaceFormats.data()));
 
 	return surfaceFormats;
 }
@@ -26,12 +28,12 @@ static vector<VkSurfaceFormatKHR> getSurfaceFormats(VkSurfaceKHR surface)
 static vector<VkPresentModeKHR> getPresentModes(VkSurfaceKHR surface)
 {
 	uint32_t presentModeCount = 0;
-	assumeSuccess(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr));
+	assumeSuccess(vkGetPhysicalDeviceSurfacePresentModesKHR(vkInstance::physicalDevice, surface, &presentModeCount, nullptr));
 	assert(presentModeCount > 0);
 
 	vector<VkPresentModeKHR> presentModes;
 	presentModes.resize(presentModeCount);
-	assumeSuccess(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data()));
+	assumeSuccess(vkGetPhysicalDeviceSurfacePresentModesKHR(vkInstance::physicalDevice, surface, &presentModeCount, presentModes.data()));
 
 	return presentModes;
 }
@@ -40,7 +42,7 @@ SwapChain::SwapChain(VkSurfaceKHR surface, int width, int height, VkImageUsageFl
 	swapChain(VK_NULL_HANDLE)
 {
 	VkBool32 surfaceSupported = VK_FALSE;
-	assumeSuccess(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, graphicsQueueIndex, surface, &surfaceSupported));
+	assumeSuccess(vkGetPhysicalDeviceSurfaceSupportKHR(vkInstance::physicalDevice, vkInstance::graphicsQueueIndex, surface, &surfaceSupported));
 	assert(surfaceSupported == VK_TRUE);
 
 	vector<VkSurfaceFormatKHR> surfaceFormats = getSurfaceFormats(surface);
@@ -52,7 +54,7 @@ SwapChain::SwapChain(VkSurfaceKHR surface, int width, int height, VkImageUsageFl
 		// find sRGB color format
 		auto result = std::find_if(surfaceFormats.begin(), surfaceFormats.end(), [&](const VkSurfaceFormatKHR &format) {
 			VkFormatProperties formatProperties;
-			vkGetPhysicalDeviceFormatProperties(physicalDevice, format.format, &formatProperties);
+			vkGetPhysicalDeviceFormatProperties(vkInstance::physicalDevice, format.format, &formatProperties);
 
 			if ((imageUsage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0 &&
 				(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
@@ -86,7 +88,7 @@ SwapChain::SwapChain(VkSurfaceKHR surface, int width, int height, VkImageUsageFl
 	}
 
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	assumeSuccess(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities));
+	assumeSuccess(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkInstance::physicalDevice, surface, &surfaceCapabilities));
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -117,16 +119,16 @@ SwapChain::SwapChain(VkSurfaceKHR surface, int width, int height, VkImageUsageFl
 	swapchainCreateInfo.clipped = true;
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
-	assumeSuccess(vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapChain));
+	assumeSuccess(vkCreateSwapchainKHR(vkInstance::device, &swapchainCreateInfo, nullptr, &swapChain));
 	assert(swapChain != VK_NULL_HANDLE);
 
 	uint32_t imageCount;
-	assumeSuccess(vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr));
+	assumeSuccess(vkGetSwapchainImagesKHR(vkInstance::device, swapChain, &imageCount, nullptr));
 	assert(imageCount > 0);
 
 	// Get the swap chain images
 	images.resize(imageCount);
-	assumeSuccess(vkGetSwapchainImagesKHR(device, swapChain, &imageCount, images.data()));
+	assumeSuccess(vkGetSwapchainImagesKHR(vkInstance::device, swapChain, &imageCount, images.data()));
 
 	imageViews.resize(imageCount);
 	for (uint32_t i = 0; i < imageCount; i++) {
@@ -137,14 +139,14 @@ SwapChain::SwapChain(VkSurfaceKHR surface, int width, int height, VkImageUsageFl
 		subresourceRange.levelCount = 1;
 		subresourceRange.layerCount = 1;
 
-		imageViews[i] = createImageView(images[i], VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, subresourceRange);
+		imageViews[i] = createImageView(vkInstance::device, images[i], VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, subresourceRange);
 	}
 }
 
 uint32_t SwapChain::aquireNextImage(VkSemaphore presentCompleteSemaphore)
 {
 	uint32_t currentSwapImage;
-	assumeSuccess(vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, presentCompleteSemaphore, VK_NULL_HANDLE, &currentSwapImage));
+	assumeSuccess(vkAcquireNextImageKHR(vkInstance::device, swapChain, UINT64_MAX, presentCompleteSemaphore, VK_NULL_HANDLE, &currentSwapImage));
 	return currentSwapImage;
 }
 
@@ -157,5 +159,5 @@ void SwapChain::queuePresent(uint32_t currentSwapImage, const VkSemaphore *waitS
 	presentInfo.pImageIndices = &currentSwapImage;
 	presentInfo.pWaitSemaphores = waitSemaphores;
 	presentInfo.waitSemaphoreCount = numWaitSemaphores;
-	assumeSuccess(vkQueuePresentKHR(graphicsQueue, &presentInfo));
+	assumeSuccess(vkQueuePresentKHR(vkInstance::graphicsQueue, &presentInfo));
 }

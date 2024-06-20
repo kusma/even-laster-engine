@@ -1,7 +1,7 @@
 #include "texture.h"
-#include "vulkan.h"
+#include "vkhelpers.h"
 
-using namespace vulkan;
+using namespace vkHelpers;
 
 TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers, bool useStaging) :
 	baseWidth(width),
@@ -38,15 +38,15 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	if (useStaging)
 		imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-	assumeSuccess(vkCreateImage(device, &imageCreateInfo, nullptr, &image));
+	assumeSuccess(vkCreateImage(vkInstance::device, &imageCreateInfo, nullptr, &image));
 
 	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(device, image, &memoryRequirements);
+	vkGetImageMemoryRequirements(vkInstance::device, image, &memoryRequirements);
 
-	auto memoryTypeIndex = getMemoryTypeIndex(memoryRequirements, useStaging ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	deviceMemory = allocateDeviceMemory(memoryRequirements.size, memoryTypeIndex);
+	auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, useStaging ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
 
-	assumeSuccess(vkBindImageMemory(device, image, deviceMemory, 0));
+	assumeSuccess(vkBindImageMemory(vkInstance::device, image, deviceMemory, 0));
 
 	VkImageSubresourceRange subresourceRange;
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -55,14 +55,14 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	subresourceRange.levelCount = mipLevels;
 	subresourceRange.layerCount = arrayLayers;
 
-	imageView = createImageView(image, imageViewType, format, subresourceRange);
+	imageView = createImageView(vkInstance::device, image, imageViewType, format, subresourceRange);
 }
 
 void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel, int arrayLayer)
 {
 	assert(stagingBuffer != nullptr);
 
-	auto commandBuffer = allocateCommandBuffers(setupCommandPool, 1)[0];
+	auto commandBuffer = allocateCommandBuffers(vkInstance::device, vkInstance::setupCommandPool, 1)[0];
 
 	VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -104,5 +104,5 @@ void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipL
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+	assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 }

@@ -12,7 +12,7 @@
 #include <map>
 #include <stdexcept>
 
-#include "vulkan.h"
+#include "vkhelpers.h"
 #include "core/core.h"
 #include "core/blobbuilder.h"
 #include "swapchain.h"
@@ -40,7 +40,7 @@ const unsigned maxConcurrentFrames = 2u;
 #include <glm/gtx/quaternion.hpp>
 #include <bass.h>
 
-using namespace vulkan;
+using namespace vkHelpers;
 
 using std::vector;
 using std::map;
@@ -71,7 +71,7 @@ static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule 
 	computePipelineCreateInfo.layout = layout;
 
 	VkPipeline computePipeline;
-	assumeSuccess(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &computePipeline));
+	assumeSuccess(vkCreateComputePipelines(vkInstance::device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &computePipeline));
 	return computePipeline;
 }
 
@@ -79,12 +79,12 @@ VkPhysicalDevice choosePhysicalDevice()
 {
 	// Get number of available physical devices
 	uint32_t physicalDeviceCount = 0;
-	assumeSuccess(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
+	assumeSuccess(vkEnumeratePhysicalDevices(vkInstance::instance, &physicalDeviceCount, nullptr));
 	assert(physicalDeviceCount > 0);
 
 	// Enumerate devices
 	auto physicalDevices = new VkPhysicalDevice[physicalDeviceCount];
-	assumeSuccess(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices));
+	assumeSuccess(vkEnumeratePhysicalDevices(vkInstance::instance, &physicalDeviceCount, physicalDevices));
 	assert(physicalDeviceCount > 0);
 
 	auto physicalDevice = physicalDevices[0];
@@ -195,7 +195,7 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 	pipelineCreateInfo.pStages = shaderStages.data();
 
 	VkPipeline pipeline;
-	assumeSuccess(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
+	assumeSuccess(vkCreateGraphicsPipelines(vkInstance::device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
 	return pipeline;
 }
 
@@ -239,7 +239,7 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 
 	stagingBuffer->unmap();
 	texture.uploadFromStagingBuffer(stagingBuffer, 0);
-	setImageName(texture.getImage(), filename);
+	setImageName(vkInstance::device, texture.getImage(), filename);
 	return texture;
 }
 
@@ -449,15 +449,15 @@ int main(int argc, char *argv[])
 		enabledExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
-		instanceInit(appName, enabledExtensions);
+		vkInstance::instanceInit(appName, enabledExtensions);
 
 		auto physicalDevice = choosePhysicalDevice();
-		deviceInit(physicalDevice, [](VkInstance instance, VkPhysicalDevice physicalDevice, uint32_t queueIndex) {
+		vkInstance::deviceInit(physicalDevice, [](VkInstance instance, VkPhysicalDevice physicalDevice, uint32_t queueIndex) {
 			return glfwGetPhysicalDevicePresentationSupport(instance, physicalDevice, queueIndex) == GLFW_TRUE;
 		});
 
 		VkSurfaceKHR surface;
-		auto err = glfwCreateWindowSurface(instance, win, nullptr, &surface);
+		auto err = glfwCreateWindowSurface(vkInstance::instance, win, nullptr, &surface);
 		if (err)
 			throw runtime_error("glfwCreateWindowSurface failed!");
 
@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 			VK_FORMAT_D16_UNORM,
 		};
 
-		auto depthFormat = findBestFormat(depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		auto depthFormat = findBestFormat(vkInstance::physicalDevice, depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height);
 		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
@@ -539,9 +539,10 @@ int main(int argc, char *argv[])
 		sceneRenderPassCreateInfo.pSubpasses = &sceneSubpass;
 
 		VkRenderPass sceneRenderPass;
-		assumeSuccess(vkCreateRenderPass(device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass));
+		assumeSuccess(vkCreateRenderPass(vkInstance::device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass));
 
 		auto sceneFramebuffer = createFramebuffer(
+			vkInstance::device,
 			width, height, 1,
 			{ sceneDepthRenderTarget.getImageView(), sceneColorRenderTarget.getImageView() },
 			sceneRenderPass);
@@ -574,18 +575,18 @@ int main(int argc, char *argv[])
 		bloomRenderPassCreateInfo.pSubpasses = &bloomSubpass;
 
 		VkRenderPass bloomRenderPass;
-		assumeSuccess(vkCreateRenderPass(device, &bloomRenderPassCreateInfo, nullptr, &bloomRenderPass));
+		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomRenderPassCreateInfo, nullptr, &bloomRenderPass));
 
-		auto bloomDescriptorSetLayout = createDescriptorSetLayout({
+		auto bloomDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
 		});
 
-		auto bloomUpscaleDescriptorSetLayout = createDescriptorSetLayout({
+		auto bloomUpscaleDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
 			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
 		});
 
-		auto bloomDescriptorPool = createDescriptorPool({
+		auto bloomDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(bloomLevels + 2) },
 		}, bloomLevels + 1);
 
@@ -593,7 +594,7 @@ int main(int argc, char *argv[])
 		vector<VkDescriptorSet> bloomDescriptorSets;
 		vector<VkImageView> bloomImageViews;
 
-		VkSampler bloomInputSampler = createSampler(0.0f, false, false);
+		VkSampler bloomInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 		for (int mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
 			VkImageSubresourceRange subresourceRange;
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -601,15 +602,15 @@ int main(int argc, char *argv[])
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.levelCount = 1;
 			subresourceRange.layerCount = 1;
-			auto imageView = createImageView(bloomRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomRenderTarget.getFormat(), subresourceRange);
+			auto imageView = createImageView(vkInstance::device, bloomRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomRenderTarget.getFormat(), subresourceRange);
 			bloomImageViews.push_back(imageView);
 
 			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
 			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);
-			auto framebuffer = createFramebuffer(mipWidth, mipHeight, 1, { imageView }, bloomRenderPass);
+			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { imageView }, bloomRenderPass);
 			bloomFramebuffers.push_back(framebuffer);
 
-			auto descriptorSet = allocateDescriptorSet(bloomDescriptorPool, bloomDescriptorSetLayout);
+			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomDescriptorSetLayout);
 
 			VkDescriptorImageInfo descriptorImageInfo = {};
 			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -627,12 +628,12 @@ int main(int argc, char *argv[])
 			writeDescriptorSet.pBufferInfo = nullptr;
 			writeDescriptorSet.pImageInfo = &descriptorImageInfo;
 			writeDescriptorSet.dstBinding = 0;
-			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+			vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
 
 			bloomDescriptorSets.push_back(descriptorSet);
 		}
 
-		auto bloomPipelineLayout = createPipelineLayout({ bloomDescriptorSetLayout }, {});
+		auto bloomPipelineLayout = createPipelineLayout(vkInstance::device, { bloomDescriptorSetLayout }, {});
 		auto bloomFragmentShader = loadShaderModule("data/shaders/bloom.frag.spv");
 		auto bloomPipeline = createFullScreenQuadPipeline(bloomPipelineLayout, bloomRenderPass, bloomFragmentShader);
 
@@ -664,11 +665,11 @@ int main(int argc, char *argv[])
 		bloomUpscaleRenderPassCreateInfo.pSubpasses = &bloomUpscaleSubpass;
 
 		VkRenderPass bloomUpscaleRenderPass;
-		assumeSuccess(vkCreateRenderPass(device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass));
+		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass));
 
-		auto bloomUpscaleFramebuffer = createFramebuffer(width, height, 1, { bloomUpscaleRenderTarget.getImageView() }, bloomUpscaleRenderPass);
-		auto bloomUpscaleDescriptorSet = allocateDescriptorSet(bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
-		VkSampler bloomSampler = createSampler(float(bloomLevels), false, false);
+		auto bloomUpscaleFramebuffer = createFramebuffer(vkInstance::device, width, height, 1, { bloomUpscaleRenderTarget.getImageView() }, bloomUpscaleRenderPass);
+		auto bloomUpscaleDescriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
+		VkSampler bloomSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(bloomLevels), false, false);
 
 		{
 			VkWriteDescriptorSet writeDescriptorSet = {};
@@ -685,7 +686,7 @@ int main(int argc, char *argv[])
 			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptorSet.pImageInfo = descriptorImageInfos.data();
 
-			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+			vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
 		}
 
 		struct {
@@ -699,7 +700,7 @@ int main(int argc, char *argv[])
 			0,
 			sizeof(bloomUpscalePushConstants)
 		};
-		auto bloomUpscalePipelineLayout = createPipelineLayout({ bloomUpscaleDescriptorSetLayout }, { bloomUpscalePushConstantRange });
+		auto bloomUpscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomUpscaleDescriptorSetLayout }, { bloomUpscalePushConstantRange });
 		auto bloomUpscaleFragmentShader = loadShaderModule("data/shaders/bloom_upscale.frag.spv");
 		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader);
 
@@ -713,11 +714,11 @@ int main(int argc, char *argv[])
 		} wavePlaneUniforms;
 		auto wavePlaneUniformBuffer = new Buffer(sizeof(wavePlaneUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-		auto wavePlaneDescriptorSetLayout = createDescriptorSetLayout({
+		auto wavePlaneDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT },
 		});
-		auto wavePlanePipelineLayout = createPipelineLayout({ wavePlaneDescriptorSetLayout }, {});
+		auto wavePlanePipelineLayout = createPipelineLayout(vkInstance::device, { wavePlaneDescriptorSetLayout }, {});
 		vector<VkPipelineShaderStageCreateInfo> wavePlaneShaderStages = { {
 				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				nullptr,
@@ -738,15 +739,15 @@ int main(int argc, char *argv[])
 
 		auto wavePlanePipeline = createGeometrylessPipeline(wavePlanePipelineLayout, sceneRenderPass, wavePlaneShaderStages, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, false, BlendMode::Additive);
 
-		auto wavePlaneDescriptorPool = createDescriptorPool({
+		auto wavePlaneDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
 			}, 1);
 
-		auto wavePlaneDescriptorSet = allocateDescriptorSet(wavePlaneDescriptorPool, wavePlaneDescriptorSetLayout);
+		auto wavePlaneDescriptorSet = allocateDescriptorSet(vkInstance::device, wavePlaneDescriptorPool, wavePlaneDescriptorSetLayout);
 
 		Texture3D fractalNoise = loadFractalNoise("data/fbm.raw", 64, 64, 64);
-		VkSampler fractalNoiseSampler = createSampler(0.0f, true, false);
+		VkSampler fractalNoiseSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, true, false);
 
 		{
 			VkWriteDescriptorSet writeDescriptorSets[2] = {};
@@ -770,7 +771,7 @@ int main(int argc, char *argv[])
 			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptorSets[1].pImageInfo = descriptorImageInfos.data();
 
-			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
+			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
 
 		vector<Scene *> scenes;
@@ -796,7 +797,7 @@ int main(int argc, char *argv[])
 		auto cubeTexture = importTextureCube("assets/cubemap.hdr", TextureImportFlags::GENERATE_MIPMAPS);
 		auto colorLuts = importColorLuts("assets/luts");
 
-		auto commandBuffer = allocateCommandBuffers(setupCommandPool, 1)[0];
+		auto commandBuffer = allocateCommandBuffers(vkInstance::device, vkInstance::setupCommandPool, 1)[0];
 
 		VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -860,10 +861,10 @@ int main(int argc, char *argv[])
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 
-		assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+		assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 
 
-		VkSampler textureSampler = createSampler(float(planes.getMipLevels()), false, false);
+		VkSampler textureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(planes.getMipLevels()), false, false);
 
 		struct {
 			float planeIndex;
@@ -894,13 +895,13 @@ int main(int argc, char *argv[])
 			writeDescriptorSets[1].pBufferInfo = &descriptorBufferInfo;
 			writeDescriptorSets[1].dstBinding = 3;
 
-			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
+			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
 
-		auto arrayTextureSampler = createSampler(0.0f, false, false);
-		auto colorLutSampler = createSampler(0.0f, false, false);
+		auto arrayTextureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
+		auto colorLutSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 
-		auto postProcessDescriptorSetLayout = createDescriptorSetLayout({
+		auto postProcessDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 			{ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0 },
 			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
@@ -932,12 +933,12 @@ int main(int argc, char *argv[])
 			sizeof(postProcessPushConstantData)
 		};
 
-		auto postProcessPipelineLayout = createPipelineLayout({ postProcessDescriptorSetLayout }, { postProcessPushConstantRange });
+		auto postProcessPipelineLayout = createPipelineLayout(vkInstance::device, { postProcessDescriptorSetLayout }, { postProcessPushConstantRange });
 
 		VkPipeline postProcessPipeline = createComputePipeline(postProcessPipelineLayout, loadShaderModule("data/shaders/postprocess.comp.spv"));
 
 		int swapChainImageCount = swapChain.getImageViews().size();
-		auto postProcessDescriptorPool = createDescriptorPool({
+		auto postProcessDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, uint32_t(swapChainImageCount * 1) },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(swapChainImageCount * 6) },
 		}, swapChainImageCount);
@@ -945,7 +946,7 @@ int main(int argc, char *argv[])
 		vector<VkDescriptorSet> postProcessDescriptorSets;
 		postProcessDescriptorSets.reserve(swapChainImageCount);
 		for (int i = 0; i < swapChainImageCount; ++i) {
-			auto descriptorSet = allocateDescriptorSet(postProcessDescriptorPool, postProcessDescriptorSetLayout);
+			auto descriptorSet = allocateDescriptorSet(vkInstance::device, postProcessDescriptorPool, postProcessDescriptorSetLayout);
 			postProcessDescriptorSets.push_back(descriptorSet);
 
 			VkDescriptorImageInfo postProcessRenderTargetImageInfo = {};
@@ -973,24 +974,24 @@ int main(int argc, char *argv[])
 			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptorSets[1].pImageInfo = descriptorImageInfos.data();
 
-			vkUpdateDescriptorSets(device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
+			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
 
 
-		auto presentCompleteSemaphore = createSemaphore();
+		auto presentCompleteSemaphore = createSemaphore(vkInstance::device);
 
-		VkCommandPool commandPool = createCommandPool(graphicsQueueIndex);
+		VkCommandPool commandPool = createCommandPool(vkInstance::device, vkInstance::graphicsQueueIndex);
 
-		auto commandBuffers = allocateCommandBuffers(commandPool, maxConcurrentFrames);
+		auto commandBuffers = allocateCommandBuffers(vkInstance::device, commandPool, maxConcurrentFrames);
 
 		auto commandBufferFences = new VkFence[maxConcurrentFrames];
 		auto commandBufferSemaphores = new VkSemaphore[maxConcurrentFrames];
 		for (auto i = 0u; i < maxConcurrentFrames; ++i) {
-			commandBufferFences[i] = createFence(VK_FENCE_CREATE_SIGNALED_BIT);
-			commandBufferSemaphores[i] = createSemaphore();
+			commandBufferFences[i] = createFence(vkInstance::device, VK_FENCE_CREATE_SIGNALED_BIT);
+			commandBufferSemaphores[i] = createSemaphore(vkInstance::device);
 		}
 
-		assumeSuccess(vkQueueWaitIdle(graphicsQueue));
+		assumeSuccess(vkQueueWaitIdle(vkInstance::graphicsQueue));
 
 		auto rocket = sync_create_device("data/sync");
 		if (!rocket)
@@ -1087,8 +1088,8 @@ int main(int argc, char *argv[])
 #endif
 
 			assert(frameIndex < maxConcurrentFrames);
-			assumeSuccess(vkWaitForFences(device, 1, &commandBufferFences[frameIndex], VK_TRUE, UINT64_MAX));
-			assumeSuccess(vkResetFences(device, 1, &commandBufferFences[frameIndex]));
+			assumeSuccess(vkWaitForFences(vkInstance::device, 1, &commandBufferFences[frameIndex], VK_TRUE, UINT64_MAX));
+			assumeSuccess(vkResetFences(vkInstance::device, 1, &commandBufferFences[frameIndex]));
 			auto currentSwapImage = swapChain.aquireNextImage(commandBufferSemaphores[frameIndex]);
 
 			static int nextArrayBufferFrame = 0;
@@ -1291,7 +1292,7 @@ int main(int argc, char *argv[])
 				writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				writeDescriptorSet.pImageInfo = descriptorImageInfos.data();
 
-				vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+				vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
 			}
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postProcessPipeline);
@@ -1396,7 +1397,7 @@ int main(int argc, char *argv[])
 			submitInfo.pCommandBuffers = &commandBuffer;
 
 			// Submit draw command buffer
-			assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, commandBufferFences[frameIndex]));
+			assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, commandBufferFences[frameIndex]));
 
 			swapChain.queuePresent(currentSwapImage, &presentCompleteSemaphore, 1);
 
@@ -1417,7 +1418,7 @@ int main(int argc, char *argv[])
 #endif
 		sync_destroy_device(rocket);
 
-		assumeSuccess(vkDeviceWaitIdle(device));
+		assumeSuccess(vkDeviceWaitIdle(vkInstance::device));
 		glfwDestroyWindow(win);
 
 	} catch (const exception &e) {

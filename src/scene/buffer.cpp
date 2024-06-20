@@ -1,7 +1,7 @@
 #include "buffer.h"
-#include "vulkan.h"
+#include "vkhelpers.h"
 
-using namespace vulkan;
+using namespace vkHelpers;
 
 Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags) :
 	size(size)
@@ -11,28 +11,28 @@ Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropert
 	bufferCreateInfo.size = size;
 	bufferCreateInfo.usage = usageFlags;
 
-	assumeSuccess(vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer));
+	assumeSuccess(vkCreateBuffer(vkInstance::device, &bufferCreateInfo, nullptr, &buffer));
 
 	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
+	vkGetBufferMemoryRequirements(vkInstance::device, buffer, &memoryRequirements);
 
-	auto memoryTypeIndex = getMemoryTypeIndex(memoryRequirements, memoryPropertyFlags);
-	deviceMemory = allocateDeviceMemory(memoryRequirements.size, memoryTypeIndex);
+	auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, memoryPropertyFlags);
+	deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
 
-	assumeSuccess(vkBindBufferMemory(device, buffer, deviceMemory, 0));
+	assumeSuccess(vkBindBufferMemory(vkInstance::device, buffer, deviceMemory, 0));
 }
 
 Buffer::~Buffer()
 {
-	vkDestroyBuffer(device, buffer, nullptr);
-	vkFreeMemory(device, deviceMemory, nullptr);
+	vkDestroyBuffer(vkInstance::device, buffer, nullptr);
+	vkFreeMemory(vkInstance::device, deviceMemory, nullptr);
 }
 
 void Buffer::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size)
 {
 	assert(stagingBuffer != nullptr);
 
-	auto commandBuffer = allocateCommandBuffers(setupCommandPool, 1)[0];
+	auto commandBuffer = allocateCommandBuffers(vkInstance::device, vkInstance::setupCommandPool, 1)[0];
 
 	VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -53,5 +53,5 @@ void Buffer::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize 
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+	assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 }

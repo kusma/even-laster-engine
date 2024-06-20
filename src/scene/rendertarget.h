@@ -1,7 +1,7 @@
 #ifndef RENDERTARGET_H
 #define RENDERTARGET_H
 
-#include "../vulkan.h"
+#include "../vkhelpers.h"
 
 class RenderTargetBase {
 protected:
@@ -26,15 +26,15 @@ protected:
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		assumeSuccess(vkCreateImage(device, &imageCreateInfo, nullptr, &image));
+		assumeSuccess(vkCreateImage(vkInstance::device, &imageCreateInfo, nullptr, &image));
 
 		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(device, image, &memoryRequirements);
+		vkGetImageMemoryRequirements(vkInstance::device, image, &memoryRequirements);
 
-		auto memoryTypeIndex = getMemoryTypeIndex(memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		auto deviceMemory = allocateDeviceMemory(memoryRequirements.size, memoryTypeIndex);
+		auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		auto deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
 
-		assumeSuccess(vkBindImageMemory(device, image, deviceMemory, 0));
+		assumeSuccess(vkBindImageMemory(vkInstance::device, image, deviceMemory, 0));
 
 		VkImageSubresourceRange subresourceRange;
 		subresourceRange.aspectMask = aspect;
@@ -43,7 +43,7 @@ protected:
 		subresourceRange.levelCount = mipLevels;
 		subresourceRange.layerCount = arrayLayers;
 
-		imageView = createImageView(image, imageViewType, format, subresourceRange);
+		imageView = createImageView(vkInstance::device, image, imageViewType, format, subresourceRange);
 	}
 
 public:
@@ -97,7 +97,7 @@ public:
 			subresourceRange.baseArrayLayer = i;
 			subresourceRange.levelCount = 1;
 			subresourceRange.layerCount = 1;
-			arrayImageViews.push_back(createImageView(image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange));
+			arrayImageViews.push_back(createImageView(vkInstance::device, image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange));
 		}
 	}
 

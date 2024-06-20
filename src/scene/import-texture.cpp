@@ -12,7 +12,7 @@ using std::string;
 using std::runtime_error;
 using std::max;
 using std::vector;
-using vulkan::setImageName;
+using vkHelpers::setImageName;
 
 #include <FreeImage.h>
 #include <immintrin.h>
@@ -173,7 +173,7 @@ Texture2D importTexture2D(string filename, TextureImportFlags flags)
 	Texture2D texture(format, baseWidth, baseHeight, mipLevels, 1, true);
 	uploadMipChain(texture, dib, mipLevels);
 
-	setImageName(texture.getImage(), filename);
+	setImageName(vkInstance::device, texture.getImage(), filename);
 	return texture;
 }
 
@@ -225,7 +225,7 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 	for (size_t i = 0; i < bitmaps.size(); ++i)
 		uploadMipChain(texture, bitmaps[i], mipLevels, i);
 
-	setImageName(texture.getImage(), folder);
+	setImageName(vkInstance::device, texture.getImage(), folder);
 	return texture;
 }
 
@@ -276,6 +276,6 @@ TextureCube importTextureCube(string filename, TextureImportFlags flags)
 
 	FreeImage_Unload(dib);
 
-	setImageName(texture.getImage(), filename);
+	setImageName(vkInstance::device, texture.getImage(), filename);
 	return texture;
 }
