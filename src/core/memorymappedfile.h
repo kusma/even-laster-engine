@@ -13,6 +13,8 @@
 #include <unistd.h>
 #endif
 
+#include <stdexcept>
+
 class MemoryMappedFile
 {
 public:
