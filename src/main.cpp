@@ -27,6 +27,8 @@ const auto beatsPerMinute = 174.0f;
 const auto rowsPerBeat = 8;
 const auto rowRate = (beatsPerMinute / 60.0) * rowsPerBeat;
 
+const unsigned maxConcurrentFrames = 2u;
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -980,10 +982,10 @@ int main(int argc, char *argv[])
 
 		VkCommandPool commandPool = createCommandPool(graphicsQueueIndex);
 
-		auto commandBuffers = allocateCommandBuffers(commandPool, swapChain.getImageViews().size());
+		auto commandBuffers = allocateCommandBuffers(commandPool, maxConcurrentFrames);
 
-		auto commandBufferFences = new VkFence[commandBuffers.size()];
-		for (auto i = 0u; i < commandBuffers.size(); ++i)
+		auto commandBufferFences = new VkFence[maxConcurrentFrames];
+		for (auto i = 0u; i < maxConcurrentFrames; ++i)
 			commandBufferFences[i] = createFence(VK_FENCE_CREATE_SIGNALED_BIT);
 
 		assumeSuccess(vkQueueWaitIdle(graphicsQueue));
@@ -1049,6 +1051,7 @@ int main(int argc, char *argv[])
 		BASS_ChannelPlay(stream, false);
 
 		int validFrames = 0;
+		unsigned frameIndex = 0;
 		while (!glfwWindowShouldClose(win)) {
 			auto pos = BASS_ChannelGetPosition(stream, BASS_POS_BYTE);
 			auto time = BASS_ChannelBytes2Seconds(stream, pos);
@@ -1086,10 +1089,11 @@ int main(int argc, char *argv[])
 			int arrayBufferFrame = nextArrayBufferFrame++;
 			uint32_t arrayBufferFrameWrapped = arrayBufferFrame % colorArray.getArrayLayers();
 
-			assumeSuccess(vkWaitForFences(device, 1, &commandBufferFences[currentSwapImage], VK_TRUE, UINT64_MAX));
-			assumeSuccess(vkResetFences(device, 1, &commandBufferFences[currentSwapImage]));
+			assert(frameIndex < maxConcurrentFrames);
+			assumeSuccess(vkWaitForFences(device, 1, &commandBufferFences[frameIndex], VK_TRUE, UINT64_MAX));
+			assumeSuccess(vkResetFences(device, 1, &commandBufferFences[frameIndex]));
 
-			auto commandBuffer = commandBuffers[currentSwapImage];
+			auto commandBuffer = commandBuffers[frameIndex];
 			VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 			commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 			commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -1390,9 +1394,13 @@ int main(int argc, char *argv[])
 			submitInfo.pCommandBuffers = &commandBuffer;
 
 			// Submit draw command buffer
-			assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, commandBufferFences[currentSwapImage]));
+			assumeSuccess(vkQueueSubmit(graphicsQueue, 1, &submitInfo, commandBufferFences[frameIndex]));
 
 			swapChain.queuePresent(currentSwapImage, &presentCompleteSemaphore, 1);
+
+			frameIndex++;
+			if (frameIndex == maxConcurrentFrames)
+				frameIndex = 0;
 
 			glfwPollEvents();
 
