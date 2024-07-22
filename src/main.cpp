@@ -977,16 +977,18 @@ int main(int argc, char *argv[])
 		}
 
 
-		auto backBufferSemaphore = createSemaphore(),
-		     presentCompleteSemaphore = createSemaphore();
+		auto presentCompleteSemaphore = createSemaphore();
 
 		VkCommandPool commandPool = createCommandPool(graphicsQueueIndex);
 
 		auto commandBuffers = allocateCommandBuffers(commandPool, maxConcurrentFrames);
 
 		auto commandBufferFences = new VkFence[maxConcurrentFrames];
-		for (auto i = 0u; i < maxConcurrentFrames; ++i)
+		auto commandBufferSemaphores = new VkSemaphore[maxConcurrentFrames];
+		for (auto i = 0u; i < maxConcurrentFrames; ++i) {
 			commandBufferFences[i] = createFence(VK_FENCE_CREATE_SIGNALED_BIT);
+			commandBufferSemaphores[i] = createSemaphore();
+		}
 
 		assumeSuccess(vkQueueWaitIdle(graphicsQueue));
 
@@ -1084,14 +1086,14 @@ int main(int argc, char *argv[])
 				sync_tcp_connect(rocket, "localhost", SYNC_DEFAULT_PORT);
 #endif
 
-			auto currentSwapImage = swapChain.aquireNextImage(backBufferSemaphore);
-			static int nextArrayBufferFrame = 0;
-			int arrayBufferFrame = nextArrayBufferFrame++;
-			uint32_t arrayBufferFrameWrapped = arrayBufferFrame % colorArray.getArrayLayers();
-
 			assert(frameIndex < maxConcurrentFrames);
 			assumeSuccess(vkWaitForFences(device, 1, &commandBufferFences[frameIndex], VK_TRUE, UINT64_MAX));
 			assumeSuccess(vkResetFences(device, 1, &commandBufferFences[frameIndex]));
+			auto currentSwapImage = swapChain.aquireNextImage(commandBufferSemaphores[frameIndex]);
+
+			static int nextArrayBufferFrame = 0;
+			int arrayBufferFrame = nextArrayBufferFrame++;
+			uint32_t arrayBufferFrameWrapped = arrayBufferFrame % colorArray.getArrayLayers();
 
 			auto commandBuffer = commandBuffers[frameIndex];
 			VkCommandBufferBeginInfo commandBufferBeginInfo = {};
@@ -1386,7 +1388,7 @@ int main(int argc, char *argv[])
 			VkSubmitInfo submitInfo = {};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 			submitInfo.waitSemaphoreCount = 1;
-			submitInfo.pWaitSemaphores = &backBufferSemaphore;
+			submitInfo.pWaitSemaphores = &commandBufferSemaphores[frameIndex];
 			submitInfo.signalSemaphoreCount = 1;
 			submitInfo.pSignalSemaphores = &presentCompleteSemaphore;
 			submitInfo.pWaitDstStageMask = &waitDstStageMask;
