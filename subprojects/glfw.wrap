@@ -2,3 +2,7 @@
 directory=glfw
 url=https://github.com/glfw/glfw.git
 revision=3.3.6
+method=cmake
+
+[provide]
+glfw3 = glfw_dep

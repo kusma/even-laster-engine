@@ -2,3 +2,8 @@
 directory=glm
 url=https://github.com/g-truc/glm.git
 revision=0.9.9.3
+
+method=cmake
+
+[provide]
+glm = glm_dep

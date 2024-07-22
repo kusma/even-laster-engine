@@ -4,7 +4,7 @@ project('engine', 'cpp', 'c',
 		'default_library=static',
 		'b_ndebug=if-release'
 	],
-	meson_version: '>=1.2')
+	meson_version: '>=1.3')
 
 meson.add_postconf_script(
 	join_paths(meson.project_source_root(), 'bin/create_link.py'),
@@ -20,18 +20,8 @@ python = import('python').find_installation('python3')
 
 vulkan_dep = dependency('vulkan')
 glslang = find_program('glslangValidator')
-glfw_dep = dependency('glfw3', version : '>=3.2', required : false)
-glm_dep = dependency('glm', required : false)
-
-if not glfw_dep.found()
-	cmake = import('cmake')
-	glfw_dep = cmake.subproject('glfw').dependency('glfw')
-endif
-
-if not glm_dep.found()
-	cmake = import('cmake')
-	glm_dep = cmake.subproject('glm').dependency('glm')
-endif
+glfw_dep = dependency('glfw3', version : '>=3.2')
+glm_dep = dependency('glm')
 
 freeimage_dep = cxx.find_library('freeimage')
 assimp_dep = dependency('assimp')
