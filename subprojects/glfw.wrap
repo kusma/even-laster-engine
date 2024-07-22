@@ -1,7 +1,7 @@
 [wrap-git]
 directory=glfw
 url=https://github.com/glfw/glfw.git
-revision=3.3.6
+revision=3.3.8
 method=cmake
 
 [provide]
