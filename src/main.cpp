@@ -422,7 +422,8 @@ int main(int argc, char *argv[])
 			throw runtime_error("no vulkan support!");
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		if (!fullscreen)
+			glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 		win = glfwCreateWindow(width, height, appName, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
 		if (fullscreen)
 			glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
