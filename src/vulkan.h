@@ -30,8 +30,11 @@ namespace vulkan
 
 	inline void assumeSuccess(VkResult result)
 	{
-		assert(result == VK_SUCCESS);
-		if (result != VK_SUCCESS)
+		// Success codes are non-negative
+		assert(result >= 0);
+
+		// failures are negative
+		if (result < 0)
 			throw std::runtime_error("unexpected return code");
 	}
 
