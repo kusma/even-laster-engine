@@ -78,11 +78,6 @@ void vkInstance::instanceInit(const char *appName, const vector<const char *> &e
 	instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
 	instanceCreateInfo.enabledExtensionCount = enabledExtensions.size();
 
-#ifndef NDEBUG
-	// instanceCreateInfo.ppEnabledLayerNames = validationLayerNames;
-	// instanceCreateInfo.enabledLayerCount = ARRAY_SIZE(validationLayerNames);
-#endif
-
 	VkResult err = vkCreateInstance(&instanceCreateInfo, nullptr, &vkInstance::instance);
 	if (err == VK_ERROR_INCOMPATIBLE_DRIVER)
 		throw runtime_error("Your GPU is from Hønefoss!");
