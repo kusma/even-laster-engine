@@ -8,59 +8,21 @@
 
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba8, binding = 0) uniform writeonly image2D outputImage;
-layout (binding = 1) uniform sampler2DArray samplerColor;
-layout (binding = 2) uniform sampler2DArray samplerOffsets;
-layout (binding = 3) uniform sampler2DArray overlaySampler;
-layout (binding = 4) uniform sampler3D colorLut1;
-layout (binding = 5) uniform sampler3D colorLut2;
+layout (binding = 1) uniform sampler2D samplerColor;
+layout (binding = 2) uniform sampler2DArray overlaySampler;
+layout (binding = 3) uniform sampler3D colorLut1;
+layout (binding = 4) uniform sampler3D colorLut2;
 
 layout(push_constant) uniform PushConstants {
-	int arrayBufferFrame;
-	int validFrames;
-	int delayImage;
 	int overlayIndex;
-	float delayAmount;
-	float delayChroma;
+	int frameSeed;
 	float overlayAlpha;
 	float fade;
 	float flash;
-	float patternAmount;
 	float kaleidoCount;
-	int patternScale;
 	float gradeBlend;
 	float gradeAmount;
 } pushConstants;
-
-vec3 sampleSpectrum(vec2 pos, float timeA, float timeB)
-{
-	// thanks to Hornet ;)
-	const int num_iter = 32;
-	const float stepsiz = 1.0 / (num_iter - 1);
-
-	float rnd = nrand(gl_GlobalInvocationID.xy + pushConstants.arrayBufferFrame * 0.1);
-	float t = rnd * stepsiz;
-
-	int slices = textureSize(samplerColor, 0).z;
-
-	vec3 sumcol = vec3(0.0);
-	vec3 sumw = vec3(0.0);
-	for (int i = 0; i < num_iter; ++i) {
-		vec3 w = spectrum_offset(t);
-		sumw += w;
-
-		float time = mix(timeA, timeB, t);
-		int slice = int(time);
-
-		vec3 a = textureLod(samplerColor, vec3(pos, (slice + 0) % slices), 0).xyz;
-		vec3 b = textureLod(samplerColor, vec3(pos, (slice + 1) % slices), 0).xyz;
-		vec3 color = mix(a, b, fract(time));
-
-		sumcol += w * color;
-		t += stepsiz;
-	}
-	return sumcol.rgb /= sumw;
-}
-
 
 vec2 kaleidoscope(vec2 pos, float count)
 {
@@ -85,19 +47,7 @@ void main()
 		kaleidoPos = 0.5 + kaleidoscope(vec2(gl_GlobalInvocationID.xy) + 0.5 - halfSize, pushConstants.kaleidoCount) / halfSize;
 	}
 
-
-	float time = pushConstants.arrayBufferFrame;
-	float delay = textureLod(samplerOffsets, vec3(pos.xy, pushConstants.delayImage), 0).x;
-
-	uint r = rand(int(gl_GlobalInvocationID.x ^ gl_GlobalInvocationID.y) >> pushConstants.patternScale);
-	float delayPattern = float(r >> (32 - 23)) / ((1 << 23) - 1);
-	delay = mix(delay, delayPattern, pushConstants.patternAmount);
-
-	delay *= pushConstants.delayAmount;
-	delay *= textureSize(samplerColor, 0).z;
-	delay = clamp(delay, 0, pushConstants.validFrames - 1);
-
-	vec3 color = sampleSpectrum(kaleidoPos, time - delay, time - delay * pushConstants.delayChroma);
+	vec3 color = texture(samplerColor, kaleidoPos).xyz;
 
 	vec4 overlay = textureLod(overlaySampler, vec3(pos.xy, pushConstants.overlayIndex), 0);
 	color = color * (1 - overlay.a * pushConstants.overlayAlpha) + overlay.rgb * pushConstants.overlayAlpha;
@@ -108,8 +58,7 @@ void main()
 	color = color * pushConstants.fade + pushConstants.flash;
 
 	uint pixelSeed = rand(137 + gl_GlobalInvocationID.x) | (rand(8 + gl_GlobalInvocationID.y) << 4);
-	uint frameSeed = rand(pushConstants.arrayBufferFrame);
-	color += randf(pixelSeed ^ frameSeed) * (4.0 / 255);
+	color += randf(pixelSeed ^ pushConstants.frameSeed) * (4.0 / 255);
 
 	vec3 srgbColor = fromLinear(color);
 	vec3 gradeColor1 = toLinear(textureLod(colorLut1, srgbColor, 0).rgb);

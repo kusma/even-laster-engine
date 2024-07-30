@@ -487,9 +487,7 @@ int main(int argc, char *argv[])
 
 		int bloomLevels = 32 - clz(max(width, height));
 		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-		ColorRenderTarget bloomUpscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-
-		Texture2DArrayRenderTarget colorArray(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 128, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		ColorRenderTarget bloomUpscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		vector<VkAttachmentDescription> sceneRenderPassAttachments;
@@ -646,7 +644,7 @@ int main(int argc, char *argv[])
 		bloomUpscaleColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		bloomUpscaleColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		bloomUpscaleColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		bloomUpscaleColorAttachment.finalLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		bloomUpscaleColorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkAttachmentReference bloomUpscaleColorAttachmentReference = {};
 		bloomUpscaleColorAttachmentReference.attachment = 0;
@@ -792,7 +790,6 @@ int main(int argc, char *argv[])
 			sceneRenderers.push_back(SceneRenderer(scene, sceneRenderPass));
 
 		auto planes = importTexture2DArray("assets/planes", TextureImportFlags::NONE);
-		auto offsetMaps = importTexture2DArray("assets/offset-maps", TextureImportFlags::NONE);
 		auto overlays = importTexture2DArray("assets/overlays", TextureImportFlags::PREMULTIPLY_ALPHA);
 		auto cubeTexture = importTextureCube("assets/cubemap.hdr", TextureImportFlags::GENERATE_MIPMAPS);
 		auto colorLuts = importColorLuts("assets/luts");
@@ -808,14 +805,6 @@ int main(int argc, char *argv[])
 		imageBarrier(
 			commandBuffer,
 			planes.getImage(),
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		imageBarrier(
-			commandBuffer,
-			offsetMaps.getImage(),
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			0, VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -907,22 +896,15 @@ int main(int argc, char *argv[])
 			{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 			});
 
 		struct {
-			uint32_t arrayBufferFrame;
-			uint32_t validFrames;
-			uint32_t delayImage;
 			uint32_t overlayIndex;
-			float delayAmount;
-			float delayChroma;
+			uint32_t frameSeed;
 			float overlayAlpha;
 			float fade;
 			float flash;
-			float patternAmount;
 			float kaleidoCount;
-			uint32_t patternScale;
 			float gradeBlend;
 			float gradeAmount;
 		} postProcessPushConstantData;
@@ -962,8 +944,7 @@ int main(int argc, char *argv[])
 			writeDescriptorSets[0].pImageInfo = &postProcessRenderTargetImageInfo;
 
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ arrayTextureSampler, colorArray.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-				{ arrayTextureSampler, offsetMaps.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+				{ arrayTextureSampler, bloomUpscaleRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
 				{ arrayTextureSampler, overlays.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
@@ -1021,12 +1002,6 @@ int main(int argc, char *argv[])
 		auto refractionFadeTrack = sync_get_track(rocket, "refraction:fade");
 		auto refractionIndexTrack = sync_get_track(rocket, "refraction:index");
 
-		auto delayImageTrack = sync_get_track(rocket, "postprocess:delay.image");
-		auto delayAmountTrack = sync_get_track(rocket, "postprocess:delay.amount");
-		auto delayChromaTrack = sync_get_track(rocket, "postprocess:delay.chroma");
-		auto delayResetTrack = sync_get_track(rocket, "postprocess:delay.reset");
-		auto delayPatternAmountTrack = sync_get_track(rocket, "postprocess:pattern.amount");
-		auto delayPatternScaleTrack = sync_get_track(rocket, "postprocess:pattern.scale");
 		auto bloomAmountTrack = sync_get_track(rocket, "postprocess:bloom.amount");
 		auto bloomShapeTrack = sync_get_track(rocket, "postprocess:bloom.shape");
 		auto kaleidoTrack = sync_get_track(rocket, "postprocess:kaleidoscope");
@@ -1035,7 +1010,6 @@ int main(int argc, char *argv[])
 		auto gradeIndex2Track = sync_get_track(rocket, "postprocess:grade.index2");
 		auto gradeBlendTrack = sync_get_track(rocket, "postprocess:grade.blend");
 		auto gradeAmountTrack = sync_get_track(rocket, "postprocess:grade.amount");
-
 
 		auto overlayIndexTrack = sync_get_track(rocket, "overlay.index");
 		auto overlayAlphaTrack = sync_get_track(rocket, "overlay.alpha");
@@ -1053,7 +1027,6 @@ int main(int argc, char *argv[])
 		BASS_Start();
 		BASS_ChannelPlay(stream, false);
 
-		int validFrames = 0;
 		unsigned frameIndex = 0;
 		while (!glfwWindowShouldClose(win)) {
 			auto pos = BASS_ChannelGetPosition(stream, BASS_POS_BYTE);
@@ -1091,10 +1064,6 @@ int main(int argc, char *argv[])
 			assumeSuccess(vkWaitForFences(vkInstance::device, 1, &commandBufferFences[frameIndex], VK_TRUE, UINT64_MAX));
 			assumeSuccess(vkResetFences(vkInstance::device, 1, &commandBufferFences[frameIndex]));
 			auto currentSwapImage = swapChain.aquireNextImage(commandBufferSemaphores[frameIndex]);
-
-			static int nextArrayBufferFrame = 0;
-			int arrayBufferFrame = nextArrayBufferFrame++;
-			uint32_t arrayBufferFrameWrapped = arrayBufferFrame % colorArray.getArrayLayers();
 
 			auto commandBuffer = commandBuffers[frameIndex];
 			VkCommandBufferBeginInfo commandBufferBeginInfo = {};
@@ -1246,34 +1215,6 @@ int main(int argc, char *argv[])
 
 			vkCmdEndRenderPass(commandBuffer);
 
-			imageBarrier(
-				commandBuffer,
-				colorArray.getImage(),
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-			blitImage(commandBuffer,
-				bloomUpscaleRenderTarget.getImage(),
-				colorArray.getImage(),
-				width, height,
-				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
-				{ VK_IMAGE_ASPECT_COLOR_BIT, 0, arrayBufferFrameWrapped, 1 });
-
-			imageBarrier(
-				commandBuffer,
-				colorArray.getImage(),
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-				VK_ACCESS_TRANSFER_WRITE_BIT, 0,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-			if (sync_get_val(delayResetTrack, row) > 0.5)
-				validFrames = 0;
-			if (validFrames < colorArray.getArrayLayers())
-				validFrames++;
-
 			VkDescriptorSet &postProcessDescriptorSet = postProcessDescriptorSets[currentSwapImage];
 			{
 				auto gradeIndex1 = max(0, min(int(sync_get_val(gradeIndex1Track, row)), int(colorLuts.size() - 1)));
@@ -1287,7 +1228,7 @@ int main(int argc, char *argv[])
 
 				writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				writeDescriptorSet.dstSet = postProcessDescriptorSet;
-				writeDescriptorSet.dstBinding = 4;
+				writeDescriptorSet.dstBinding = 3;
 				writeDescriptorSet.descriptorCount = descriptorImageInfos.size();
 				writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				writeDescriptorSet.pImageInfo = descriptorImageInfos.data();
@@ -1312,17 +1253,11 @@ int main(int argc, char *argv[])
 			auto pulse = cos(row * pulseSpeed * (M_PI / rowsPerBeat));
 			fade = max(0.0, fade - pulseAmount + pulse * pulseAmount);
 
-			postProcessPushConstantData.arrayBufferFrame = uint32_t(arrayBufferFrame);
-			postProcessPushConstantData.validFrames = uint32_t(validFrames);
-			postProcessPushConstantData.delayImage = uint32_t(sync_get_val(delayImageTrack, row));
 			postProcessPushConstantData.overlayIndex = uint32_t(sync_get_val(overlayIndexTrack, row));
-			postProcessPushConstantData.delayAmount = float(sync_get_val(delayAmountTrack, row));
-			postProcessPushConstantData.delayChroma = float(1.0 - min(max(0.0, sync_get_val(delayChromaTrack, row)), 1.0));
+			postProcessPushConstantData.frameSeed = rand();
 			postProcessPushConstantData.overlayAlpha = float(sync_get_val(overlayAlphaTrack, row));
 			postProcessPushConstantData.fade = float(fade);
 			postProcessPushConstantData.flash = float(sync_get_val(flashTrack, row));
-			postProcessPushConstantData.patternAmount = float(sync_get_val(delayPatternAmountTrack, row));
-			postProcessPushConstantData.patternScale = int(sync_get_val(delayPatternScaleTrack, row));
 			postProcessPushConstantData.kaleidoCount = float(sync_get_val(kaleidoTrack, row));
 			postProcessPushConstantData.gradeBlend = float(sync_get_val(gradeBlendTrack, row));
 			postProcessPushConstantData.gradeAmount = float(sync_get_val(gradeAmountTrack, row));
