@@ -1,7 +1,7 @@
 #ifndef SCENERENDERER_H
 #define SCENERENDERER_H
 
-#include <vulkan/vulkan_core.h>
+#include <volk.h>
 #include "scene/scene.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

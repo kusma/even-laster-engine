@@ -1,3 +1,4 @@
+#define VOLK_IMPLEMENTATION
 #include "vkinstance.h"
 
 #include "core/core.h"
@@ -64,6 +65,9 @@ static VkBool32 messageCallback(
 
 void vkInstance::instanceInit(const char *appName, const vector<const char *> &enabledExtensions)
 {
+	VkResult err = volkInitialize();
+	assumeSuccess(err);
+
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = appName;
@@ -78,23 +82,23 @@ void vkInstance::instanceInit(const char *appName, const vector<const char *> &e
 	instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
 	instanceCreateInfo.enabledExtensionCount = enabledExtensions.size();
 
-	VkResult err = vkCreateInstance(&instanceCreateInfo, nullptr, &vkInstance::instance);
+	err = vkCreateInstance(&instanceCreateInfo, nullptr, &vkInstance::instance);
 	if (err == VK_ERROR_INCOMPATIBLE_DRIVER)
 		throw runtime_error("Your GPU is from Hønefoss!");
 	assumeSuccess(err);
 
-	instanceFuncsInit(vkInstance::instance);
+	volkLoadInstance(vkInstance::instance);
 
 #ifndef NDEBUG
 	VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
 	debugReportCallbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
 	debugReportCallbackCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)messageCallback;
 	debugReportCallbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-	assumeSuccess(instanceFuncs.vkCreateDebugReportCallbackEXT(instance, &debugReportCallbackCreateInfo,
-	                                                           nullptr, &debugReportCallback));
+	assumeSuccess(vkCreateDebugReportCallbackEXT(instance, &debugReportCallbackCreateInfo,
+	                                             nullptr, &debugReportCallback));
 
 	// SELF-TEST:
-	// instanceFuncs.vkDebugReportMessageEXT(instance, VK_DEBUG_REPORT_WARNING_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT, nullptr, 0, 0, "self-test", "This is a dummy warning");
+	// vkDebugReportMessageEXT(instance, VK_DEBUG_REPORT_WARNING_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT, nullptr, 0, 0, "self-test", "This is a dummy warning");
 #endif
 }
 
@@ -157,30 +161,4 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 	vkGetDeviceQueue(device, graphicsQueueIndex, 0, &graphicsQueue);
 
 	setupCommandPool = createCommandPool(device, graphicsQueueIndex);
-}
-
-template <typename T>
-static T getDeviceProc(VkDevice device, const char *entrypoint)
-{
-	auto ret = reinterpret_cast<T>(vkGetDeviceProcAddr(device, entrypoint));
-	assert(ret != nullptr);
-	return ret;
-}
-
-struct vkInstance::instance_funcs vkInstance::instanceFuncs;
-
-template <typename T>
-static T getInstanceProc(VkInstance instance, const char *entrypoint)
-{
-	auto ret = reinterpret_cast<T>(vkGetInstanceProcAddr(instance, entrypoint));
-	assert(ret != nullptr);
-	return ret;
-}
-
-void vkInstance::instanceFuncsInit(VkInstance instance)
-{
-	instanceFuncs.vkCreateDebugReportCallbackEXT = getInstanceProc<PFN_vkCreateDebugReportCallbackEXT>(instance, "vkCreateDebugReportCallbackEXT");
-	instanceFuncs.vkDestroyDebugReportCallbackEXT = getInstanceProc<PFN_vkDestroyDebugReportCallbackEXT>(instance, "vkDestroyDebugReportCallbackEXT");
-	instanceFuncs.vkDebugReportMessageEXT = getInstanceProc<PFN_vkDebugReportMessageEXT>(instance, "vkDebugReportMessageEXT");
-	instanceFuncs.vkSetDebugUtilsObjectNameEXT = getInstanceProc<PFN_vkSetDebugUtilsObjectNameEXT>(instance, "vkSetDebugUtilsObjectNameEXT");
 }

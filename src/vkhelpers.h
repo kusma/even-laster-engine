@@ -1,9 +1,7 @@
 #ifndef VULKAN_H
 #define VULKAN_H
 
-#define VK_PROTOTYPES
-
-#include <vulkan/vulkan.h>
+#include <volk.h>
 
 #include <algorithm>
 #include <vector>
@@ -432,7 +430,7 @@ namespace vkHelpers
 		};
 
 		// HACK!
-		// instanceFuncs.vkSetDebugUtilsObjectNameEXT(device, &imageNameInfo);
+		// vkSetDebugUtilsObjectNameEXT(device, &imageNameInfo);
 */
 #endif
 	}

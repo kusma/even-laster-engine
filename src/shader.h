@@ -1,7 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <vulkan/vulkan_core.h>
+#include <volk.h>
 
 VkShaderModule loadShaderModule(const char *path);
 
