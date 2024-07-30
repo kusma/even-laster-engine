@@ -228,7 +228,7 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 
 	auto size = sizeof(float) * 4 * width * height * depth;
 	auto stagingBuffer = new StagingBuffer(size);
-	void *ptr = stagingBuffer->map(0, size);
+	void *ptr = stagingBuffer->map();
 
 	FILE *fp = fopen(filename.c_str(), "rb");
 	if (!fp)
@@ -280,7 +280,7 @@ Texture3D importCubeFile(const std::string &filename)
 
 				auto textureSize = sizeof(float) * 4 * size * size * size;
 				stagingBuffer = new StagingBuffer(textureSize);
-				ptr = static_cast<float *>(stagingBuffer->map(0, textureSize));
+				ptr = static_cast<float *>(stagingBuffer->map());
 
 				continue;
 			}
@@ -1131,7 +1131,7 @@ int main(int argc, char *argv[])
 				refractionUniforms.fade = float(sync_get_val(refractionFadeTrack, row));
 				refractionUniforms.refractiveIndex = float(sync_get_val(refractionIndexTrack, row));
 
-				auto ptr = refractionUniformBuffer->map(0, sizeof(refractionUniforms));
+				auto ptr = refractionUniformBuffer->map();
 				memcpy(ptr, &refractionUniforms, sizeof(refractionUniforms));
 				refractionUniformBuffer->unmap();
 
@@ -1152,7 +1152,7 @@ int main(int argc, char *argv[])
 				                                    sync_get_val(wavePlaneScaleYTrack, row));
 				wavePlaneUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
 
-				auto ptr = wavePlaneUniformBuffer->map(0, sizeof(wavePlaneUniforms));
+				auto ptr = wavePlaneUniformBuffer->map();
 				memcpy(ptr, &wavePlaneUniforms, sizeof(wavePlaneUniforms));
 				wavePlaneUniformBuffer->unmap();
 

@@ -176,7 +176,7 @@ void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMat
 	auto offset = 0u;
 	map<const Transform*, unsigned int> offsetMap;
 	auto transforms = scene->getTransforms();
-	auto ptr = uniformBuffer->map(0, uniformBufferSpacing * transforms.size());
+	auto ptr = uniformBuffer->map();
 
 	for (auto transform : transforms) {
 		auto modelMatrix = glm::mat4(1); //  transform->getAbsoluteMatrix();

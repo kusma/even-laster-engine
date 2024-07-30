@@ -10,24 +10,24 @@ class StagingBuffer;
 
 class Buffer {
 public:
-	Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags);
+	Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags);
 	~Buffer();
 
-	void *map(VkDeviceSize offset, VkDeviceSize size)
+	void *map()
 	{
 		void *ret;
-		vkHelpers::assumeSuccess(vkMapMemory(vkInstance::device, deviceMemory, offset, size, 0, &ret));
+		vkHelpers::assumeSuccess(vmaMapMemory(vkInstance::allocator, allocation, &ret));
 		return ret;
 	}
 
 	void unmap()
 	{
-		vkUnmapMemory(vkInstance::device, deviceMemory);
+		vmaUnmapMemory(vkInstance::allocator, allocation);
 	}
 
-	void uploadMemory(VkDeviceSize offset, void *data, VkDeviceSize size)
+	void uploadMemory(void *data, VkDeviceSize size)
 	{
-		auto mappedUniformMemory = map(offset, size);
+		auto mappedUniformMemory = map();
 		memcpy(mappedUniformMemory, data, (size_t)size);
 		unmap();
 	}
@@ -49,19 +49,19 @@ public:
 private:
 	VkBuffer buffer;
 	VkDeviceSize size;
-	VkDeviceMemory deviceMemory;
+	VmaAllocation allocation;
 };
 
 class StagingBuffer : public Buffer {
 public:
-	StagingBuffer(VkDeviceSize size) : Buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+	StagingBuffer(VkDeviceSize size) : Buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_AUTO, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
 	{
 	}
 };
 
 class UniformBuffer : public Buffer {
 public:
-	UniformBuffer(VkDeviceSize size) : Buffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+	UniformBuffer(VkDeviceSize size) : Buffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
 	{
 	}
 };

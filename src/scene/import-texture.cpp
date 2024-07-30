@@ -92,7 +92,7 @@ static StagingBuffer *copyToStagingBuffer(FIBITMAP *dib)
 	auto size = pitch * height;
 
 	auto stagingBuffer = new StagingBuffer(size);
-	void *ptr = stagingBuffer->map(0, size);
+	void *ptr = stagingBuffer->map();
 
 	for (auto y = 0u; y < height; ++y) {
 		auto srcRow = FreeImage_GetScanLine(dib, y);

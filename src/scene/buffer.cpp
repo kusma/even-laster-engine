@@ -3,29 +3,25 @@
 
 using namespace vkHelpers;
 
-Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags) :
+Buffer::Buffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags) :
 	size(size)
 {
-	VkBufferCreateInfo bufferCreateInfo = {};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size = size;
-	bufferCreateInfo.usage = usageFlags;
-
-	assumeSuccess(vkCreateBuffer(vkInstance::device, &bufferCreateInfo, nullptr, &buffer));
-
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(vkInstance::device, buffer, &memoryRequirements);
-
-	auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, memoryPropertyFlags);
-	deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
-
-	assumeSuccess(vkBindBufferMemory(vkInstance::device, buffer, deviceMemory, 0));
+	VkBufferCreateInfo bufferCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = size,
+		.usage = usageFlags,
+	};
+	VmaAllocationCreateInfo allocInfo = {
+		.flags = allocFlags,
+		.usage = memoryUsage,
+	};
+	assumeSuccess(vmaCreateBuffer(vkInstance::allocator, &bufferCreateInfo, &allocInfo, &buffer, &allocation, nullptr));
 }
 
 Buffer::~Buffer()
 {
 	vkDestroyBuffer(vkInstance::device, buffer, nullptr);
-	vkFreeMemory(vkInstance::device, deviceMemory, nullptr);
+	vmaFreeMemory(vkInstance::allocator, allocation);
 }
 
 void Buffer::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size)

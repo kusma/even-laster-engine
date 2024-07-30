@@ -13,15 +13,15 @@ IndexedBatch meshToIndexedBatch(const Mesh &mesh)
 	auto indices = mesh.getIndices();
 
 	auto vertexStagingBuffer = new StagingBuffer(vertices.size());
-	vertexStagingBuffer->uploadMemory(0, vertices.data(), vertices.size());
+	vertexStagingBuffer->uploadMemory(vertices.data(), vertices.size());
 
-	auto vertexBuffer = new Buffer(vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	auto vertexBuffer = new Buffer(vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_AUTO, 0);
 	vertexBuffer->uploadFromStagingBuffer(vertexStagingBuffer, 0, 0, vertices.size());
 
 	auto indexStagingBuffer = new StagingBuffer(indices.size());
-	indexStagingBuffer->uploadMemory(0, indices.data(), indices.size());
+	indexStagingBuffer->uploadMemory(indices.data(), indices.size());
 
-	auto indexBuffer = new Buffer(indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	auto indexBuffer = new Buffer(indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_AUTO, 0);
 	indexBuffer->uploadFromStagingBuffer(indexStagingBuffer, 0, 0, indices.size());
 
 	VkIndexType indexType = VK_INDEX_TYPE_UINT16; // dummy

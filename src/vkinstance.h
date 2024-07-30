@@ -1,5 +1,9 @@
 #include <volk.h>
 
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+#include <vk_mem_alloc.h>
+
 #include <vector>
 #include <functional>
 
@@ -18,6 +22,7 @@ namespace vkInstance
 
 	extern VkCommandPool setupCommandPool;
 
+	extern VmaAllocator allocator;
 	extern VkDebugReportCallbackEXT debugReportCallback;
 
 	void instanceInit(const char *appName, const std::vector<const char *> &enabledExtensions);

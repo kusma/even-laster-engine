@@ -1,4 +1,6 @@
 #define VOLK_IMPLEMENTATION
+#define VMA_IMPLEMENTATION
+
 #include "vkinstance.h"
 
 #include "core/core.h"
@@ -29,6 +31,7 @@ VkPhysicalDeviceMemoryProperties vkInstance::deviceMemoryProperties;
 uint32_t vkInstance::graphicsQueueIndex = UINT32_MAX;
 VkQueue vkInstance::graphicsQueue;
 VkCommandPool vkInstance::setupCommandPool;
+VmaAllocator vkInstance::allocator;
 VkDebugReportCallbackEXT vkInstance::debugReportCallback;
 
 #ifndef NDEBUG
@@ -151,11 +154,52 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 
 	const char *enabledExtensions[] = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 	};
 	deviceCreateInfo.enabledExtensionCount = ARRAY_SIZE(enabledExtensions);
 	deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
 
 	assumeSuccess(vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device));
+
+	VmaVulkanFunctions vulkanFunctions = {
+#define P(x) .x = x,
+	P(vkGetInstanceProcAddr)
+	P(vkGetDeviceProcAddr)
+	P(vkGetPhysicalDeviceProperties)
+	P(vkGetPhysicalDeviceMemoryProperties)
+	P(vkAllocateMemory)
+	P(vkFreeMemory)
+	P(vkMapMemory)
+	P(vkUnmapMemory)
+	P(vkFlushMappedMemoryRanges)
+	P(vkInvalidateMappedMemoryRanges)
+	P(vkBindBufferMemory)
+	P(vkBindImageMemory)
+	P(vkGetBufferMemoryRequirements)
+	P(vkGetImageMemoryRequirements)
+	P(vkCreateBuffer)
+	P(vkDestroyBuffer)
+	P(vkCreateImage)
+	P(vkDestroyImage)
+	P(vkCmdCopyBuffer)
+	P(vkGetBufferMemoryRequirements2KHR)
+	P(vkGetImageMemoryRequirements2KHR)
+	P(vkBindBufferMemory2KHR)
+	P(vkBindImageMemory2KHR)
+	P(vkGetPhysicalDeviceMemoryProperties2KHR)
+	P(vkGetDeviceBufferMemoryRequirements)
+	P(vkGetDeviceImageMemoryRequirements)
+#undef P
+	};
+
+	VmaAllocatorCreateInfo allocatorCreateInfo = {};
+	allocatorCreateInfo.flags = 0;
+	allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+	allocatorCreateInfo.physicalDevice = physicalDevice;
+	allocatorCreateInfo.device = device;
+	allocatorCreateInfo.instance = instance;
+	allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+	vmaCreateAllocator(&allocatorCreateInfo, &vkInstance::allocator);
 
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
 	vkGetDeviceQueue(device, graphicsQueueIndex, 0, &graphicsQueue);
