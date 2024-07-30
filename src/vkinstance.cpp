@@ -75,7 +75,7 @@ void vkInstance::instanceInit(const char *appName, const vector<const char *> &e
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = appName;
 	appInfo.pEngineName = "very lastest engine ever";
-	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.apiVersion = VK_API_VERSION_1_3;
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -186,7 +186,7 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 	P(vkGetImageMemoryRequirements2KHR)
 	P(vkBindBufferMemory2KHR)
 	P(vkBindImageMemory2KHR)
-	P(vkGetPhysicalDeviceMemoryProperties2KHR)
+	.vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2,
 	P(vkGetDeviceBufferMemoryRequirements)
 	P(vkGetDeviceImageMemoryRequirements)
 #undef P
@@ -194,7 +194,7 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 
 	VmaAllocatorCreateInfo allocatorCreateInfo = {};
 	allocatorCreateInfo.flags = 0;
-	allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+	allocatorCreateInfo.vulkanApiVersion = deviceProperties.apiVersion;
 	allocatorCreateInfo.physicalDevice = physicalDevice;
 	allocatorCreateInfo.device = device;
 	allocatorCreateInfo.instance = instance;

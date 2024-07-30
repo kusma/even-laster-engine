@@ -13,7 +13,8 @@ foreach s : sources
 	infile = files(join_paths('..', '..', 'src', 'shaders', s))
 	outfile = s + '.spv'
 	custom_target(outfile, input : infile, output : outfile,
-		command : [glslang, '-V', '@INPUT@', '-o', '@OUTPUT@'],
+		command : [glslang, '-V', '--target-env', 'vulkan1.3', '@INPUT@',
+		           '-o', '@OUTPUT@'],
 		build_by_default : true,
 		install : true,
 		install_dir : 'data/shaders/')
