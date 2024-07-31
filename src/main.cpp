@@ -710,7 +710,7 @@ int main(int argc, char *argv[])
 			glm::vec2 scale;
 			float time;
 		} wavePlaneUniforms;
-		auto wavePlaneUniformBuffer = new Buffer(sizeof(wavePlaneUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		auto wavePlaneUniformBuffer = new UniformBuffer(sizeof(wavePlaneUniforms));
 
 		auto wavePlaneDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
@@ -860,7 +860,7 @@ int main(int argc, char *argv[])
 			float fade;
 			float refractiveIndex;
 		} refractionUniforms;
-		auto refractionUniformBuffer = new Buffer(sizeof(refractionUniforms), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		auto refractionUniformBuffer = new UniformBuffer(sizeof(refractionUniforms));
 
 		for (SceneRenderer &sceneRenderer : sceneRenderers) {
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {

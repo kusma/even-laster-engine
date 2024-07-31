@@ -154,7 +154,7 @@ SceneRenderer::SceneRenderer(Scene *scene, VkRenderPass renderPass) :
 	uniformBufferSpacing = uint32_t(alignSize(sizeof(PerObjectUniforms), vkInstance::deviceProperties.limits.minUniformBufferOffsetAlignment));
 	auto uniformBufferSize = VkDeviceSize(uniformBufferSpacing * scene->getTransforms().size());
 
-	uniformBuffer = new Buffer(uniformBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	uniformBuffer = new UniformBuffer(uniformBufferSize);
 
 	descriptorSet = allocateDescriptorSet(vkInstance::device, descriptorPool, descriptorSetLayout);
 
