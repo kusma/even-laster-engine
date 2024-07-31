@@ -208,7 +208,6 @@ void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMat
 		assert(offset <= uniformBuffer->getSize() - sizeof(PerObjectUniforms));
 		uint32_t dynamicOffsets[] = { (uint32_t)offset };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 1, dynamicOffsets);
-		// vkCmdDraw(commandBuffer, ARRAY_SIZE(vertexPositions), 1, 0, 0);
 		indexedBatch.draw(commandBuffer);
 	}
 }
