@@ -3,7 +3,7 @@
 #include "vkhelpers.h"
 #include "shader.h"
 
-#include "scene/buffer.h"
+#include "buffer.h"
 
 #include <utility>
 #include <map>

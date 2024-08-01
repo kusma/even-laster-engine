@@ -1,8 +1,8 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#include "../vkhelpers.h"
-#include "../vkinstance.h"
+#include "vkhelpers.h"
+#include "vkinstance.h"
 
 #include <cstring>
 

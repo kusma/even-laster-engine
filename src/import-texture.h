@@ -1,7 +1,7 @@
 #ifndef IMPORT_TEXTURE_H
 #define IMPORT_TEXTURE_H
 
-#include "scene/texture.h"
+#include "texture.h"
 #include <string>
 
 enum TextureImportFlags {

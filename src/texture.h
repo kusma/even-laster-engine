@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <cassert>
 
-#include "../vkinstance.h"
-#include "../vkhelpers.h"
+#include "vkinstance.h"
+#include "vkhelpers.h"
 
 class StagingBuffer;
 

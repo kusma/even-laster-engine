@@ -19,7 +19,7 @@
 #include "shader.h"
 #include "import-texture.h"
 #include "scene/sceneimporter.h"
-#include "scene/buffer.h"
+#include "buffer.h"
 #include "scenerenderer.h"
 
 #include "sync/sync.h"
