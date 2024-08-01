@@ -1,5 +1,7 @@
 #include "texture.h"
+
 #include "vkhelpers.h"
+#include "buffer.h"
 
 using namespace vkHelpers;
 

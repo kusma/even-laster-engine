@@ -1,5 +1,7 @@
-#include "core/core.h"
 #include "import-texture.h"
+
+#include "core/core.h"
+#include "scene/buffer.h"
 
 #include <string>
 #include <stdexcept>

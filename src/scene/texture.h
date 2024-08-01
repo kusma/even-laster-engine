@@ -2,7 +2,12 @@
 #define TEXTURE_H
 
 #include <algorithm>
-#include "buffer.h"
+#include <cassert>
+
+#include "../vkinstance.h"
+#include "../vkhelpers.h"
+
+class StagingBuffer;
 
 class TextureBase {
 protected:
