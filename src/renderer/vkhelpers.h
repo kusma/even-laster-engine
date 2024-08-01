@@ -27,34 +27,6 @@ namespace vkHelpers
 		return ((value + alignment - 1) / alignment) * alignment;
 	}
 
-	inline uint32_t getMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties deviceMemoryProperties, const VkMemoryRequirements &memoryRequirements, VkMemoryPropertyFlags propertyFlags)
-	{
-		for (auto i = 0u; i < VK_MAX_MEMORY_TYPES; i++) {
-			if (((memoryRequirements.memoryTypeBits >> i) & 1) == 1) {
-				if ((deviceMemoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags) {
-					return i;
-					break;
-				}
-			}
-		}
-
-		assert(false);
-		throw std::runtime_error("invalid memory type!");
-	}
-
-	inline VkDeviceMemory allocateDeviceMemory(VkDevice device, VkDeviceSize size, uint32_t memoryTypeIndex)
-	{
-		VkMemoryAllocateInfo memoryAllocateInfo = {};
-		memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		memoryAllocateInfo.allocationSize = size;
-		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
-
-		VkDeviceMemory deviceMemory;
-		assumeSuccess(vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &deviceMemory));
-
-		return deviceMemory;
-	}
-
 	inline std::vector<VkCommandBuffer> allocateCommandBuffers(VkDevice device, VkCommandPool commandPool, int commandBufferCount)
 	{
 		VkCommandBufferAllocateInfo commandAllocInfo = {};
