@@ -11,7 +11,7 @@ class StagingBuffer;
 
 class TextureBase {
 protected:
-	TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels = 1, int arrayLayers = 1, bool useStaging = true);
+	TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers, bool useStaging);
 
 public:
 
