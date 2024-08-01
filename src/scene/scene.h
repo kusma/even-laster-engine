@@ -1,11 +1,11 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "texture.h"
-
 #include <glm/glm.hpp>
 
 #include <list>
+#include <vector>
+#include <string>
 
 enum VertexFormat {
 	VERTEX_FORMAT_NONE = 0,
@@ -73,12 +73,19 @@ private:
 };
 
 class Material {
-	Texture2D *albedoMap;
-	glm::vec4 albedoColor;
+public:
+	Material(const std::string &name, const std::string &albedoMap = "") :
+		name(name),
+		albedoMap(albedoMap)
+	{
 
-	// TODO: these should be baked (shininess)
-	Texture2D *normalMap;
-	Texture2D *specularMap;
+	}
+	const std::string &getName() const { return name; }
+	const std::string &getAlbedoMap() const { return albedoMap; }
+
+private:
+	std::string name;
+	std::string albedoMap;
 };
 
 class Model {

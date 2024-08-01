@@ -33,6 +33,7 @@ Scene *SceneImporter::import(string filename)
 
 	auto sceneImporter = SceneImporter(source);
 	sceneImporter.convertMeshes();
+	sceneImporter.convertMaterials();
 	sceneImporter.traverseChildren(source->mRootNode, nullptr);
 
 	return sceneImporter.result;
@@ -44,7 +45,7 @@ SceneImporter::SceneImporter(const aiScene *source) :
 {
 }
 
-Mesh *SceneImporter::convertMesh(aiMesh *mesh)
+Mesh *SceneImporter::convertMesh(const aiMesh *mesh)
 {
 	VertexFormat vertexFormat = VERTEX_FORMAT_NONE;
 	int stride = 0;
@@ -107,6 +108,25 @@ void SceneImporter::convertMeshes()
 		meshes[i] = convertMesh(source->mMeshes[i]);
 }
 
+Material *SceneImporter::convertMaterial(const aiMaterial *material)
+{
+	aiString name;
+	material->Get(AI_MATKEY_NAME, name);
+
+	aiString albedoMap;
+	if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), albedoMap);
+
+	return new Material(string(name.C_Str()), string(albedoMap.C_Str()));
+}
+
+void SceneImporter::convertMaterials()
+{
+	materials.resize(source->mNumMeshes);
+	for (auto i = 0u; i < source->mNumMaterials; ++i)
+		materials[i] = convertMaterial(source->mMaterials[i]);
+}
+
 void SceneImporter::traverseChildren(const aiNode *node, Transform *parentTransform)
 {
 	for (auto i = 0u; i < node->mNumChildren; ++i)
@@ -134,8 +154,9 @@ void SceneImporter::traverseNode(const aiNode *node, Transform *parentTransform)
 
 	for (auto i = 0u; i < node->mNumMeshes; ++i) {
 		auto mesh = meshes[node->mMeshes[i]];
-//		auto material = source->mMaterials[mesh->mMaterialIndex];
-		auto material = new Material();
+
+		auto material = materials[source->mMeshes[i]->mMaterialIndex];
+
 		auto model = new Model(mesh, material);
 		result->createObject(model, parentTransform);
 
