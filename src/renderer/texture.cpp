@@ -5,7 +5,7 @@
 
 using namespace vkHelpers;
 
-TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers) :
+TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags) :
 	baseWidth(width),
 	baseHeight(height),
 	baseDepth(depth),
@@ -37,15 +37,12 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	assumeSuccess(vkCreateImage(vkInstance::device, &imageCreateInfo, nullptr, &image));
+	VmaAllocationCreateInfo allocInfo = {
+		.flags = allocFlags,
+		.usage = memoryUsage,
+	};
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(vkInstance::device, image, &memoryRequirements);
-
-	auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
-
-	assumeSuccess(vkBindImageMemory(vkInstance::device, image, deviceMemory, 0));
+	assumeSuccess(vmaCreateImage(vkInstance::allocator, &imageCreateInfo, &allocInfo, &image, &allocation, nullptr));
 
 	VkImageSubresourceRange subresourceRange;
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

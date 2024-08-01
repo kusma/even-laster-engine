@@ -11,7 +11,7 @@ class StagingBuffer;
 
 class TextureBase {
 protected:
-	TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers);
+	TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags);
 
 public:
 
@@ -67,13 +67,13 @@ protected:
 
 	VkImage image;
 	VkImageView imageView;
-	VkDeviceMemory deviceMemory;
+	VmaAllocation allocation;
 };
 
 class Texture2D : public TextureBase {
 public:
 	Texture2D(VkFormat format, int width, int height, int mipLevels = 1, int arrayLayers = 1) :
-		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, mipLevels, arrayLayers)
+		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, mipLevels, arrayLayers, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
 };
@@ -81,7 +81,7 @@ public:
 class Texture2DArray : public TextureBase {
 public:
 	Texture2DArray(VkFormat format, int width, int height, int arrayLayers, int mipLevels = 1) :
-		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY, width, height, 1, mipLevels, arrayLayers)
+		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY, width, height, 1, mipLevels, arrayLayers, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
 };
@@ -89,7 +89,7 @@ public:
 class TextureCube : public TextureBase {
 public:
 	TextureCube(VkFormat format, int size, int mipLevels = 1) :
-		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_CUBE, size, size, 1, mipLevels, 6)
+		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_CUBE, size, size, 1, mipLevels, 6, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
 };
@@ -97,7 +97,7 @@ public:
 class Texture3D : public TextureBase {
 public:
 	Texture3D(VkFormat format, int width, int height, int depth, int mipLevels = 1) :
-		TextureBase(format, VK_IMAGE_TYPE_3D, VK_IMAGE_VIEW_TYPE_3D, width, height, depth, mipLevels, 1)
+		TextureBase(format, VK_IMAGE_TYPE_3D, VK_IMAGE_VIEW_TYPE_3D, width, height, depth, mipLevels, 1, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
 };
