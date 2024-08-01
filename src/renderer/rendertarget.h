@@ -5,7 +5,7 @@
 
 class RenderTargetBase {
 protected:
-	RenderTargetBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int arrayLayers, int mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspect) :
+	RenderTargetBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int arrayLayers, int mipLevels, VkImageUsageFlags usage, VkImageAspectFlags aspect, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags) :
 		format(format),
 		width(width),
 		height(height),
@@ -26,15 +26,12 @@ protected:
 		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		assumeSuccess(vkCreateImage(vkInstance::device, &imageCreateInfo, nullptr, &image));
+		VmaAllocationCreateInfo allocInfo = {
+			.flags = allocFlags,
+			.usage = memoryUsage,
+		};
 
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(vkInstance::device, image, &memoryRequirements);
-
-		auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		auto deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
-
-		assumeSuccess(vkBindImageMemory(vkInstance::device, image, deviceMemory, 0));
+		assumeSuccess(vmaCreateImage(vkInstance::allocator, &imageCreateInfo, &allocInfo, &image, &allocation, nullptr));
 
 		VkImageSubresourceRange subresourceRange;
 		subresourceRange.aspectMask = aspect;
@@ -66,12 +63,13 @@ protected:
 
 	VkImage image;
 	VkImageView imageView;
+	VmaAllocation allocation;
 };
 
 class ColorRenderTarget : public RenderTargetBase {
 public:
 	ColorRenderTarget(VkFormat format, int width, int height, int mipLevels = 1, VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) :
-		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, 1, mipLevels, usage, VK_IMAGE_ASPECT_COLOR_BIT)
+		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, 1, mipLevels, usage, VK_IMAGE_ASPECT_COLOR_BIT, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
 };
@@ -79,7 +77,7 @@ public:
 class DepthRenderTarget : public RenderTargetBase {
 public:
 	DepthRenderTarget(VkFormat format, int width, int height, VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) :
-		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, 1, 1, usage, VK_IMAGE_ASPECT_DEPTH_BIT)
+		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, 1, 1, usage, VK_IMAGE_ASPECT_DEPTH_BIT, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
 };
@@ -87,7 +85,7 @@ public:
 class Texture2DArrayRenderTarget : public RenderTargetBase {
 public:
 	Texture2DArrayRenderTarget(VkFormat format, int width, int height, int arrayLayers, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) :
-		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY, width, height, 1, arrayLayers, 1, usage, VK_IMAGE_ASPECT_COLOR_BIT)
+		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY, width, height, 1, arrayLayers, 1, usage, VK_IMAGE_ASPECT_COLOR_BIT, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 		arrayImageViews.reserve(arrayLayers);
 		for (int i = 0; i < arrayLayers; ++i) {
