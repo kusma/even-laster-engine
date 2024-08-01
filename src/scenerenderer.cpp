@@ -3,7 +3,7 @@
 #include "vkhelpers.h"
 #include "shader.h"
 
-#include "scene/import-texture.h" // HACK!
+#include "import-texture.h" // HACK!
 
 #include <utility>
 #include <map>

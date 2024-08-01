@@ -1,4 +1,4 @@
-#include "../core/core.h"
+#include "core/core.h"
 #include "import-texture.h"
 
 #include <string>

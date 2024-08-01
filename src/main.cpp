@@ -17,7 +17,7 @@
 #include "core/blobbuilder.h"
 #include "swapchain.h"
 #include "shader.h"
-#include "scene/import-texture.h"
+#include "import-texture.h"
 #include "scene/sceneimporter.h"
 #include "scenerenderer.h"
 
