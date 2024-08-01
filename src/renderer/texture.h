@@ -61,18 +61,6 @@ public:
 		return descriptorImageInfo;
 	}
 
-	void *map(VkDeviceSize offset, VkDeviceSize size)
-	{
-		void *ret;
-		vkHelpers::assumeSuccess(vkMapMemory(vkInstance::device, deviceMemory, offset, size, 0, &ret));
-		return ret;
-	}
-
-	void unmap()
-	{
-		vkUnmapMemory(vkInstance::device, deviceMemory);
-	}
-
 protected:
 	int baseWidth, baseHeight, baseDepth;
 	int mipLevels, arrayLayers;
