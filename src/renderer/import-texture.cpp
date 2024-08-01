@@ -93,7 +93,7 @@ static StagingBuffer *copyToStagingBuffer(FIBITMAP *dib)
 	auto pitch = width * pixelSize;
 	auto size = pitch * height;
 
-	auto stagingBuffer = new StagingBuffer(size);
+	auto stagingBuffer = vkInstance::getStagingBuffer(size);
 	void *ptr = stagingBuffer->map();
 
 	for (auto y = 0u; y < height; ++y) {
@@ -150,7 +150,6 @@ static void uploadMipChain(TextureBase &texture, FIBITMAP *dib, int mipLevels, i
 
 		auto stagingBuffer = copyToStagingBuffer(dib);
 		texture.uploadFromStagingBuffer(stagingBuffer, mipLevel, arrayLayer);
-		// TODO: delete staging buffer
 	}
 
 	FreeImage_Unload(dib);

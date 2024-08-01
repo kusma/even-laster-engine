@@ -95,10 +95,10 @@ static IndexedBatch *meshToIndexedBatch(const Mesh &mesh)
 	auto vertices = mesh.getVertices();
 	auto indices = mesh.getIndices();
 
-	auto vertexStagingBuffer = new StagingBuffer(vertices.size());
+	auto vertexStagingBuffer = vkInstance::getStagingBuffer(vertices.size());
 	vertexStagingBuffer->uploadMemory(vertices.data(), vertices.size());
 
-	auto indexStagingBuffer = new StagingBuffer(indices.size());
+	auto indexStagingBuffer = vkInstance::getStagingBuffer(indices.size());
 	indexStagingBuffer->uploadMemory(indices.data(), indices.size());
 
 	VkIndexType indexType = VK_INDEX_TYPE_UINT16; // dummy

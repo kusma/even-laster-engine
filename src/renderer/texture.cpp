@@ -64,7 +64,7 @@ void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipL
 {
 	assert(stagingBuffer != nullptr);
 
-	auto commandBuffer = allocateCommandBuffers(vkInstance::device, vkInstance::setupCommandPool, 1)[0];
+	auto commandBuffer = vkInstance::getSetupCommandBuffer();
 
 	VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

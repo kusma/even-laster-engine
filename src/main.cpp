@@ -228,7 +228,7 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 	Texture3D texture(VK_FORMAT_R32G32B32A32_SFLOAT, width, height, depth, 1);
 
 	auto size = sizeof(float) * 4 * width * height * depth;
-	auto stagingBuffer = new StagingBuffer(size);
+	auto stagingBuffer = vkInstance::getStagingBuffer(size);
 	void *ptr = stagingBuffer->map();
 
 	FILE *fp = fopen(filename.c_str(), "rb");
@@ -280,7 +280,7 @@ Texture3D importCubeFile(const std::string &filename)
 					throw runtime_error("size needs to be at least one");
 
 				auto textureSize = sizeof(float) * 4 * size * size * size;
-				stagingBuffer = new StagingBuffer(textureSize);
+				stagingBuffer = vkInstance::getStagingBuffer(textureSize);
 				ptr = static_cast<float *>(stagingBuffer->map());
 
 				continue;
@@ -795,7 +795,7 @@ int main(int argc, char *argv[])
 		auto cubeTexture = importTextureCube("assets/cubemap.hdr", TextureImportFlags::GENERATE_MIPMAPS);
 		auto colorLuts = importColorLuts("assets/luts");
 
-		auto commandBuffer = allocateCommandBuffers(vkInstance::device, vkInstance::setupCommandPool, 1)[0];
+		auto commandBuffer = vkInstance::getSetupCommandBuffer();
 
 		VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -973,8 +973,6 @@ int main(int argc, char *argv[])
 			commandBufferSemaphores[i] = createSemaphore(vkInstance::device);
 		}
 
-		assumeSuccess(vkQueueWaitIdle(vkInstance::graphicsQueue));
-
 		auto rocket = sync_create_device("data/sync");
 		if (!rocket)
 			throw runtime_error("sync_create_device() failed: out of memory?");
@@ -1024,6 +1022,9 @@ int main(int argc, char *argv[])
 		auto wavePlaneScaleXTrack = sync_get_track(rocket, "waveplane:scale.x");
 		auto wavePlaneScaleYTrack = sync_get_track(rocket, "waveplane:scale.y");
 		auto wavePlaneTimeTrack = sync_get_track(rocket, "waveplane:time");
+
+		// wait for all pending setup-work to finish
+		vkInstance::finishSetup();
 
 		BASS_Start();
 		BASS_ChannelPlay(stream, false);

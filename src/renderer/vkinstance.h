@@ -9,6 +9,8 @@
 
 #include <cstdint>
 
+class StagingBuffer;
+
 namespace vkInstance
 {
 	extern VkInstance instance;
@@ -21,6 +23,9 @@ namespace vkInstance
 	extern uint32_t graphicsQueueIndex;
 
 	extern VkCommandPool setupCommandPool;
+	VkCommandBuffer getSetupCommandBuffer();
+	StagingBuffer *getStagingBuffer(VkDeviceSize size);
+	void finishSetup();
 
 	extern VmaAllocator allocator;
 	extern VkDebugReportCallbackEXT debugReportCallback;

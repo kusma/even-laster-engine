@@ -3,6 +3,8 @@
 
 #include "vkinstance.h"
 
+#include "buffer.h"
+
 #include "core/core.h"
 
 #include <assert.h>
@@ -205,4 +207,36 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 	vkGetDeviceQueue(device, graphicsQueueIndex, 0, &graphicsQueue);
 
 	setupCommandPool = createCommandPool(device, graphicsQueueIndex);
+}
+
+static std::vector<VkCommandBuffer> setupCommandBuffers;
+static std::vector<StagingBuffer*> setupStagingBuffers;
+
+VkCommandBuffer vkInstance::getSetupCommandBuffer()
+{
+	auto cb = allocateCommandBuffers(device, setupCommandPool, 1)[0];
+	setupCommandBuffers.push_back(cb);
+	return cb;
+}
+
+StagingBuffer *vkInstance::getStagingBuffer(VkDeviceSize size)
+{
+	auto sb = new StagingBuffer(size);
+	setupStagingBuffers.push_back(sb);
+	return sb;
+}
+
+void vkInstance::finishSetup()
+{
+	assumeSuccess(vkQueueWaitIdle(vkInstance::graphicsQueue));
+
+	/* free up resources */
+	for (auto cb : setupCommandBuffers)
+		vkFreeCommandBuffers(device, setupCommandPool, 1, &cb);
+	setupCommandBuffers.clear();
+
+	for (auto sb : setupStagingBuffers)
+		delete sb;
+
+	setupStagingBuffers.clear();
 }
