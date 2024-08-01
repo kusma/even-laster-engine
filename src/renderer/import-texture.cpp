@@ -171,7 +171,7 @@ Texture2D importTexture2D(string filename, TextureImportFlags flags)
 	if (flags & TextureImportFlags::GENERATE_MIPMAPS)
 		mipLevels = 32 - clz(max(baseWidth, baseHeight));
 
-	Texture2D texture(format, baseWidth, baseHeight, mipLevels, 1, true);
+	Texture2D texture(format, baseWidth, baseHeight, mipLevels, 1);
 	uploadMipChain(texture, dib, mipLevels);
 
 	setImageName(vkInstance::device, texture.getImage(), filename);
@@ -222,7 +222,7 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 	if (flags & TextureImportFlags::GENERATE_MIPMAPS)
 		mipLevels = 32 - clz(max(firstWidth, firstHeight));
 
-	Texture2DArray texture(firstFormat, firstWidth, firstHeight, bitmaps.size(), mipLevels, true);
+	Texture2DArray texture(firstFormat, firstWidth, firstHeight, bitmaps.size(), mipLevels);
 	for (size_t i = 0; i < bitmaps.size(); ++i)
 		uploadMipChain(texture, bitmaps[i], mipLevels, i);
 

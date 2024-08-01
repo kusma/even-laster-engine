@@ -5,7 +5,7 @@
 
 using namespace vkHelpers;
 
-TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers, bool useStaging) :
+TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers) :
 	baseWidth(width),
 	baseHeight(height),
 	baseDepth(depth),
@@ -32,20 +32,17 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	imageCreateInfo.mipLevels = mipLevels;
 	imageCreateInfo.arrayLayers = arrayLayers;
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateInfo.tiling = useStaging ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
-	imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	imageCreateInfo.initialLayout = useStaging ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_PREINITIALIZED;
-
-	if (useStaging)
-		imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 	assumeSuccess(vkCreateImage(vkInstance::device, &imageCreateInfo, nullptr, &image));
 
 	VkMemoryRequirements memoryRequirements;
 	vkGetImageMemoryRequirements(vkInstance::device, image, &memoryRequirements);
 
-	auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, useStaging ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
 
 	assumeSuccess(vkBindImageMemory(vkInstance::device, image, deviceMemory, 0));
