@@ -1,15 +1,15 @@
 sources = files(
 	'main.cpp',
-	'import-texture.cpp',
-	'buffer.cpp',
+	'renderer/import-texture.cpp',
+	'renderer/buffer.cpp',
 	'scene/sceneimporter.cpp',
-	'texture.cpp',
+	'renderer/texture.cpp',
 	'sync/device.c',
 	'sync/track.c',
-	'scenerenderer.cpp',
-	'shader.cpp',
+	'renderer/scenerenderer.cpp',
+	'renderer/shader.cpp',
 	'swapchain.cpp',
-	'vkinstance.cpp'
+	'renderer/vkinstance.cpp'
 )
 
 demo_deps = [

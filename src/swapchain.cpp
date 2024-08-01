@@ -1,7 +1,7 @@
 #include "swapchain.h"
 
-#include "vkhelpers.h"
-#include "vkinstance.h"
+#include "renderer/vkhelpers.h"
+#include "renderer/vkinstance.h"
 
 #include <assert.h>
 #include <algorithm>

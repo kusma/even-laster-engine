@@ -12,15 +12,15 @@
 #include <map>
 #include <stdexcept>
 
-#include "vkhelpers.h"
+#include "renderer/vkhelpers.h"
 #include "core/core.h"
 #include "core/blobbuilder.h"
 #include "swapchain.h"
-#include "shader.h"
-#include "import-texture.h"
+#include "renderer/shader.h"
+#include "renderer/import-texture.h"
 #include "scene/sceneimporter.h"
-#include "buffer.h"
-#include "scenerenderer.h"
+#include "renderer/buffer.h"
+#include "renderer/scenerenderer.h"
 
 #include "sync/sync.h"
 
@@ -59,7 +59,7 @@ static vector<const char *> getRequiredInstanceExtensions()
 }
 
 #include "scene/scene.h"
-#include "rendertarget.h"
+#include "renderer/rendertarget.h"
 
 static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule shaderModule, const char *name = "main")
 {
