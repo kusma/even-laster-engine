@@ -786,9 +786,9 @@ int main(int argc, char *argv[])
 			scenes.push_back(SceneImporter::import(path));
 		}
 
-		vector<SceneRenderer> sceneRenderers;
+		vector<SceneRenderer*> sceneRenderers;
 		for (auto scene : scenes)
-			sceneRenderers.push_back(SceneRenderer(scene, sceneRenderPass));
+			sceneRenderers.push_back(new SceneRenderer(scene, sceneRenderPass));
 
 		auto planes = importTexture2DArray("assets/planes", TextureImportFlags::NONE);
 		auto overlays = importTexture2DArray("assets/overlays", TextureImportFlags::PREMULTIPLY_ALPHA);
@@ -863,7 +863,7 @@ int main(int argc, char *argv[])
 		} refractionUniforms;
 		auto refractionUniformBuffer = new UniformBuffer(sizeof(refractionUniforms));
 
-		for (SceneRenderer &sceneRenderer : sceneRenderers) {
+		for (SceneRenderer *sceneRenderer : sceneRenderers) {
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
 				planes.getDescriptorImageInfo(textureSampler),
 				cubeTexture.getDescriptorImageInfo(textureSampler)
@@ -871,7 +871,7 @@ int main(int argc, char *argv[])
 
 			VkWriteDescriptorSet writeDescriptorSets[2] = {};
 			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = sceneRenderer.getDescriptorSet();
+			writeDescriptorSets[0].dstSet = sceneRenderer->getDescriptorSet();
 			writeDescriptorSets[0].dstBinding = 1;
 			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptorSets[0].descriptorCount = descriptorImageInfos.size();
@@ -879,7 +879,7 @@ int main(int argc, char *argv[])
 
 			auto descriptorBufferInfo = refractionUniformBuffer->getDescriptorBufferInfo();
 			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = sceneRenderer.getDescriptorSet();
+			writeDescriptorSets[1].dstSet = sceneRenderer->getDescriptorSet();
 			writeDescriptorSets[1].descriptorCount = 1;
 			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			writeDescriptorSets[1].pBufferInfo = &descriptorBufferInfo;
@@ -1127,7 +1127,7 @@ int main(int argc, char *argv[])
 			int sceneIndex = int(sync_get_val(sceneIndexTrack, row));
 			if (sceneIndex >= 0) {
 				sceneIndex %= sceneRenderers.size();
-				SceneRenderer &sceneRenderer = sceneRenderers[sceneIndex];
+				SceneRenderer *sceneRenderer = sceneRenderers[sceneIndex];
 
 				refractionUniforms.planeIndex = float(sync_get_val(refractionPlaneIndexTrack, row));
 				refractionUniforms.fade = float(sync_get_val(refractionFadeTrack, row));
@@ -1135,7 +1135,7 @@ int main(int argc, char *argv[])
 
 				refractionUniformBuffer->uploadMemory(&refractionUniforms, sizeof(refractionUniforms));
 
-				sceneRenderer.draw(commandBuffer, viewMatrix, projectionMatrix);
+				sceneRenderer->draw(commandBuffer, viewMatrix, projectionMatrix);
 			} else {
 				int size = 256;
 
@@ -1352,6 +1352,11 @@ int main(int argc, char *argv[])
 		sync_destroy_device(rocket);
 
 		assumeSuccess(vkDeviceWaitIdle(vkInstance::device));
+
+		for (auto sr : sceneRenderers)
+			delete sr;
+		sceneRenderers.clear();
+
 		glfwDestroyWindow(win);
 
 	} catch (const exception &e) {

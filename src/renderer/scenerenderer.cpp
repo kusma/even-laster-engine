@@ -286,6 +286,19 @@ SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass) :
 	vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 }
 
+SceneRenderer::~SceneRenderer()
+{
+	for (const auto& v : indexedBatches) {
+		delete v.second;
+	}
+	indexedBatches.clear();
+
+	for (const auto& v : pipelines) {
+		vkDestroyPipeline(vkInstance::device, v.second, nullptr);
+	}
+	pipelines.clear();
+}
+
 void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMatrix, const glm::mat4 &projectionMatrix)
 {
 	auto offset = 0u;
