@@ -47,13 +47,13 @@ private:
 class SceneRenderer {
 public:
 
-	SceneRenderer(Scene *scene, VkRenderPass renderPass);
+	SceneRenderer(const Scene *scene, VkRenderPass renderPass);
 	void draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMatrix, const glm::mat4 &projectionMatrix);
 
 	VkDescriptorSet getDescriptorSet() { return descriptorSet; } // HACK! Yuck yuck yuck!
 
 private:
-	Scene *scene;
+	const Scene *scene;
 
 	VkPipelineLayout pipelineLayout;
 	VkDescriptorSet descriptorSet;

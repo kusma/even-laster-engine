@@ -182,7 +182,7 @@ static vector<VkVertexInputAttributeDescription> vertexFormatToInputAttributeDes
 	return vertexInputAttributeDescriptions;
 }
 
-SceneRenderer::SceneRenderer(Scene *scene, VkRenderPass renderPass) :
+SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass) :
 	scene(scene)
 {
 	auto descriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
