@@ -741,75 +741,7 @@ int main(int argc, char *argv[])
 		auto bloomUpscaleFragmentShader = loadShaderModule("data/shaders/bloom_upscale.frag.spv");
 		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader);
 
-		struct {
-			glm::mat4 modelViewMatrix;
-			glm::mat4 modelViewInverseMatrix;
-			glm::mat4 modelViewProjectionMatrix;
-			glm::vec2 offset;
-			glm::vec2 scale;
-			float time;
-		} wavePlaneUniforms;
-		auto wavePlaneUniformBuffer = new UniformBuffer(sizeof(wavePlaneUniforms));
-
-		auto wavePlaneDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
-			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT },
-		});
-		auto wavePlanePipelineLayout = createPipelineLayout(vkInstance::device, { wavePlaneDescriptorSetLayout }, {});
-		vector<VkPipelineShaderStageCreateInfo> wavePlaneShaderStages = { {
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				nullptr,
-				0,
-				VK_SHADER_STAGE_VERTEX_BIT,
-				loadShaderModule("data/shaders/plane.vert.spv"),
-				"main",
-				nullptr
-			},{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				nullptr,
-				0,
-				VK_SHADER_STAGE_FRAGMENT_BIT,
-				loadShaderModule("data/shaders/plane.frag.spv"),
-				"main",
-				nullptr
-			} };
-
-		auto wavePlanePipeline = createGeometrylessPipeline(wavePlanePipelineLayout, sceneRenderPass, wavePlaneShaderStages, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, false, BlendMode::Additive);
-
-		auto wavePlaneDescriptorPool = createDescriptorPool(vkInstance::device, {
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
-			}, 1);
-
-		auto wavePlaneDescriptorSet = allocateDescriptorSet(vkInstance::device, wavePlaneDescriptorPool, wavePlaneDescriptorSetLayout);
-
 		Texture3D fractalNoise = loadFractalNoise("data/fbm.raw", 64, 64, 64);
-		VkSampler fractalNoiseSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, true, false);
-
-		{
-			VkWriteDescriptorSet writeDescriptorSets[2] = {};
-
-			auto descriptorBufferInfo = wavePlaneUniformBuffer->getDescriptorBufferInfo();
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = wavePlaneDescriptorSet;
-			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].descriptorCount = 1;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSets[0].pBufferInfo = &descriptorBufferInfo;
-
-			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ fractalNoiseSampler, fractalNoise.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
-			};
-
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = wavePlaneDescriptorSet;
-			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[1].pImageInfo = descriptorImageInfos.data();
-
-			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
-		}
 
 		vector<Scene *> scenes;
 		for (int i = 0; true; ++i) {
@@ -1000,12 +932,6 @@ int main(int argc, char *argv[])
 		auto pulseAmountTrack = sync_get_track(rocket, "pulse.amount");
 		auto pulseSpeedTrack = sync_get_track(rocket, "pulse.speed");
 
-		auto wavePlaneOffsetXTrack = sync_get_track(rocket, "waveplane:offset.x");
-		auto wavePlaneOffsetYTrack = sync_get_track(rocket, "waveplane:offset.y");
-		auto wavePlaneScaleXTrack = sync_get_track(rocket, "waveplane:scale.x");
-		auto wavePlaneScaleYTrack = sync_get_track(rocket, "waveplane:scale.y");
-		auto wavePlaneTimeTrack = sync_get_track(rocket, "waveplane:time");
-
 		// wait for all pending setup-work to finish
 		vkInstance::finishSetup();
 
@@ -1113,8 +1039,7 @@ int main(int argc, char *argv[])
 			auto projectionMatrix = glm::perspective(float(fov * M_PI / 180), aspect, znear, zfar);
 
 			int sceneIndex = int(sync_get_val(sceneIndexTrack, row));
-			if (sceneIndex >= 0) {
-				sceneIndex %= sceneRenderers.size();
+			if (sceneIndex >= 0 && unsigned(sceneIndex) < sceneRenderers.size()) {
 				SceneRenderer *sceneRenderer = sceneRenderers[sceneIndex];
 
 				refractionUniforms.planeIndex = float(sync_get_val(refractionPlaneIndexTrack, row));
@@ -1124,29 +1049,6 @@ int main(int argc, char *argv[])
 				refractionUniformBuffer->uploadMemory(&refractionUniforms, sizeof(refractionUniforms));
 
 				sceneRenderer->draw(commandBuffer, viewMatrix, projectionMatrix);
-			} else {
-				int size = 256;
-
-				auto modelMatrix = glm::mat4(1);
-				auto modelViewMatrix = viewMatrix * modelMatrix;
-				auto modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
-				wavePlaneUniforms.modelViewMatrix = modelViewMatrix;
-				wavePlaneUniforms.modelViewInverseMatrix = glm::inverse(modelViewMatrix);
-				wavePlaneUniforms.modelViewProjectionMatrix = modelViewProjectionMatrix;
-
-				wavePlaneUniforms.offset = glm::vec2(sync_get_val(wavePlaneOffsetXTrack, row),
-				                                     sync_get_val(wavePlaneOffsetYTrack, row));
-				wavePlaneUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
-				                                    sync_get_val(wavePlaneScaleYTrack, row));
-				wavePlaneUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
-
-				wavePlaneUniformBuffer->uploadMemory(&wavePlaneUniforms, sizeof(wavePlaneUniforms));
-
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,  wavePlanePipeline);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, wavePlanePipelineLayout, 0, 1, &wavePlaneDescriptorSet, 0, nullptr);
-
-				for (int i = 0; i < size; ++i)
-					vkCmdDraw(commandBuffer, 2 + 2 * size, 1, (1 << 16) * i, 0);
 			}
 
 			vkCmdEndRenderPass(commandBuffer);
