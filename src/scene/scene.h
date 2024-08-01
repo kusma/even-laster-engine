@@ -248,39 +248,4 @@ private:
 	RootTransform rootTransform;
 };
 
-struct IndexedBatch
-{
-public:
-	IndexedBatch(const std::vector<VkBuffer> &vertexBuffers, const std::vector<VkDeviceSize> &vertexBufferOffsets, VkBuffer indexBuffer, VkIndexType indexType, uint32_t indexCount) :
-		vertexBuffers(vertexBuffers),
-		vertexBufferOffsets(vertexBufferOffsets),
-		indexBuffer(indexBuffer),
-		indexType(indexType),
-		indexCount(indexCount)
-	{
-		assert(vertexBuffers.size() == vertexBufferOffsets.size());
-	}
-
-	void bind(VkCommandBuffer commandBuffer)
-	{
-		vkCmdBindVertexBuffers(commandBuffer, 0, vertexBuffers.size(), vertexBuffers.data(), vertexBufferOffsets.data());
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, indexType);
-	}
-
-	void draw(VkCommandBuffer commandBuffer)
-	{
-		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
-	}
-
-private:
-	std::vector<VkBuffer> vertexBuffers;
-	std::vector<VkDeviceSize> vertexBufferOffsets;
-	VkBuffer indexBuffer;
-	VkIndexType indexType;
-	uint32_t indexCount;
-};
-
-std::vector<VkVertexInputAttributeDescription> vertexFormatToInputAttributeDescriptions(VertexFormat vertexFormat);
-IndexedBatch meshToIndexedBatch(const Mesh &mesh);
-
 #endif // SCENE_H

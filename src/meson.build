@@ -2,7 +2,6 @@ sources = files(
 	'main.cpp',
 	'scene/buffer.cpp',
 	'scene/import-texture.cpp',
-	'scene/scene.cpp',
 	'scene/sceneimporter.cpp',
 	'scene/texture.cpp',
 	'sync/device.c',
