@@ -90,7 +90,7 @@ static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass r
 	return pipeline;
 }
 
-static IndexedBatch meshToIndexedBatch(const Mesh &mesh)
+static IndexedBatch *meshToIndexedBatch(const Mesh &mesh)
 {
 	auto vertices = mesh.getVertices();
 	auto indices = mesh.getIndices();
@@ -98,14 +98,8 @@ static IndexedBatch meshToIndexedBatch(const Mesh &mesh)
 	auto vertexStagingBuffer = new StagingBuffer(vertices.size());
 	vertexStagingBuffer->uploadMemory(vertices.data(), vertices.size());
 
-	auto vertexBuffer = new VertexBuffer(vertices.size());
-	vertexBuffer->uploadFromStagingBuffer(vertexStagingBuffer, 0, 0, vertices.size());
-
 	auto indexStagingBuffer = new StagingBuffer(indices.size());
 	indexStagingBuffer->uploadMemory(indices.data(), indices.size());
-
-	auto indexBuffer = new IndexBuffer(indices.size());
-	indexBuffer->uploadFromStagingBuffer(indexStagingBuffer, 0, 0, indices.size());
 
 	VkIndexType indexType = VK_INDEX_TYPE_UINT16; // dummy
 	uint32_t indexCount = 0;
@@ -124,14 +118,15 @@ static IndexedBatch meshToIndexedBatch(const Mesh &mesh)
 		unreachable("invalid index-type!");
 	}
 
-	// FIXME: leaks both vertexBuffer and indexBuffer!
+	auto ret = new IndexedBatch(indexType, indexCount);
 
-	return IndexedBatch(
-		std::vector<VkBuffer> { vertexBuffer->getBuffer() },
-		std::vector<VkDeviceSize> { 0 },
-		indexBuffer->getBuffer(),
-		indexType,
-		indexCount);
+	auto vertexBuffer = ret->createVertexBuffer(vertices.size(), 0);
+	vertexBuffer->uploadFromStagingBuffer(vertexStagingBuffer, 0, 0, vertices.size());
+
+	auto indexBuffer = ret->createIndexBuffer(indices.size());
+	indexBuffer->uploadFromStagingBuffer(indexStagingBuffer, 0, 0, indices.size());
+
+	return ret;
 }
 
 static vector<VkVertexInputAttributeDescription> vertexFormatToInputAttributeDescriptions(VertexFormat vertexFormat)
@@ -182,6 +177,31 @@ static vector<VkVertexInputAttributeDescription> vertexFormatToInputAttributeDes
 	return vertexInputAttributeDescriptions;
 }
 
+VertexBuffer *IndexedBatch::createVertexBuffer(VkDeviceSize size, VkDeviceSize offset)
+{
+	auto vb = new VertexBuffer(size);
+	vertexBuffers.push_back(vb->getBuffer());
+	vertexBufferOffsets.push_back(offset);
+	buffers.push_back(vb);
+	return vb;
+}
+
+IndexBuffer *IndexedBatch::createIndexBuffer(VkDeviceSize size)
+{
+	assert(indexBuffer == VK_NULL_HANDLE);
+	auto ib = new IndexBuffer(size);
+	indexBuffer = ib->getBuffer();
+	buffers.push_back(ib);
+	return ib;
+}
+
+IndexedBatch::~IndexedBatch()
+{
+	for (auto buf : buffers) {
+		delete buf;
+	}
+}
+
 SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass) :
 	scene(scene)
 {
@@ -196,8 +216,10 @@ SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass) :
 	for (auto object : scene->getObjects()) {
 		// transform meshes to indexed batches
 		auto mesh = object->getModel()->getMesh();
-		if (indexedBatches.find(mesh) == indexedBatches.end())
+		if (indexedBatches.find(mesh) == indexedBatches.end()) {
+			// FIXME: currently leaks all IndexedBatch objects
 			indexedBatches.insert(std::make_pair(mesh, meshToIndexedBatch(*mesh)));
+		}
 
 		// transform vertexformats to pipelines
 		auto vertexFormat = mesh->getVertexFormat();
@@ -292,7 +314,7 @@ void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMat
 		auto indexedBatch = indexedBatches.find(mesh)->second;
 		auto pipeline = pipelines[mesh->getVertexFormat()];
 
-		indexedBatch.bind(commandBuffer);
+		indexedBatch->bind(commandBuffer);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		assert(offsetMap.count(object->getTransform()) > 0);
@@ -301,6 +323,6 @@ void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMat
 		assert(offset <= uniformBuffer->getSize() - sizeof(PerObjectUniforms));
 		uint32_t dynamicOffsets[] = { (uint32_t)offset };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 1, dynamicOffsets);
-		indexedBatch.draw(commandBuffer);
+		indexedBatch->draw(commandBuffer);
 	}
 }

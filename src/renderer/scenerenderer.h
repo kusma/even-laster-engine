@@ -12,21 +12,27 @@
 class Scene;
 class Mesh;
 class Buffer;
+class VertexBuffer;
+class IndexBuffer;
 
 struct IndexedBatch {
 public:
-	IndexedBatch(const std::vector<VkBuffer> &vertexBuffers, const std::vector<VkDeviceSize> &vertexBufferOffsets, VkBuffer indexBuffer, VkIndexType indexType, uint32_t indexCount) :
-		vertexBuffers(vertexBuffers),
-		vertexBufferOffsets(vertexBufferOffsets),
-		indexBuffer(indexBuffer),
+	IndexedBatch(VkIndexType indexType, uint32_t indexCount) :
+		indexBuffer(VK_NULL_HANDLE),
 		indexType(indexType),
 		indexCount(indexCount)
 	{
 		assert(vertexBuffers.size() == vertexBufferOffsets.size());
 	}
 
+	~IndexedBatch();
+
+	VertexBuffer *createVertexBuffer(VkDeviceSize size, VkDeviceSize offset);
+	IndexBuffer *createIndexBuffer(VkDeviceSize size);
+
 	void bind(VkCommandBuffer commandBuffer)
 	{
+		assert(indexBuffer != VK_NULL_HANDLE);
 		vkCmdBindVertexBuffers(commandBuffer, 0, vertexBuffers.size(), vertexBuffers.data(), vertexBufferOffsets.data());
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, indexType);
 	}
@@ -37,6 +43,8 @@ public:
 	}
 
 private:
+	std::vector<Buffer*> buffers;
+
 	std::vector<VkBuffer> vertexBuffers;
 	std::vector<VkDeviceSize> vertexBufferOffsets;
 	VkBuffer indexBuffer;
@@ -57,7 +65,7 @@ private:
 
 	VkPipelineLayout pipelineLayout;
 	VkDescriptorSet descriptorSet;
-	std::map<const Mesh *, IndexedBatch> indexedBatches;
+	std::map<const Mesh *, IndexedBatch *> indexedBatches;
 	std::map<VertexFormat, VkPipeline> pipelines;
 	VkSampler textureSampler;
 
