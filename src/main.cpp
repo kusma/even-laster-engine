@@ -1131,9 +1131,7 @@ int main(int argc, char *argv[])
 				refractionUniforms.fade = float(sync_get_val(refractionFadeTrack, row));
 				refractionUniforms.refractiveIndex = float(sync_get_val(refractionIndexTrack, row));
 
-				auto ptr = refractionUniformBuffer->map();
-				memcpy(ptr, &refractionUniforms, sizeof(refractionUniforms));
-				refractionUniformBuffer->unmap();
+				refractionUniformBuffer->uploadMemory(&refractionUniforms, sizeof(refractionUniforms));
 
 				sceneRenderer.draw(commandBuffer, viewMatrix, projectionMatrix);
 			} else {
@@ -1152,9 +1150,7 @@ int main(int argc, char *argv[])
 				                                    sync_get_val(wavePlaneScaleYTrack, row));
 				wavePlaneUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
 
-				auto ptr = wavePlaneUniformBuffer->map();
-				memcpy(ptr, &wavePlaneUniforms, sizeof(wavePlaneUniforms));
-				wavePlaneUniformBuffer->unmap();
+				wavePlaneUniformBuffer->uploadMemory(&wavePlaneUniforms, sizeof(wavePlaneUniforms));
 
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,  wavePlanePipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, wavePlanePipelineLayout, 0, 1, &wavePlaneDescriptorSet, 0, nullptr);
