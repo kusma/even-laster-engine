@@ -98,13 +98,13 @@ static IndexedBatch meshToIndexedBatch(const Mesh &mesh)
 	auto vertexStagingBuffer = new StagingBuffer(vertices.size());
 	vertexStagingBuffer->uploadMemory(vertices.data(), vertices.size());
 
-	auto vertexBuffer = new Buffer(vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_AUTO, 0);
+	auto vertexBuffer = new VertexBuffer(vertices.size());
 	vertexBuffer->uploadFromStagingBuffer(vertexStagingBuffer, 0, 0, vertices.size());
 
 	auto indexStagingBuffer = new StagingBuffer(indices.size());
 	indexStagingBuffer->uploadMemory(indices.data(), indices.size());
 
-	auto indexBuffer = new Buffer(indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_AUTO, 0);
+	auto indexBuffer = new IndexBuffer(indices.size());
 	indexBuffer->uploadFromStagingBuffer(indexStagingBuffer, 0, 0, indices.size());
 
 	VkIndexType indexType = VK_INDEX_TYPE_UINT16; // dummy

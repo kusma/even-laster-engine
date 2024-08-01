@@ -66,4 +66,18 @@ public:
 	}
 };
 
+class VertexBuffer : public Buffer {
+public:
+	VertexBuffer(VkDeviceSize size) : Buffer(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_AUTO, 0)
+	{
+	}
+};
+
+class IndexBuffer : public Buffer {
+public:
+	IndexBuffer(VkDeviceSize size) : Buffer(size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_AUTO, 0)
+	{
+	}
+};
+
 #endif // BUFFER_H
