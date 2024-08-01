@@ -1,7 +1,7 @@
 #ifndef RENDERTARGET_H
 #define RENDERTARGET_H
 
-#include "../vkhelpers.h"
+#include "vkhelpers.h"
 
 class RenderTargetBase {
 protected:

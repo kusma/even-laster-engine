@@ -58,7 +58,7 @@ static vector<const char *> getRequiredInstanceExtensions()
 }
 
 #include "scene/scene.h"
-#include "scene/rendertarget.h"
+#include "rendertarget.h"
 
 static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule shaderModule, const char *name = "main")
 {
