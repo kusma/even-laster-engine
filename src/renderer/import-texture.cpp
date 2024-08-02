@@ -37,8 +37,7 @@ static FIBITMAP *loadBitmap(string filename, VkFormat *format)
 
 	auto imageType = FreeImage_GetImageType(dib);
 	FIBITMAP *temp;
-	switch (imageType)
-	{
+	switch (imageType) {
 	case FIT_BITMAP:
 		temp = dib;
 		dib = FreeImage_ConvertTo32Bits(dib);
@@ -63,8 +62,7 @@ static FIBITMAP *loadBitmap(string filename, VkFormat *format)
 
 static int getBpp(FIBITMAP *dib)
 {
-	switch (FreeImage_GetImageType(dib))
-	{
+	switch (FreeImage_GetImageType(dib)) {
 	case FIT_BITMAP: return FreeImage_GetBPP(dib);
 	case FIT_RGBF: return sizeof(uint16_t) * 8 * 4; // expand to RGBA, which is always supported
 	default:
@@ -102,8 +100,7 @@ static StagingBuffer *copyToStagingBuffer(FIBITMAP *dib)
 		FIRGBF *srcRowRGBf;
 		uint16_t *dstRowHalf = (uint16_t *)dstRow;
 
-		switch (imageType)
-		{
+		switch (imageType) {
 		case FIT_BITMAP:
 			for (auto x = 0u; x < width; ++x) {
 				dstRow[x * 4 + 0] = srcRow[x * 4 + FI_RGBA_RED];
