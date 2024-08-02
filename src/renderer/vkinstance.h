@@ -27,6 +27,8 @@ namespace vkInstance
 	StagingBuffer *getStagingBuffer(VkDeviceSize size);
 	void finishSetup();
 
+	void submitSetupCommands(std::function<void(VkCommandBuffer)> callback);
+
 	extern VmaAllocator allocator;
 	extern VkDebugReportCallbackEXT debugReportCallback;
 

@@ -60,57 +60,39 @@ void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer,
                                           unsigned mipLevel, unsigned arrayLayer)
 {
 	assert(stagingBuffer != nullptr);
-
-	auto commandBuffer = vkInstance::getSetupCommandBuffer();
-
-	VkCommandBufferBeginInfo commandBufferBeginInfo = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-	};
-
-	assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
-
-	VkImageSubresourceRange subresourceRange = {
-		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-		.baseMipLevel = mipLevel,
-		.levelCount = 1,
-		.baseArrayLayer = arrayLayer,
-		.layerCount = 1,
-	};
-
-	imageBarrier(commandBuffer,
-		image, subresourceRange,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-		0, VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	VkBufferImageCopy copyRegion = {
-		.bufferOffset = 0,
-		.bufferRowLength = 0,
-		.bufferImageHeight = 0,
-		.imageSubresource = {
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		VkImageSubresourceRange subresourceRange = {
 			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-			.mipLevel = mipLevel,
+			.baseMipLevel = mipLevel,
+			.levelCount = 1,
 			.baseArrayLayer = arrayLayer,
 			.layerCount = 1,
-		},
-		.imageOffset = { 0, 0, 0 },
-		.imageExtent = {
-			.width = mipSize(baseWidth, mipLevel),
-			.height = mipSize(baseHeight, mipLevel),
-			.depth = mipSize(baseDepth, mipLevel),
-		},
-	};
+		};
 
-	vkCmdCopyBufferToImage(commandBuffer, stagingBuffer->getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+		imageBarrier(commandBuffer,
+			image, subresourceRange,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0, VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	assumeSuccess(vkEndCommandBuffer(commandBuffer));
+		VkBufferImageCopy copyRegion = {
+			.bufferOffset = 0,
+			.bufferRowLength = 0,
+			.bufferImageHeight = 0,
+			.imageSubresource = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel = mipLevel,
+				.baseArrayLayer = arrayLayer,
+				.layerCount = 1,
+			},
+			.imageOffset = { 0, 0, 0 },
+			.imageExtent = {
+				.width = mipSize(baseWidth, mipLevel),
+				.height = mipSize(baseHeight, mipLevel),
+				.depth = mipSize(baseDepth, mipLevel),
+			},
+		};
 
-	VkSubmitInfo submitInfo = {
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.commandBufferCount = 1,
-		.pCommandBuffers = &commandBuffer,
-	};
-
-	assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer->getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+	});
 }

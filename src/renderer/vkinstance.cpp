@@ -246,3 +246,23 @@ void vkInstance::finishSetup()
 
 	setupStagingBuffers.clear();
 }
+
+void vkInstance::submitSetupCommands(std::function<void(VkCommandBuffer)> callback)
+{
+	auto commandBuffer = vkInstance::getSetupCommandBuffer();
+	VkCommandBufferBeginInfo commandBufferBeginInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+	};
+	assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+	callback(commandBuffer);
+
+	assumeSuccess(vkEndCommandBuffer(commandBuffer));
+	VkSubmitInfo submitInfo = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &commandBuffer,
+	};
+	assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+}
