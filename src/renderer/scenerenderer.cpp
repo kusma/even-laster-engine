@@ -262,24 +262,13 @@ SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass) :
 				.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data(),
 			};
 
-			auto pipeline = createGraphicsPipeline(pipelineLayout, renderPass, pipelineVertexInputStateCreateInfo, {
-				{
-					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-					nullptr,
-					0,
-					VK_SHADER_STAGE_VERTEX_BIT,
-					loadShaderModule("data/shaders/refraction.vert.spv"),
-					"main",
-					NULL
-				},{
-					VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-					nullptr,
-					0,
-					VK_SHADER_STAGE_FRAGMENT_BIT,
-					loadShaderModule("data/shaders/refraction.frag.spv"),
-					"main",
-					NULL
-				}});
+			auto shaderStages = createStageVector({
+				.vertexShader = loadShaderModule("data/shaders/refraction.vert.spv"),
+				.fragmentShader = loadShaderModule("data/shaders/refraction.frag.spv"),
+			});
+			auto pipeline = createGraphicsPipeline(pipelineLayout, renderPass,
+			                                       pipelineVertexInputStateCreateInfo,
+												   shaderStages);
 			pipelines.insert(std::make_pair(vertexFormat, pipeline));
 		}
 	}

@@ -216,24 +216,10 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 
 static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkShaderModule fragmentShader)
 {
-	vector<VkPipelineShaderStageCreateInfo> shaderStages = { {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		loadShaderModule("data/shaders/fullscreenquad.vert.spv"),
-		"main",
-		nullptr
-	}, {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		fragmentShader,
-		"main",
-		nullptr
-	} };
-
+	auto shaderStages = createStageVector({
+		.vertexShader = loadShaderModule("data/shaders/fullscreenquad.vert.spv"),
+		.fragmentShader = fragmentShader,
+	});
 	return createGeometrylessPipeline(layout, renderPass, shaderStages);
 }
 

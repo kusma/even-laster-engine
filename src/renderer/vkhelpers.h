@@ -415,6 +415,41 @@ namespace vkHelpers
 */
 #endif
 	}
+
+	struct ShaderStages {
+		VkShaderModule vertexShader, geometryShader, fragmentShader;
+	};
+
+	inline std::vector<VkPipelineShaderStageCreateInfo> createStageVector(const ShaderStages &stages)
+	{
+		assert(stages.vertexShader != VK_NULL_HANDLE);
+
+		std::vector<VkPipelineShaderStageCreateInfo> ret = { {
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.stage = VK_SHADER_STAGE_VERTEX_BIT,
+				.module = stages.vertexShader,
+				.pName = "main"
+			} };
+
+		if (stages.geometryShader)
+			ret.push_back({
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.stage = VK_SHADER_STAGE_GEOMETRY_BIT,
+				.module = stages.geometryShader,
+				.pName = "main",
+			});
+
+		if (stages.fragmentShader)
+			ret.push_back({
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.module = stages.fragmentShader,
+				.pName = "main",
+			});
+
+		return ret;
+	}
+
 };
 
 #endif // VULKAN_H
