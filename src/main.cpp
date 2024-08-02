@@ -369,7 +369,7 @@ std::vector<Texture3D> importColorLuts(string folder)
 	return colorLuts;
 }
 
-VkRect2D makeLetterbox(int swapWidth, int swapHeight, float monitor_aspect, float demo_aspect)
+VkRect2D makeLetterbox(unsigned swapWidth, unsigned swapHeight, float monitor_aspect, float demo_aspect)
 {
 	float w_ratio = 1.0f,
 	      h_ratio = monitor_aspect / demo_aspect;
@@ -381,8 +381,8 @@ VkRect2D makeLetterbox(int swapWidth, int swapHeight, float monitor_aspect, floa
 	}
 
 	VkRect2D rect;
-	rect.extent.width = int(std::roundf(swapWidth * w_ratio));
-	rect.extent.height = int(std::roundf(swapHeight * h_ratio));
+	rect.extent.width = unsigned(std::roundf(swapWidth * w_ratio));
+	rect.extent.height = unsigned(std::roundf(swapHeight * h_ratio));
 	rect.offset.x = (swapWidth - rect.extent.width) / 2;
 	rect.offset.y = (swapHeight - rect.extent.height) / 2;
 	return rect;
@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
 		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height);
 		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-		int bloomLevels = 32 - clz(max(width, height));
+		unsigned bloomLevels = 32 - clz(max(width, height));
 		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget bloomUpscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
@@ -594,7 +594,7 @@ int main(int argc, char *argv[])
 		vector<VkImageView> bloomImageViews;
 
 		VkSampler bloomInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
-		for (int mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
+		for (unsigned mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
 			VkImageSubresourceRange subresourceRange;
 			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			subresourceRange.baseMipLevel = mipLevel;
@@ -1163,9 +1163,9 @@ int main(int argc, char *argv[])
 
 			vkCmdEndRenderPass(commandBuffer);
 
-			for (int i = 0; i < bloomLevels; ++i) {
-				int levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
-				int levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
+			for (unsigned i = 0; i < bloomLevels; ++i) {
+				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
+				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
 				VkRenderPassBeginInfo bloomRenderPassBegin = {};
 				bloomRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 				bloomRenderPassBegin.renderPass = bloomRenderPass;

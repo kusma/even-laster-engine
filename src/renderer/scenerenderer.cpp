@@ -132,7 +132,7 @@ static IndexedBatch *meshToIndexedBatch(const Mesh &mesh)
 static vector<VkVertexInputAttributeDescription> vertexFormatToInputAttributeDescriptions(VertexFormat vertexFormat)
 {
 	vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-	int offset = 0;
+	unsigned offset = 0;
 
 	if (vertexFormat & VERTEX_FORMAT_POSITION) {
 		VkVertexInputAttributeDescription attr;

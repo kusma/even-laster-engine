@@ -142,8 +142,8 @@ static void uploadMipChain(TextureBase &texture, FIBITMAP *dib, int mipLevels, i
 			FreeImage_Unload(temp);
 		}
 
-		assert(int(FreeImage_GetWidth(dib)) == mipWidth);
-		assert(int(FreeImage_GetHeight(dib)) == mipHeight);
+		assert(FreeImage_GetWidth(dib) == mipWidth);
+		assert(FreeImage_GetHeight(dib) == mipHeight);
 
 		auto stagingBuffer = copyToStagingBuffer(dib);
 		texture.uploadFromStagingBuffer(stagingBuffer, mipLevel, arrayLayer);

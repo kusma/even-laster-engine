@@ -27,7 +27,7 @@ namespace vkHelpers
 		return ((value + alignment - 1) / alignment) * alignment;
 	}
 
-	inline std::vector<VkCommandBuffer> allocateCommandBuffers(VkDevice device, VkCommandPool commandPool, int commandBufferCount)
+	inline std::vector<VkCommandBuffer> allocateCommandBuffers(VkDevice device, VkCommandPool commandPool, unsigned commandBufferCount)
 	{
 		VkCommandBufferAllocateInfo commandAllocInfo = {};
 		commandAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -97,7 +97,8 @@ namespace vkHelpers
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	}
 
-	inline void setScissor(VkCommandBuffer commandBuffer, int x, int y, int width, int height)
+	inline void setScissor(VkCommandBuffer commandBuffer,
+	                       int x, int y, unsigned width, unsigned height)
 	{
 		VkRect2D scissor = {};
 		scissor.offset.x = x;
@@ -249,7 +250,7 @@ namespace vkHelpers
 			srcLayout, dstLayout);
 	}
 
-	inline VkDescriptorPool createDescriptorPool(VkDevice device, const std::vector<VkDescriptorPoolSize> &poolSizes, int maxSets)
+	inline VkDescriptorPool createDescriptorPool(VkDevice device, const std::vector<VkDescriptorPoolSize> &poolSizes, unsigned maxSets)
 	{
 		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
 		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -336,11 +337,8 @@ namespace vkHelpers
 		return textureSampler;
 	}
 
-	inline VkFramebuffer createFramebuffer(VkDevice device, int width, int height, int layers, std::vector<VkImageView> attachments, VkRenderPass renderPass)
+	inline VkFramebuffer createFramebuffer(VkDevice device, unsigned width, unsigned height, unsigned layers, std::vector<VkImageView> attachments, VkRenderPass renderPass)
 	{
-		assert(width > 0);
-		assert(height > 0);
-		assert(layers > 0);
 		assert(attachments.size() > 0);
 
 		VkFramebufferCreateInfo framebufferCreateInfo = {};
@@ -348,9 +346,9 @@ namespace vkHelpers
 		framebufferCreateInfo.renderPass = renderPass;
 		framebufferCreateInfo.attachmentCount = attachments.size();
 		framebufferCreateInfo.pAttachments = attachments.data();
-		framebufferCreateInfo.width = uint32_t(width);
-		framebufferCreateInfo.height = uint32_t(height);
-		framebufferCreateInfo.layers = uint32_t(layers);
+		framebufferCreateInfo.width = width;
+		framebufferCreateInfo.height = height;
+		framebufferCreateInfo.layers = layers;
 
 		VkFramebuffer framebuffer;
 		assumeSuccess(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer));

@@ -11,24 +11,26 @@ class StagingBuffer;
 
 class TextureBase {
 protected:
-	TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags);
+	TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType,
+	            unsigned width, unsigned height, unsigned depth, unsigned mipLevels, unsigned arrayLayers,
+	            VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags);
 
 public:
 
-	static int mipSize(int size, int mipLevel)
+	static unsigned mipSize(unsigned size, unsigned mipLevel)
 	{
-		assert(mipLevel >= 0);
-		return std::max(size >> mipLevel, 1);
+		return std::max(size >> mipLevel, 1u);
 	}
 
-	int getWidth(int level = 0) { return mipSize(baseWidth, level); }
-	int getHeight(int level = 0) { return mipSize(baseHeight, level); }
-	int getDepth(int level = 0) { return mipSize(baseDepth, level); }
+	unsigned getWidth(unsigned level = 0) { return mipSize(baseWidth, level); }
+	unsigned getHeight(unsigned level = 0) { return mipSize(baseHeight, level); }
+	unsigned getDepth(unsigned level = 0) { return mipSize(baseDepth, level); }
 
-	int getMipLevels() const { return mipLevels; }
-	int getArrayLayers() const { return arrayLayers; }
+	unsigned getMipLevels() const { return mipLevels; }
+	unsigned getArrayLayers() const { return arrayLayers; }
 
-	void uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel = 0, int arrayLayer = 0);
+	void uploadFromStagingBuffer(StagingBuffer *stagingBuffer,
+	                             unsigned mipLevel = 0, unsigned arrayLayer = 0);
 
 	VkImageView getImageView() const
 	{
@@ -40,7 +42,7 @@ public:
 		return image;
 	}
 
-	VkSubresourceLayout getSubresourceLayout(int mipLevel = 0, int arrayLayer = 0)
+	VkSubresourceLayout getSubresourceLayout(unsigned mipLevel = 0, unsigned arrayLayer = 0)
 	{
 		VkImageSubresource subRes = {};
 		subRes.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -62,8 +64,8 @@ public:
 	}
 
 protected:
-	int baseWidth, baseHeight, baseDepth;
-	int mipLevels, arrayLayers;
+	unsigned baseWidth, baseHeight, baseDepth;
+	unsigned mipLevels, arrayLayers;
 
 	VkImage image;
 	VkImageView imageView;
@@ -72,7 +74,7 @@ protected:
 
 class Texture2D : public TextureBase {
 public:
-	Texture2D(VkFormat format, int width, int height, int mipLevels = 1, int arrayLayers = 1) :
+	Texture2D(VkFormat format, unsigned width, unsigned height, unsigned mipLevels = 1, unsigned arrayLayers = 1) :
 		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, mipLevels, arrayLayers, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
@@ -80,7 +82,7 @@ public:
 
 class Texture2DArray : public TextureBase {
 public:
-	Texture2DArray(VkFormat format, int width, int height, int arrayLayers, int mipLevels = 1) :
+	Texture2DArray(VkFormat format, unsigned width, unsigned height, unsigned arrayLayers, unsigned mipLevels = 1) :
 		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D_ARRAY, width, height, 1, mipLevels, arrayLayers, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
@@ -88,7 +90,7 @@ public:
 
 class TextureCube : public TextureBase {
 public:
-	TextureCube(VkFormat format, int size, int mipLevels = 1) :
+	TextureCube(VkFormat format, unsigned size, unsigned mipLevels = 1) :
 		TextureBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_CUBE, size, size, 1, mipLevels, 6, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}
@@ -96,7 +98,7 @@ public:
 
 class Texture3D : public TextureBase {
 public:
-	Texture3D(VkFormat format, int width, int height, int depth, int mipLevels = 1) :
+	Texture3D(VkFormat format, unsigned width, unsigned height, unsigned depth, unsigned mipLevels = 1) :
 		TextureBase(format, VK_IMAGE_TYPE_3D, VK_IMAGE_VIEW_TYPE_3D, width, height, depth, mipLevels, 1, VMA_MEMORY_USAGE_AUTO, 0)
 	{
 	}

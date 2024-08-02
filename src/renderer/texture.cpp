@@ -5,18 +5,18 @@
 
 using namespace vkHelpers;
 
-TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType, int width, int height, int depth, int mipLevels, int arrayLayers, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags) :
+TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType imageViewType,
+                         unsigned width, unsigned height, unsigned depth, unsigned mipLevels, unsigned arrayLayers,
+                         VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags allocFlags) :
 	baseWidth(width),
 	baseHeight(height),
 	baseDepth(depth),
 	mipLevels(mipLevels),
 	arrayLayers(arrayLayers)
 {
-	assert(0 < width && (uint32_t)width <= UINT32_MAX);
-	assert(0 < height && (uint32_t)height <= UINT32_MAX);
-	assert(0 < depth && (uint32_t)depth <= UINT32_MAX);
-	assert(mipLevels > 0);
-	assert(arrayLayers > 0);
+	assert(width <= UINT32_MAX);
+	assert(height <= UINT32_MAX);
+	assert(depth <= UINT32_MAX);
 
 	VkImageCreateInfo imageCreateInfo = {};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -28,7 +28,7 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 
 	imageCreateInfo.imageType = imageType;
 	imageCreateInfo.format = format;
-	imageCreateInfo.extent = { (uint32_t)width, (uint32_t)height, (uint32_t)depth };
+	imageCreateInfo.extent = { width, height, depth };
 	imageCreateInfo.mipLevels = mipLevels;
 	imageCreateInfo.arrayLayers = arrayLayers;
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -54,7 +54,8 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	imageView = createImageView(vkInstance::device, image, imageViewType, format, subresourceRange);
 }
 
-void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipLevel, int arrayLayer)
+void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer,
+                                          unsigned mipLevel, unsigned arrayLayer)
 {
 	assert(stagingBuffer != nullptr);
 
@@ -68,8 +69,8 @@ void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, int mipL
 
 	VkImageSubresourceRange subresourceRange = {
 		VK_IMAGE_ASPECT_COLOR_BIT,
-		uint32_t(mipLevel), 1,
-		uint32_t(arrayLayer), 1
+		mipLevel, 1,
+		arrayLayer, 1
 	};
 
 	imageBarrier(commandBuffer,
