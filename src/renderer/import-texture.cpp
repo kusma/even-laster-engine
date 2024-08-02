@@ -126,7 +126,8 @@ static StagingBuffer *copyToStagingBuffer(FIBITMAP *dib)
 	return stagingBuffer;
 }
 
-static void uploadMipChain(TextureBase &texture, FIBITMAP *dib, int mipLevels, int arrayLayer = 0)
+static void uploadMipChain(VkCommandBuffer commandBuffer, TextureBase &texture,
+                           FIBITMAP *dib, int mipLevels, int arrayLayer = 0)
 {
 	auto baseWidth = FreeImage_GetWidth(dib);
 	auto baseHeight = FreeImage_GetHeight(dib);
@@ -146,7 +147,8 @@ static void uploadMipChain(TextureBase &texture, FIBITMAP *dib, int mipLevels, i
 		assert(FreeImage_GetHeight(dib) == mipHeight);
 
 		auto stagingBuffer = copyToStagingBuffer(dib);
-		texture.uploadFromStagingBuffer(stagingBuffer, mipLevel, arrayLayer);
+		texture.uploadFromStagingBuffer(commandBuffer, stagingBuffer, mipLevel,
+		                                arrayLayer);
 	}
 
 	FreeImage_Unload(dib);
@@ -169,7 +171,10 @@ Texture2D importTexture2D(string filename, TextureImportFlags flags)
 		mipLevels = 32 - clz(max(baseWidth, baseHeight));
 
 	Texture2D texture(format, baseWidth, baseHeight, mipLevels, 1);
-	uploadMipChain(texture, dib, mipLevels);
+
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		uploadMipChain(commandBuffer, texture, dib, mipLevels);
+	});
 
 	setImageName(vkInstance::device, texture.getImage(), filename);
 	return texture;
@@ -220,8 +225,11 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 		mipLevels = 32 - clz(max(firstWidth, firstHeight));
 
 	Texture2DArray texture(firstFormat, firstWidth, firstHeight, bitmaps.size(), mipLevels);
-	for (size_t i = 0; i < bitmaps.size(); ++i)
-		uploadMipChain(texture, bitmaps[i], mipLevels, i);
+
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		for (size_t i = 0; i < bitmaps.size(); ++i)
+			uploadMipChain(commandBuffer, texture, bitmaps[i], mipLevels, i);
+	});
 
 	setImageName(vkInstance::device, texture.getImage(), folder);
 	return texture;
@@ -259,18 +267,21 @@ TextureCube importTextureCube(string filename, TextureImportFlags flags)
 		{ 1, 2 }, // +Z
 		{ 1, 0 }, // -Z - this one is upside down :(
 	};
-	for (auto face = 0; face < 6; ++face) {
-		auto left = offsets[face][0] * baseSize,
-		     top  = offsets[face][1] * baseSize;
-		auto faceDib = FreeImage_Copy(dib, left, top, left + baseSize, top + baseSize);
 
-		if (face == 5) {
-			FreeImage_FlipVertical(faceDib);
-			FreeImage_FlipHorizontal(faceDib);
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		for (auto face = 0; face < 6; ++face) {
+			auto left = offsets[face][0] * baseSize,
+				top  = offsets[face][1] * baseSize;
+			auto faceDib = FreeImage_Copy(dib, left, top, left + baseSize, top + baseSize);
+
+			if (face == 5) {
+				FreeImage_FlipVertical(faceDib);
+				FreeImage_FlipHorizontal(faceDib);
+			}
+
+			uploadMipChain(commandBuffer, texture, faceDib, mipLevels, face);
 		}
-
-		uploadMipChain(texture, faceDib, mipLevels, face);
-	}
+	});
 
 	FreeImage_Unload(dib);
 

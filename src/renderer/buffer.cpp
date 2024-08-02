@@ -24,15 +24,13 @@ Buffer::~Buffer()
 	vmaFreeMemory(vkInstance::allocator, allocation);
 }
 
-void Buffer::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size)
+void Buffer::uploadFromStagingBuffer(VkCommandBuffer commandBuffer, StagingBuffer *stagingBuffer, VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size)
 {
 	assert(stagingBuffer != nullptr);
-	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
-		VkBufferCopy bufferCopy = {
-			.srcOffset = srcOffset,
-			.dstOffset = dstOffset,
-			.size = size,
-		};
-		vkCmdCopyBuffer(commandBuffer, stagingBuffer->getBuffer(), buffer, 1, &bufferCopy);
-	});
+	VkBufferCopy bufferCopy = {
+		.srcOffset = srcOffset,
+		.dstOffset = dstOffset,
+		.size = size,
+	};
+	vkCmdCopyBuffer(commandBuffer, stagingBuffer->getBuffer(), buffer, 1, &bufferCopy);
 }

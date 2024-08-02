@@ -253,7 +253,11 @@ static Texture3D loadFractalNoise(const std::string &filename, int width, int he
 	fclose(fp);
 
 	stagingBuffer->unmap();
-	texture.uploadFromStagingBuffer(stagingBuffer, 0);
+
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		texture.uploadFromStagingBuffer(commandBuffer, stagingBuffer, 0);
+	});
+
 	setImageName(vkInstance::device, texture.getImage(), filename);
 	return texture;
 }
@@ -357,7 +361,11 @@ Texture3D importCubeFile(const std::string &filename)
 
 	Texture3D texture(VK_FORMAT_R32G32B32A32_SFLOAT, size, size, size, 1);
 	stagingBuffer->unmap();
-	texture.uploadFromStagingBuffer(stagingBuffer, 0);
+
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		texture.uploadFromStagingBuffer(commandBuffer, stagingBuffer, 0);
+	});
+
 	return texture;
 }
 

@@ -44,7 +44,7 @@ public:
 		};
 	}
 
-	void uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size);
+	void uploadFromStagingBuffer(VkCommandBuffer commandBuffer, StagingBuffer *stagingBuffer, VkDeviceSize srcOffset, VkDeviceSize dstOffset, VkDeviceSize size);
 
 private:
 	VkBuffer buffer;

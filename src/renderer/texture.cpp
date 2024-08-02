@@ -56,43 +56,42 @@ TextureBase::TextureBase(VkFormat format, VkImageType imageType, VkImageViewType
 	imageView = createImageView(vkInstance::device, image, imageViewType, format, subresourceRange);
 }
 
-void TextureBase::uploadFromStagingBuffer(StagingBuffer *stagingBuffer,
+void TextureBase::uploadFromStagingBuffer(VkCommandBuffer commandBuffer,
+                                          StagingBuffer *stagingBuffer,
                                           unsigned mipLevel, unsigned arrayLayer)
 {
 	assert(stagingBuffer != nullptr);
-	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
-		VkImageSubresourceRange subresourceRange = {
+	VkImageSubresourceRange subresourceRange = {
+		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.baseMipLevel = mipLevel,
+		.levelCount = 1,
+		.baseArrayLayer = arrayLayer,
+		.layerCount = 1,
+	};
+
+	imageBarrier(commandBuffer,
+		image, subresourceRange,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+		0, VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	VkBufferImageCopy copyRegion = {
+		.bufferOffset = 0,
+		.bufferRowLength = 0,
+		.bufferImageHeight = 0,
+		.imageSubresource = {
 			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel = mipLevel,
-			.levelCount = 1,
+			.mipLevel = mipLevel,
 			.baseArrayLayer = arrayLayer,
 			.layerCount = 1,
-		};
+		},
+		.imageOffset = { 0, 0, 0 },
+		.imageExtent = {
+			.width = mipSize(baseWidth, mipLevel),
+			.height = mipSize(baseHeight, mipLevel),
+			.depth = mipSize(baseDepth, mipLevel),
+		},
+	};
 
-		imageBarrier(commandBuffer,
-			image, subresourceRange,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-		VkBufferImageCopy copyRegion = {
-			.bufferOffset = 0,
-			.bufferRowLength = 0,
-			.bufferImageHeight = 0,
-			.imageSubresource = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.mipLevel = mipLevel,
-				.baseArrayLayer = arrayLayer,
-				.layerCount = 1,
-			},
-			.imageOffset = { 0, 0, 0 },
-			.imageExtent = {
-				.width = mipSize(baseWidth, mipLevel),
-				.height = mipSize(baseHeight, mipLevel),
-				.depth = mipSize(baseDepth, mipLevel),
-			},
-		};
-
-		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer->getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
-	});
+	vkCmdCopyBufferToImage(commandBuffer, stagingBuffer->getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 }

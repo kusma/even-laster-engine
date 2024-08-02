@@ -29,7 +29,8 @@ public:
 	unsigned getMipLevels() const { return mipLevels; }
 	unsigned getArrayLayers() const { return arrayLayers; }
 
-	void uploadFromStagingBuffer(StagingBuffer *stagingBuffer,
+	void uploadFromStagingBuffer(VkCommandBuffer commandBuffer,
+	                             StagingBuffer *stagingBuffer,
 	                             unsigned mipLevel = 0, unsigned arrayLayer = 0);
 
 	VkImageView getImageView() const

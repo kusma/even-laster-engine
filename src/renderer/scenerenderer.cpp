@@ -131,10 +131,14 @@ static IndexedBatch *meshToIndexedBatch(const Mesh &mesh)
 	auto ret = new IndexedBatch(indexType, indexCount);
 
 	auto vertexBuffer = ret->createVertexBuffer(vertices.size(), 0);
-	vertexBuffer->uploadFromStagingBuffer(vertexStagingBuffer, 0, 0, vertices.size());
-
 	auto indexBuffer = ret->createIndexBuffer(indices.size());
-	indexBuffer->uploadFromStagingBuffer(indexStagingBuffer, 0, 0, indices.size());
+
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		vertexBuffer->uploadFromStagingBuffer(commandBuffer, vertexStagingBuffer,
+		                                      0, 0, vertices.size());
+		indexBuffer->uploadFromStagingBuffer(commandBuffer, indexStagingBuffer,
+		                                     0, 0, indices.size());
+	});
 
 	return ret;
 }
