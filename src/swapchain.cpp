@@ -90,34 +90,32 @@ SwapChain::SwapChain(VkSurfaceKHR surface, int width, int height, VkImageUsageFl
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	assumeSuccess(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkInstance::physicalDevice, surface, &surfaceCapabilities));
 
-	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
-	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapchainCreateInfo.surface = surface;
-	swapchainCreateInfo.minImageCount = surfaceCapabilities.minImageCount + 1;
+	VkSwapchainCreateInfoKHR swapchainCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+		.surface = surface,
+		.minImageCount = surfaceCapabilities.minImageCount + 1,
+		.imageFormat = surfaceFormat.format,
+		.imageColorSpace = surfaceFormat.colorSpace,
+		.imageExtent = { (uint32_t)width, (uint32_t)height },
+		.imageArrayLayers = 1,
+		.imageUsage = imageUsage,
+		.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.queueFamilyIndexCount = 0,
+		.pQueueFamilyIndices = nullptr,
+		.preTransform = surfaceCapabilities.currentTransform,
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		.clipped = true,
+		.oldSwapchain = VK_NULL_HANDLE,
+	};
 
 	if (surfaceCapabilities.maxImageCount != 0)
 		swapchainCreateInfo.minImageCount = std::min(swapchainCreateInfo.minImageCount, surfaceCapabilities.maxImageCount);
-
-	swapchainCreateInfo.imageFormat = surfaceFormat.format;
-	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
-	swapchainCreateInfo.imageExtent = { (uint32_t)width, (uint32_t)height };
-	swapchainCreateInfo.imageUsage = imageUsage;
-
-	swapchainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
-	swapchainCreateInfo.imageArrayLayers = 1;
-	swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	swapchainCreateInfo.queueFamilyIndexCount = 0;
-	swapchainCreateInfo.pQueueFamilyIndices = nullptr;
 
 	auto presentModes = getPresentModes(surface);
 	swapchainCreateInfo.presentMode = presentModes[0];
 	for (auto presentMode : presentModes)
 		if (presentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
 			swapchainCreateInfo.presentMode = presentMode;
-
-	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
-	swapchainCreateInfo.clipped = true;
-	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
 	assumeSuccess(vkCreateSwapchainKHR(vkInstance::device, &swapchainCreateInfo, nullptr, &swapChain));
 	assert(swapChain != VK_NULL_HANDLE);
@@ -132,12 +130,13 @@ SwapChain::SwapChain(VkSurfaceKHR surface, int width, int height, VkImageUsageFl
 
 	imageViews.resize(imageCount);
 	for (uint32_t i = 0; i < imageCount; i++) {
-		VkImageSubresourceRange subresourceRange;
-		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.levelCount = 1;
-		subresourceRange.layerCount = 1;
+		VkImageSubresourceRange subresourceRange = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
 
 		imageViews[i] = createImageView(vkInstance::device, images[i], VK_IMAGE_VIEW_TYPE_2D, surfaceFormat.format, subresourceRange);
 	}
@@ -152,12 +151,13 @@ uint32_t SwapChain::aquireNextImage(VkSemaphore presentCompleteSemaphore)
 
 void SwapChain::queuePresent(uint32_t currentSwapImage, const VkSemaphore *waitSemaphores, uint32_t numWaitSemaphores)
 {
-	VkPresentInfoKHR presentInfo = {};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &swapChain;
-	presentInfo.pImageIndices = &currentSwapImage;
-	presentInfo.pWaitSemaphores = waitSemaphores;
-	presentInfo.waitSemaphoreCount = numWaitSemaphores;
+	VkPresentInfoKHR presentInfo = {
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.waitSemaphoreCount = numWaitSemaphores,
+		.pWaitSemaphores = waitSemaphores,
+		.swapchainCount = 1,
+		.pSwapchains = &swapChain,
+		.pImageIndices = &currentSwapImage,
+	};
 	assumeSuccess(vkQueuePresentKHR(vkInstance::graphicsQueue, &presentInfo));
 }

@@ -14,19 +14,20 @@ protected:
 		depth(depth),
 		arrayLayers(arrayLayers)
 	{
-		VkImageCreateInfo imageCreateInfo = {};
-		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateInfo.flags = 0;
-		imageCreateInfo.imageType = imageType;
-		imageCreateInfo.format = format;
-		imageCreateInfo.extent = { width, height, depth };
-		imageCreateInfo.mipLevels = mipLevels;
-		imageCreateInfo.arrayLayers = arrayLayers;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = usage;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		VkImageCreateInfo imageCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+			.flags = 0,
+			.imageType = imageType,
+			.format = format,
+			.extent = { width, height, depth },
+			.mipLevels = mipLevels,
+			.arrayLayers = arrayLayers,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.tiling = VK_IMAGE_TILING_OPTIMAL,
+			.usage = usage,
+			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+		};
 
 		VmaAllocationCreateInfo allocInfo = {
 			.flags = allocFlags,
@@ -35,12 +36,13 @@ protected:
 
 		assumeSuccess(vmaCreateImage(vkInstance::allocator, &imageCreateInfo, &allocInfo, &image, &allocation, nullptr));
 
-		VkImageSubresourceRange subresourceRange;
-		subresourceRange.aspectMask = aspect;
-		subresourceRange.baseMipLevel = 0;
-		subresourceRange.baseArrayLayer = 0;
-		subresourceRange.levelCount = mipLevels;
-		subresourceRange.layerCount = arrayLayers;
+		VkImageSubresourceRange subresourceRange = {
+			.aspectMask = aspect,
+			.baseMipLevel = 0,
+			.levelCount = mipLevels,
+			.baseArrayLayer = 0,
+			.layerCount = arrayLayers,
+		};
 
 		imageView = createImageView(vkInstance::device, image, imageViewType, format, subresourceRange);
 	}
@@ -91,12 +93,13 @@ public:
 	{
 		arrayImageViews.reserve(arrayLayers);
 		for (unsigned i = 0; i < arrayLayers; ++i) {
-			VkImageSubresourceRange subresourceRange;
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.baseMipLevel = 0;
-			subresourceRange.baseArrayLayer = i;
-			subresourceRange.levelCount = 1;
-			subresourceRange.layerCount = 1;
+			VkImageSubresourceRange subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = i,
+				.layerCount = 1,
+			};
 			arrayImageViews.push_back(createImageView(vkInstance::device, image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange));
 		}
 	}

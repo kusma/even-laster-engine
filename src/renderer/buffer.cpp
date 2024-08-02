@@ -30,24 +30,25 @@ void Buffer::uploadFromStagingBuffer(StagingBuffer *stagingBuffer, VkDeviceSize 
 
 	auto commandBuffer = vkInstance::getSetupCommandBuffer();
 
-	VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
+	VkCommandBufferBeginInfo commandBufferBeginInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+	};
 	assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-	VkBufferCopy bufferCopy = {};
-	bufferCopy.srcOffset = srcOffset;
-	bufferCopy.dstOffset = dstOffset;
-	bufferCopy.size = size;
+	VkBufferCopy bufferCopy = {
+		.srcOffset = srcOffset,
+		.dstOffset = dstOffset,
+		.size = size,
+	};
 	vkCmdCopyBuffer(commandBuffer, stagingBuffer->getBuffer(), buffer, 1, &bufferCopy);
 
 	assumeSuccess(vkEndCommandBuffer(commandBuffer));
 
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
+	VkSubmitInfo submitInfo = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &commandBuffer,
+	};
 	assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 }

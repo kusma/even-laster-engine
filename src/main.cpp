@@ -63,13 +63,16 @@ static vector<const char *> getRequiredInstanceExtensions()
 
 static VkPipeline createComputePipeline(VkPipelineLayout layout, VkShaderModule shaderModule, const char *name = "main")
 {
-	VkComputePipelineCreateInfo computePipelineCreateInfo = {};
-	computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-	computePipelineCreateInfo.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	computePipelineCreateInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-	computePipelineCreateInfo.stage.module = shaderModule;
-	computePipelineCreateInfo.stage.pName = name;
-	computePipelineCreateInfo.layout = layout;
+	VkComputePipelineCreateInfo computePipelineCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		.stage = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.stage = VK_SHADER_STAGE_COMPUTE_BIT,
+			.module = shaderModule,
+			.pName = name,
+		},
+		.layout = layout,
+	};
 
 	VkPipeline computePipeline;
 	assumeSuccess(vkCreateComputePipelines(vkInstance::device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &computePipeline));
@@ -112,27 +115,32 @@ enum BlendMode {
 
 static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPass renderPass, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
 {
-	VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
-	pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 0;
-	pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = nullptr;
-	pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = 0;
-	pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = nullptr;
+	VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+		.vertexBindingDescriptionCount = 0,
+		.pVertexBindingDescriptions = nullptr,
+		.vertexAttributeDescriptionCount = 0,
+		.pVertexAttributeDescriptions = nullptr,
+	};
 
-	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {};
-	pipelineInputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	pipelineInputAssemblyStateCreateInfo.topology = topology;
-	pipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+		.topology = topology,
+		.primitiveRestartEnable = VK_FALSE,
+	};
 
-	VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {};
-	pipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-	pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
-	pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
+	VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+		.polygonMode = VK_POLYGON_MODE_FILL,
+		.cullMode = VK_CULL_MODE_NONE,
+		.frontFace = VK_FRONT_FACE_CLOCKWISE,
+		.lineWidth = 1.0f,
+	};
 
-	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState[1] = { { 0 } };
-	pipelineColorBlendAttachmentState[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState[1] = { {
+		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+		                  VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+	} };
 	switch (blendMode) {
 	case BlendMode::None:
 		pipelineColorBlendAttachmentState[0].blendEnable = VK_FALSE;
@@ -148,52 +156,58 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 		break;
 	}
 
-	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {};
-	pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	pipelineColorBlendStateCreateInfo.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState);
-	pipelineColorBlendStateCreateInfo.pAttachments = pipelineColorBlendAttachmentState;
+	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState),
+		.pAttachments = pipelineColorBlendAttachmentState,
+	};
 
-	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
-	pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+	};
 
-	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {};
-	pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	pipelineViewportStateCreateInfo.viewportCount = 1;
-	pipelineViewportStateCreateInfo.pViewports = nullptr;
-	pipelineViewportStateCreateInfo.scissorCount = 1;
-	pipelineViewportStateCreateInfo.pScissors = nullptr;
+	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		.viewportCount = 1,
+		.pViewports = nullptr,
+		.scissorCount = 1,
+		.pScissors = nullptr,
+	};
 
-	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
-	pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	pipelineDepthStencilStateCreateInfo.depthTestEnable = depthWrite;
-	pipelineDepthStencilStateCreateInfo.depthWriteEnable = depthWrite;
-	pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		.depthTestEnable = depthWrite,
+		.depthWriteEnable = depthWrite,
+		.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+	};
 
 	VkDynamicState dynamicStateEnables[] = {
 		VK_DYNAMIC_STATE_VIEWPORT,
 		VK_DYNAMIC_STATE_SCISSOR
 	};
 
-	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {};
-	pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStateEnables;
-	pipelineDynamicStateCreateInfo.dynamicStateCount = ARRAY_SIZE(dynamicStateEnables);
+	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		.dynamicStateCount = ARRAY_SIZE(dynamicStateEnables),
+		.pDynamicStates = dynamicStateEnables,
+	};
 
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.layout = layout;
-	pipelineCreateInfo.renderPass = renderPass;
-	pipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
-	pipelineCreateInfo.pInputAssemblyState = &pipelineInputAssemblyStateCreateInfo;
-	pipelineCreateInfo.pRasterizationState = &pipelineRasterizationStateCreateInfo;
-	pipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
-	pipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
-	pipelineCreateInfo.pViewportState = &pipelineViewportStateCreateInfo;
-	pipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
-	pipelineCreateInfo.pDynamicState = &pipelineDynamicStateCreateInfo;
-	pipelineCreateInfo.stageCount = shaderStages.size();
-	pipelineCreateInfo.pStages = shaderStages.data();
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		.stageCount = uint32_t(shaderStages.size()),
+		.pStages = shaderStages.data(),
+		.pVertexInputState = &pipelineVertexInputStateCreateInfo,
+		.pInputAssemblyState = &pipelineInputAssemblyStateCreateInfo,
+		.pViewportState = &pipelineViewportStateCreateInfo,
+		.pRasterizationState = &pipelineRasterizationStateCreateInfo,
+		.pMultisampleState = &pipelineMultisampleStateCreateInfo,
+		.pDepthStencilState = &pipelineDepthStencilStateCreateInfo,
+		.pColorBlendState = &pipelineColorBlendStateCreateInfo,
+		.pDynamicState = &pipelineDynamicStateCreateInfo,
+		.layout = layout,
+		.renderPass = renderPass,
+	};
 
 	VkPipeline pipeline;
 	assumeSuccess(vkCreateGraphicsPipelines(vkInstance::device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
@@ -380,12 +394,13 @@ VkRect2D makeLetterbox(unsigned swapWidth, unsigned swapHeight, float monitor_as
 		h_ratio = 1.0f;
 	}
 
-	VkRect2D rect;
-	rect.extent.width = unsigned(std::roundf(swapWidth * w_ratio));
-	rect.extent.height = unsigned(std::roundf(swapHeight * h_ratio));
-	rect.offset.x = (swapWidth - rect.extent.width) / 2;
-	rect.offset.y = (swapHeight - rect.extent.height) / 2;
-	return rect;
+	unsigned w = unsigned(std::roundf(swapWidth * w_ratio));
+	unsigned h = unsigned(std::roundf(swapHeight * h_ratio));
+
+	return {
+		.offset = {int32_t(swapWidth - w) / 2, int32_t(swapHeight - h) / 2},
+		.extent = {w, h},
+	};
 }
 
 #ifdef WIN32
@@ -492,50 +507,56 @@ int main(int argc, char *argv[])
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		vector<VkAttachmentDescription> sceneRenderPassAttachments;
-		VkAttachmentDescription sceneDepthAttachment;
-		sceneDepthAttachment.flags = 0;
-		sceneDepthAttachment.format = depthFormat;
-		sceneDepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		sceneDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		sceneDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneDepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		sceneDepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		sceneDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		VkAttachmentDescription sceneDepthAttachment = {
+			.flags = 0,
+			.format = depthFormat,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		};
 		sceneRenderPassAttachments.push_back(sceneDepthAttachment);
 
-		VkAttachmentDescription sceneColorAttachment;
-		sceneColorAttachment.flags = 0;
-		sceneColorAttachment.format = sceneColorRenderTarget.getFormat();
-		sceneColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		sceneColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		sceneColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		sceneColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		sceneColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		sceneColorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		VkAttachmentDescription sceneColorAttachment = {
+			.flags = 0,
+			.format = sceneColorRenderTarget.getFormat(),
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		};
 		sceneRenderPassAttachments.push_back(sceneColorAttachment);
 
-		VkAttachmentReference sceneDepthAttachmentReference = {};
-		sceneDepthAttachmentReference.attachment = 0;
-		sceneDepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference sceneDepthAttachmentReference = {
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		};
 
-		VkAttachmentReference sceneColorAttachmentReference = {};
-		sceneColorAttachmentReference.attachment = 1;
-		sceneColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference sceneColorAttachmentReference = {
+			.attachment = 1,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		};
 
-		VkSubpassDescription sceneSubpass = {};
-		sceneSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		sceneSubpass.colorAttachmentCount = 1;
-		sceneSubpass.pColorAttachments = &sceneColorAttachmentReference;
-		sceneSubpass.pDepthStencilAttachment = &sceneDepthAttachmentReference;
+		VkSubpassDescription sceneSubpass = {
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &sceneColorAttachmentReference,
+			.pDepthStencilAttachment = &sceneDepthAttachmentReference,
+		};
 
-		VkRenderPassCreateInfo sceneRenderPassCreateInfo = {};
-		sceneRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		sceneRenderPassCreateInfo.attachmentCount = sceneRenderPassAttachments.size();
-		sceneRenderPassCreateInfo.pAttachments = sceneRenderPassAttachments.data();
-		sceneRenderPassCreateInfo.subpassCount = 1;
-		sceneRenderPassCreateInfo.pSubpasses = &sceneSubpass;
+		VkRenderPassCreateInfo sceneRenderPassCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = uint32_t(sceneRenderPassAttachments.size()),
+			.pAttachments = sceneRenderPassAttachments.data(),
+			.subpassCount = 1,
+			.pSubpasses = &sceneSubpass,
+		};
 
 		VkRenderPass sceneRenderPass;
 		assumeSuccess(vkCreateRenderPass(vkInstance::device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass));
@@ -546,32 +567,36 @@ int main(int argc, char *argv[])
 			{ sceneDepthRenderTarget.getImageView(), sceneColorRenderTarget.getImageView() },
 			sceneRenderPass);
 
-		VkAttachmentDescription bloomColorAttachment;
-		bloomColorAttachment.flags = 0;
-		bloomColorAttachment.format = bloomRenderTarget.getFormat();
-		bloomColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		bloomColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		bloomColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		bloomColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		bloomColorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		VkAttachmentDescription bloomColorAttachment = {
+			.flags = 0,
+			.format = bloomRenderTarget.getFormat(),
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		};
 
-		VkAttachmentReference bloomColorAttachmentReference = {};
-		bloomColorAttachmentReference.attachment = 0;
-		bloomColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference bloomColorAttachmentReference = {
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		};
 
-		VkSubpassDescription bloomSubpass = {};
-		bloomSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		bloomSubpass.colorAttachmentCount = 1;
-		bloomSubpass.pColorAttachments = &bloomColorAttachmentReference;
+		VkSubpassDescription bloomSubpass = {
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &bloomColorAttachmentReference,
+		};
 
-		VkRenderPassCreateInfo bloomRenderPassCreateInfo = {};
-		bloomRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		bloomRenderPassCreateInfo.attachmentCount = 1;
-		bloomRenderPassCreateInfo.pAttachments = &bloomColorAttachment;
-		bloomRenderPassCreateInfo.subpassCount = 1;
-		bloomRenderPassCreateInfo.pSubpasses = &bloomSubpass;
+		VkRenderPassCreateInfo bloomRenderPassCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = 1,
+			.pAttachments = &bloomColorAttachment,
+			.subpassCount = 1,
+			.pSubpasses = &bloomSubpass,
+		};
 
 		VkRenderPass bloomRenderPass;
 		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomRenderPassCreateInfo, nullptr, &bloomRenderPass));
@@ -595,12 +620,13 @@ int main(int argc, char *argv[])
 
 		VkSampler bloomInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 		for (unsigned mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
-			VkImageSubresourceRange subresourceRange;
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.baseMipLevel = mipLevel;
-			subresourceRange.baseArrayLayer = 0;
-			subresourceRange.levelCount = 1;
-			subresourceRange.layerCount = 1;
+			VkImageSubresourceRange subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = mipLevel,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			};
 			auto imageView = createImageView(vkInstance::device, bloomRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomRenderTarget.getFormat(), subresourceRange);
 			bloomImageViews.push_back(imageView);
 
@@ -611,22 +637,22 @@ int main(int argc, char *argv[])
 
 			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomDescriptorSetLayout);
 
-			VkDescriptorImageInfo descriptorImageInfo = {};
-			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			if (mipLevel == 0)
-				descriptorImageInfo.imageView = sceneColorRenderTarget.getImageView();
-			else
-				descriptorImageInfo.imageView = bloomImageViews[mipLevel - 1];
-			descriptorImageInfo.sampler = bloomInputSampler;
+			VkDescriptorImageInfo descriptorImageInfo = {
+				.sampler = bloomInputSampler,
+				.imageView = mipLevel == 0 ?
+				             sceneColorRenderTarget.getImageView() :
+				             bloomImageViews[mipLevel - 1],
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
 
-			VkWriteDescriptorSet writeDescriptorSet = {};
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.dstSet = descriptorSet;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSet.pBufferInfo = nullptr;
-			writeDescriptorSet.pImageInfo = &descriptorImageInfo;
-			writeDescriptorSet.dstBinding = 0;
+			VkWriteDescriptorSet writeDescriptorSet = {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSet,
+				.dstBinding = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &descriptorImageInfo,
+			};
 			vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
 
 			bloomDescriptorSets.push_back(descriptorSet);
@@ -636,32 +662,36 @@ int main(int argc, char *argv[])
 		auto bloomFragmentShader = loadShaderModule("data/shaders/bloom.frag.spv");
 		auto bloomPipeline = createFullScreenQuadPipeline(bloomPipelineLayout, bloomRenderPass, bloomFragmentShader);
 
-		VkAttachmentDescription bloomUpscaleColorAttachment;
-		bloomUpscaleColorAttachment.flags = 0;
-		bloomUpscaleColorAttachment.format = bloomUpscaleRenderTarget.getFormat();
-		bloomUpscaleColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		bloomUpscaleColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomUpscaleColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		bloomUpscaleColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		bloomUpscaleColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		bloomUpscaleColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		bloomUpscaleColorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		VkAttachmentDescription bloomUpscaleColorAttachment = {
+			.flags = 0,
+			.format = bloomUpscaleRenderTarget.getFormat(),
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		};
 
-		VkAttachmentReference bloomUpscaleColorAttachmentReference = {};
-		bloomUpscaleColorAttachmentReference.attachment = 0;
-		bloomUpscaleColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference bloomUpscaleColorAttachmentReference = {
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		};
 
-		VkSubpassDescription bloomUpscaleSubpass = {};
-		bloomUpscaleSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		bloomUpscaleSubpass.colorAttachmentCount = 1;
-		bloomUpscaleSubpass.pColorAttachments = &bloomUpscaleColorAttachmentReference;
+		VkSubpassDescription bloomUpscaleSubpass = {
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &bloomUpscaleColorAttachmentReference,
+		};
 
-		VkRenderPassCreateInfo bloomUpscaleRenderPassCreateInfo = {};
-		bloomUpscaleRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		bloomUpscaleRenderPassCreateInfo.attachmentCount = 1;
-		bloomUpscaleRenderPassCreateInfo.pAttachments = &bloomUpscaleColorAttachment;
-		bloomUpscaleRenderPassCreateInfo.subpassCount = 1;
-		bloomUpscaleRenderPassCreateInfo.pSubpasses = &bloomUpscaleSubpass;
+		VkRenderPassCreateInfo bloomUpscaleRenderPassCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = 1,
+			.pAttachments = &bloomUpscaleColorAttachment,
+			.subpassCount = 1,
+			.pSubpasses = &bloomUpscaleSubpass,
+		};
 
 		VkRenderPass bloomUpscaleRenderPass;
 		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass));
@@ -671,19 +701,19 @@ int main(int argc, char *argv[])
 		VkSampler bloomSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(bloomLevels), false, false);
 
 		{
-			VkWriteDescriptorSet writeDescriptorSet = {};
-
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
 				{ bloomSampler, sceneColorRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
 				{ bloomSampler, bloomRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.dstSet = bloomUpscaleDescriptorSet;
-			writeDescriptorSet.dstBinding = 0;
-			writeDescriptorSet.descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSet.pImageInfo = descriptorImageInfos.data();
+			VkWriteDescriptorSet writeDescriptorSet = {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = bloomUpscaleDescriptorSet,
+				.dstBinding = 0,
+				.descriptorCount = uint32_t(descriptorImageInfos.size()),
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = descriptorImageInfos.data(),
+			};
 
 			vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
 		}
@@ -797,9 +827,10 @@ int main(int argc, char *argv[])
 
 		auto commandBuffer = vkInstance::getSetupCommandBuffer();
 
-		VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		VkCommandBufferBeginInfo commandBufferBeginInfo = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		};
 
 		assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
@@ -846,10 +877,11 @@ int main(int argc, char *argv[])
 
 		assumeSuccess(vkEndCommandBuffer(commandBuffer));
 
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
+		VkSubmitInfo submitInfo = {
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.commandBufferCount = 1,
+			.pCommandBuffers = &commandBuffer,
+		};
 
 		assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
 
@@ -869,21 +901,23 @@ int main(int argc, char *argv[])
 				cubeTexture.getDescriptorImageInfo(textureSampler)
 			};
 
-			VkWriteDescriptorSet writeDescriptorSets[2] = {};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = sceneRenderer->getDescriptorSet();
-			writeDescriptorSets[0].dstBinding = 1;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[0].descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSets[0].pImageInfo = descriptorImageInfos.data();
-
 			auto descriptorBufferInfo = refractionUniformBuffer->getDescriptorBufferInfo();
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = sceneRenderer->getDescriptorSet();
-			writeDescriptorSets[1].descriptorCount = 1;
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSets[1].pBufferInfo = &descriptorBufferInfo;
-			writeDescriptorSets[1].dstBinding = 3;
+
+			VkWriteDescriptorSet writeDescriptorSets[2] = { {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = sceneRenderer->getDescriptorSet(),
+				.dstBinding = 1,
+				.descriptorCount = uint32_t(descriptorImageInfos.size()),
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = descriptorImageInfos.data(),
+			}, {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = sceneRenderer->getDescriptorSet(),
+				.dstBinding = 3,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.pBufferInfo = &descriptorBufferInfo,
+			} };
 
 			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
@@ -932,29 +966,31 @@ int main(int argc, char *argv[])
 			auto descriptorSet = allocateDescriptorSet(vkInstance::device, postProcessDescriptorPool, postProcessDescriptorSetLayout);
 			postProcessDescriptorSets.push_back(descriptorSet);
 
-			VkDescriptorImageInfo postProcessRenderTargetImageInfo = {};
-			postProcessRenderTargetImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			postProcessRenderTargetImageInfo.imageView = postProcessRenderTarget.getImageView();
-
-			VkWriteDescriptorSet writeDescriptorSets[2] = {};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = descriptorSet;
-			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].descriptorCount = 1;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			writeDescriptorSets[0].pImageInfo = &postProcessRenderTargetImageInfo;
+			VkDescriptorImageInfo postProcessRenderTargetImageInfo = {
+				.imageView = postProcessRenderTarget.getImageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+			};
 
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
 				{ arrayTextureSampler, bloomUpscaleRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
 				{ arrayTextureSampler, overlays.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = descriptorSet;
-			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].descriptorCount = descriptorImageInfos.size();
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[1].pImageInfo = descriptorImageInfos.data();
+			VkWriteDescriptorSet writeDescriptorSets[2] = { {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSet,
+				.dstBinding = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+				.pImageInfo = &postProcessRenderTargetImageInfo,
+			}, {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSet,
+				.dstBinding = 1,
+				.descriptorCount = uint32_t(descriptorImageInfos.size()),
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = descriptorImageInfos.data(),
+			}};
 
 			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
 		}
@@ -1068,31 +1104,36 @@ int main(int argc, char *argv[])
 			auto currentSwapImage = swapChain.aquireNextImage(commandBufferSemaphores[frameIndex]);
 
 			auto commandBuffer = commandBuffers[frameIndex];
-			VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-			commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+			VkCommandBufferBeginInfo commandBufferBeginInfo = {
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+				.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			};
 
 			assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-			VkClearValue clearValues[2];
-			clearValues[0].depthStencil = { 1.0f, 0 };
-			clearValues[1].color = {
-				float(sync_get_val(clearRTrack, row)),
-				float(sync_get_val(clearGTrack, row)),
-				float(sync_get_val(clearBTrack, row)),
-				1.0f
+			VkClearValue clearValues[2] = { {
+					.depthStencil = { 1.0f, 0 }
+				}, {
+					.color = {
+						float(sync_get_val(clearRTrack, row)),
+						float(sync_get_val(clearGTrack, row)),
+						float(sync_get_val(clearBTrack, row)),
+						1.0f
+					},
+				},
 			};
 
-			VkRenderPassBeginInfo sceneRenderPassBegin = {};
-			sceneRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			sceneRenderPassBegin.renderPass = sceneRenderPass;
-			sceneRenderPassBegin.renderArea.offset.x = 0;
-			sceneRenderPassBegin.renderArea.offset.y = 0;
-			sceneRenderPassBegin.renderArea.extent.width = width;
-			sceneRenderPassBegin.renderArea.extent.height = height;
-			sceneRenderPassBegin.clearValueCount = ARRAY_SIZE(clearValues);
-			sceneRenderPassBegin.pClearValues = clearValues;
-			sceneRenderPassBegin.framebuffer = sceneFramebuffer;
+			VkRenderPassBeginInfo sceneRenderPassBegin = {
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.renderPass = sceneRenderPass,
+				.framebuffer = sceneFramebuffer,
+				.renderArea = {
+					.extent = {uint32_t(width), uint32_t(height)},
+				},
+				.clearValueCount = ARRAY_SIZE(clearValues),
+				.pClearValues = clearValues,
+			};
 
 			vkCmdBeginRenderPass(commandBuffer, &sceneRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1166,14 +1207,14 @@ int main(int argc, char *argv[])
 			for (unsigned i = 0; i < bloomLevels; ++i) {
 				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
 				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
-				VkRenderPassBeginInfo bloomRenderPassBegin = {};
-				bloomRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-				bloomRenderPassBegin.renderPass = bloomRenderPass;
-				bloomRenderPassBegin.renderArea.offset.x = 0;
-				bloomRenderPassBegin.renderArea.offset.y = 0;
-				bloomRenderPassBegin.renderArea.extent.width = levelWidth;
-				bloomRenderPassBegin.renderArea.extent.height = levelHeight;
-				bloomRenderPassBegin.framebuffer = bloomFramebuffers[i];
+				VkRenderPassBeginInfo bloomRenderPassBegin = {
+					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+					.renderPass = bloomRenderPass,
+					.framebuffer = bloomFramebuffers[i],
+					.renderArea = {
+						.extent = {levelWidth, levelHeight},
+					},
+				};
 
 				vkCmdBeginRenderPass(commandBuffer, &bloomRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1187,14 +1228,14 @@ int main(int argc, char *argv[])
 				vkCmdEndRenderPass(commandBuffer);
 			}
 
-			VkRenderPassBeginInfo bloomUpscaleRenderPassBegin = {};
-			bloomUpscaleRenderPassBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			bloomUpscaleRenderPassBegin.renderPass = bloomUpscaleRenderPass;
-			bloomUpscaleRenderPassBegin.renderArea.offset.x = 0;
-			bloomUpscaleRenderPassBegin.renderArea.offset.y = 0;
-			bloomUpscaleRenderPassBegin.renderArea.extent.width = width;
-			bloomUpscaleRenderPassBegin.renderArea.extent.height = height;
-			bloomUpscaleRenderPassBegin.framebuffer = bloomUpscaleFramebuffer;
+			VkRenderPassBeginInfo bloomUpscaleRenderPassBegin = {
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.renderPass = bloomUpscaleRenderPass,
+				.framebuffer = bloomUpscaleFramebuffer,
+				.renderArea = {
+					.extent = {uint32_t(width), uint32_t(height)},
+				},
+			};
 
 			vkCmdBeginRenderPass(commandBuffer, &bloomUpscaleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1218,18 +1259,19 @@ int main(int argc, char *argv[])
 				auto gradeIndex1 = max(0, min(int(sync_get_val(gradeIndex1Track, row)), int(colorLuts.size() - 1)));
 				auto gradeIndex2 = max(0, min(int(sync_get_val(gradeIndex2Track, row)), int(colorLuts.size() - 1)));
 
-				VkWriteDescriptorSet writeDescriptorSet = {};
 				vector<VkDescriptorImageInfo> descriptorImageInfos = {
 					{ colorLutSampler, colorLuts[gradeIndex1].getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
 					{ colorLutSampler, colorLuts[gradeIndex2].getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 				};
 
-				writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				writeDescriptorSet.dstSet = postProcessDescriptorSet;
-				writeDescriptorSet.dstBinding = 3;
-				writeDescriptorSet.descriptorCount = descriptorImageInfos.size();
-				writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				writeDescriptorSet.pImageInfo = descriptorImageInfos.data();
+				VkWriteDescriptorSet writeDescriptorSet = {
+					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+					.dstSet = postProcessDescriptorSet,
+					.dstBinding = 3,
+					.descriptorCount = uint32_t(descriptorImageInfos.size()),
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.pImageInfo = descriptorImageInfos.data(),
+				};
 
 				vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
 			}
@@ -1319,15 +1361,16 @@ int main(int argc, char *argv[])
 
 			VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_BIND_POINT_COMPUTE;
 
-			VkSubmitInfo submitInfo = {};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submitInfo.waitSemaphoreCount = 1;
-			submitInfo.pWaitSemaphores = &commandBufferSemaphores[frameIndex];
-			submitInfo.signalSemaphoreCount = 1;
-			submitInfo.pSignalSemaphores = &presentCompleteSemaphore;
-			submitInfo.pWaitDstStageMask = &waitDstStageMask;
-			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &commandBuffer;
+			VkSubmitInfo submitInfo = {
+				.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.waitSemaphoreCount = 1,
+				.pWaitSemaphores = &commandBufferSemaphores[frameIndex],
+				.pWaitDstStageMask = &waitDstStageMask,
+				.commandBufferCount = 1,
+				.pCommandBuffers = &commandBuffer,
+				.signalSemaphoreCount = 1,
+				.pSignalSemaphores = &presentCompleteSemaphore,
+			};
 
 			// Submit draw command buffer
 			assumeSuccess(vkQueueSubmit(vkInstance::graphicsQueue, 1, &submitInfo, commandBufferFences[frameIndex]));

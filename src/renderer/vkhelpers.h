@@ -29,11 +29,12 @@ namespace vkHelpers
 
 	inline std::vector<VkCommandBuffer> allocateCommandBuffers(VkDevice device, VkCommandPool commandPool, unsigned commandBufferCount)
 	{
-		VkCommandBufferAllocateInfo commandAllocInfo = {};
-		commandAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		commandAllocInfo.commandPool = commandPool;
-		commandAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		commandAllocInfo.commandBufferCount = commandBufferCount;
+		VkCommandBufferAllocateInfo commandAllocInfo = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			.commandPool = commandPool,
+			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			.commandBufferCount = commandBufferCount,
+		};
 
 		std::vector<VkCommandBuffer> commandBuffers;
 		commandBuffers.resize(commandBufferCount);
@@ -67,9 +68,10 @@ namespace vkHelpers
 
 	inline VkFence createFence(VkDevice device, VkFenceCreateFlags flags)
 	{
-		VkFenceCreateInfo fenceCreateInfo = {};
-		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceCreateInfo.flags = flags;
+		VkFenceCreateInfo fenceCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.flags = flags,
+		};
 
 		VkFence ret;
 		assumeSuccess(vkCreateFence(device, &fenceCreateInfo, nullptr, &ret));
@@ -78,8 +80,10 @@ namespace vkHelpers
 
 	inline VkSemaphore createSemaphore(VkDevice device)
 	{
-		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		VkSemaphoreCreateInfo semaphoreCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		};
+
 		VkSemaphore ret;
 		assumeSuccess(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &ret));
 		return ret;
@@ -87,24 +91,24 @@ namespace vkHelpers
 
 	inline void setViewport(VkCommandBuffer commandBuffer, float x, float y, float width, float height)
 	{
-		VkViewport viewport = {};
-		viewport.x = x;
-		viewport.y = y;
-		viewport.height = height;
-		viewport.width = width;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+		VkViewport viewport = {
+			.x = x,
+			.y = y,
+			.width = width,
+			.height = height,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f,
+		};
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	}
 
 	inline void setScissor(VkCommandBuffer commandBuffer,
 	                       int x, int y, unsigned width, unsigned height)
 	{
-		VkRect2D scissor = {};
-		scissor.offset.x = x;
-		scissor.offset.y = y;
-		scissor.extent.width = width;
-		scissor.extent.height = height;
+		VkRect2D scissor = {
+			.offset = {x, y},
+			.extent = {width, height},
+		};
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 	}
 
@@ -183,16 +187,18 @@ namespace vkHelpers
 		VkFilter filter = VK_FILTER_LINEAR,
 		VkImageLayout srcLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout dstLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
-		VkImageBlit imageBlit = {};
-		imageBlit.srcSubresource = srcSubresourceLayers;
-		imageBlit.srcOffsets[1].x = int32_t(srcWidth);
-		imageBlit.srcOffsets[1].y = int32_t(srcHeight);
-		imageBlit.srcOffsets[1].z = 1;
-
-		imageBlit.dstSubresource = dstSubresourceLayers;
-		imageBlit.dstOffsets[1].x = dstWidth;
-		imageBlit.dstOffsets[1].y = dstHeight;
-		imageBlit.dstOffsets[1].z = 1;
+		VkImageBlit imageBlit = {
+			.srcSubresource = srcSubresourceLayers,
+			.srcOffsets = {
+				{ 0, 0, 0 },
+				{ srcWidth, srcHeight, 1 },
+			},
+			.dstSubresource = dstSubresourceLayers,
+			.dstOffsets = {
+				{ 0, 0, 0 },
+				{ dstWidth, dstHeight, 1 },
+			},
+		};
 
 		blitImage(commandBuffer,
 			srcImage, dstImage,
@@ -210,19 +216,20 @@ namespace vkHelpers
 		VkFilter filter = VK_FILTER_LINEAR,
 		VkImageLayout srcLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VkImageLayout dstLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
-		VkImageBlit imageBlit = {};
-		imageBlit.srcSubresource = srcSubresourceLayers;
-		imageBlit.srcOffsets[1].x = int32_t(srcWidth);
-		imageBlit.srcOffsets[1].y = int32_t(srcHeight);
-		imageBlit.srcOffsets[1].z = 1;
-
-		imageBlit.dstSubresource = dstSubresourceLayers;
-		imageBlit.dstOffsets[0].x = dstRect.offset.x;
-		imageBlit.dstOffsets[0].y = dstRect.offset.y;
-		imageBlit.dstOffsets[0].z = 0;
-		imageBlit.dstOffsets[1].x = dstRect.offset.x + dstRect.extent.width;
-		imageBlit.dstOffsets[1].y = dstRect.offset.y + dstRect.extent.height;
-		imageBlit.dstOffsets[1].z = 1;
+		VkImageBlit imageBlit = {
+			.srcSubresource = srcSubresourceLayers,
+			.srcOffsets = {
+				{ 0, 0, 0 },
+				{ srcWidth, srcHeight, 1 },
+			},
+			.dstSubresource = dstSubresourceLayers,
+			.dstOffsets = {
+				{ dstRect.offset.x, dstRect.offset.y, 0 },
+				{ int32_t(dstRect.offset.x + dstRect.extent.width),
+				  int32_t(dstRect.offset.y + dstRect.extent.height),
+				  1 },
+			},
+		};
 
 		blitImage(commandBuffer,
 			srcImage, dstImage,
@@ -252,11 +259,12 @@ namespace vkHelpers
 
 	inline VkDescriptorPool createDescriptorPool(VkDevice device, const std::vector<VkDescriptorPoolSize> &poolSizes, unsigned maxSets)
 	{
-		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
-		descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolCreateInfo.poolSizeCount = poolSizes.size();
-		descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolCreateInfo.maxSets = maxSets;
+		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = maxSets,
+			.poolSizeCount = uint32_t(poolSizes.size()),
+			.pPoolSizes = poolSizes.data(),
+		};
 
 		VkDescriptorPool descriptorPool;
 		assumeSuccess(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
@@ -265,10 +273,11 @@ namespace vkHelpers
 
 	inline VkCommandPool createCommandPool(VkDevice device, uint32_t queueFamilyIndex)
 	{
-		VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
-		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		VkCommandPoolCreateInfo commandPoolCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			.queueFamilyIndex = queueFamilyIndex,
+		};
 
 		VkCommandPool commandPool;
 		assumeSuccess(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool));
@@ -277,11 +286,12 @@ namespace vkHelpers
 
 	inline VkDescriptorSet allocateDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
 	{
-		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
-		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorSetAllocateInfo.descriptorPool = descriptorPool;
-		descriptorSetAllocateInfo.descriptorSetCount = 1;
-		descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = descriptorPool,
+			.descriptorSetCount = 1,
+			.pSetLayouts = &descriptorSetLayout,
+		};
 
 		VkDescriptorSet descriptorSet;
 		assumeSuccess(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
@@ -298,13 +308,14 @@ namespace vkHelpers
 
 	inline VkImageView createImageView(VkDevice device, VkImage image, VkImageViewType viewType, VkFormat format, const VkImageSubresourceRange &subresourceRange, VkComponentMapping components = IDENTITY_SWIZZLE)
 	{
-		VkImageViewCreateInfo imageViewCreateInfo = {};
-		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.image = image;
-		imageViewCreateInfo.viewType = viewType;
-		imageViewCreateInfo.format = format;
-		imageViewCreateInfo.components = components;
-		imageViewCreateInfo.subresourceRange = subresourceRange;
+		VkImageViewCreateInfo imageViewCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = image,
+			.viewType = viewType,
+			.format = format,
+			.components = components,
+			.subresourceRange = subresourceRange,
+		};
 
 		VkImageView imageView;
 		assumeSuccess(vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
@@ -313,19 +324,20 @@ namespace vkHelpers
 
 	inline VkSampler createSampler(VkDevice device, VkPhysicalDeviceFeatures deviceFeatures, VkPhysicalDeviceProperties deviceProperties, float maxLod, bool repeat, bool wantAnisotropy)
 	{
-		VkSamplerCreateInfo samplerCreateInfo = {};
-		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerCreateInfo.addressModeU = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerCreateInfo.addressModeV = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerCreateInfo.addressModeW = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerCreateInfo.mipLodBias = 0.0f;
-		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
-		samplerCreateInfo.minLod = 0.0f;
-		samplerCreateInfo.maxLod = maxLod;
-		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+		VkSamplerCreateInfo samplerCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			.magFilter = VK_FILTER_LINEAR,
+			.minFilter = VK_FILTER_LINEAR,
+			.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+			.addressModeU = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+			.addressModeV = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+			.addressModeW = repeat ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+			.mipLodBias = 0.0f,
+			.compareOp = VK_COMPARE_OP_NEVER,
+			.minLod = 0.0f,
+			.maxLod = maxLod,
+			.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+		};
 
 		if (wantAnisotropy && deviceFeatures.samplerAnisotropy) {
 			samplerCreateInfo.maxAnisotropy = std::min(8.0f, deviceProperties.limits.maxSamplerAnisotropy);
@@ -341,14 +353,15 @@ namespace vkHelpers
 	{
 		assert(attachments.size() > 0);
 
-		VkFramebufferCreateInfo framebufferCreateInfo = {};
-		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass;
-		framebufferCreateInfo.attachmentCount = attachments.size();
-		framebufferCreateInfo.pAttachments = attachments.data();
-		framebufferCreateInfo.width = width;
-		framebufferCreateInfo.height = height;
-		framebufferCreateInfo.layers = layers;
+		VkFramebufferCreateInfo framebufferCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass = renderPass,
+			.attachmentCount = uint32_t(attachments.size()),
+			.pAttachments = attachments.data(),
+			.width = width,
+			.height = height,
+			.layers = layers,
+		};
 
 		VkFramebuffer framebuffer;
 		assumeSuccess(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer));
@@ -357,14 +370,13 @@ namespace vkHelpers
 
 	inline VkPipelineLayout createPipelineLayout(VkDevice device, const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts, const std::vector<VkPushConstantRange> &pushConstantRanges)
 	{
-		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-		pipelineLayoutCreateInfo.setLayoutCount = descriptorSetLayouts.size();
-		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-
-		pipelineLayoutCreateInfo.pushConstantRangeCount = pushConstantRanges.size();
-		pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.setLayoutCount = uint32_t(descriptorSetLayouts.size()),
+			.pSetLayouts = descriptorSetLayouts.data(),
+			.pushConstantRangeCount = uint32_t(pushConstantRanges.size()),
+			.pPushConstantRanges = pushConstantRanges.data(),
+		};
 
 		VkPipelineLayout pipelineLayout;
 		assumeSuccess(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
@@ -373,13 +385,12 @@ namespace vkHelpers
 
 	inline VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &layoutBindings, VkDescriptorSetLayoutCreateFlags flags = 0)
 	{
-		VkDescriptorSetLayoutCreateInfo desciptorSetLayoutCreateInfo = {};
-		desciptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-
-		desciptorSetLayoutCreateInfo.flags = flags;
-
-		desciptorSetLayoutCreateInfo.bindingCount = layoutBindings.size();
-		desciptorSetLayoutCreateInfo.pBindings = layoutBindings.data();
+		VkDescriptorSetLayoutCreateInfo desciptorSetLayoutCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.flags = flags,
+			.bindingCount = uint32_t(layoutBindings.size()),
+			.pBindings = layoutBindings.data(),
+		};
 
 		VkDescriptorSetLayout descriptorSetLayout;
 		assumeSuccess(vkCreateDescriptorSetLayout(device, &desciptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));

@@ -73,19 +73,20 @@ void vkInstance::instanceInit(const char *appName, const vector<const char *> &e
 	VkResult err = volkInitialize();
 	assumeSuccess(err);
 
-	VkApplicationInfo appInfo = {};
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = appName;
-	appInfo.pEngineName = "very lastest engine ever";
-	appInfo.apiVersion = VK_API_VERSION_1_3;
+	VkApplicationInfo appInfo = {
+		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pApplicationName = appName,
+		.pEngineName = "very lastest engine ever",
+		.apiVersion = VK_API_VERSION_1_3,
+	};
 
-	VkInstanceCreateInfo instanceCreateInfo = {};
-	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceCreateInfo.pNext = nullptr;
-	instanceCreateInfo.pApplicationInfo = &appInfo;
-
-	instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
-	instanceCreateInfo.enabledExtensionCount = enabledExtensions.size();
+	VkInstanceCreateInfo instanceCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pNext = nullptr,
+		.pApplicationInfo = &appInfo,
+		.enabledExtensionCount = uint32_t(enabledExtensions.size()),
+		.ppEnabledExtensionNames = enabledExtensions.data(),
+	};
 
 	err = vkCreateInstance(&instanceCreateInfo, nullptr, &vkInstance::instance);
 	if (err == VK_ERROR_INCOMPATIBLE_DRIVER)
@@ -95,10 +96,11 @@ void vkInstance::instanceInit(const char *appName, const vector<const char *> &e
 	volkLoadInstance(vkInstance::instance);
 
 #ifndef NDEBUG
-	VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
-	debugReportCallbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-	debugReportCallbackCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)messageCallback;
-	debugReportCallbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+	VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT,
+		.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
+		.pfnCallback = (PFN_vkDebugReportCallbackEXT)messageCallback,
+	};
 	assumeSuccess(vkCreateDebugReportCallbackEXT(instance, &debugReportCallbackCreateInfo,
 	                                             nullptr, &debugReportCallback));
 
@@ -140,26 +142,29 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 
 	graphicsQueueIndex = findQueue(physicalDevice, VK_QUEUE_GRAPHICS_BIT, usableQueue);
 
-	VkDeviceQueueCreateInfo queueCreateInfo = {};
 	float queuePriorities = 0.0f;
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = graphicsQueueIndex;
-	queueCreateInfo.queueCount = 1;
-	queueCreateInfo.pQueuePriorities = &queuePriorities;
-
-	VkDeviceCreateInfo deviceCreateInfo = {};
-	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.pNext = nullptr;
-	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-	deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
+	VkDeviceQueueCreateInfo queueCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+		.queueFamilyIndex = graphicsQueueIndex,
+		.queueCount = 1,
+		.pQueuePriorities = &queuePriorities,
+	};
 
 	const char *enabledExtensions[] = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
 	};
-	deviceCreateInfo.enabledExtensionCount = ARRAY_SIZE(enabledExtensions);
-	deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
+
+	VkDeviceCreateInfo deviceCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.pNext = nullptr,
+		.queueCreateInfoCount = 1,
+		.pQueueCreateInfos = &queueCreateInfo,
+		.enabledExtensionCount = ARRAY_SIZE(enabledExtensions),
+		.ppEnabledExtensionNames = enabledExtensions,
+		.pEnabledFeatures = &enabledFeatures,
+	};
+
 
 	assumeSuccess(vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device));
 
@@ -194,13 +199,14 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 #undef P
 	};
 
-	VmaAllocatorCreateInfo allocatorCreateInfo = {};
-	allocatorCreateInfo.flags = 0;
-	allocatorCreateInfo.vulkanApiVersion = deviceProperties.apiVersion;
-	allocatorCreateInfo.physicalDevice = physicalDevice;
-	allocatorCreateInfo.device = device;
-	allocatorCreateInfo.instance = instance;
-	allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+	VmaAllocatorCreateInfo allocatorCreateInfo = {
+		.flags = 0,
+		.physicalDevice = physicalDevice,
+		.device = device,
+		.pVulkanFunctions = &vulkanFunctions,
+		.instance = instance,
+		.vulkanApiVersion = deviceProperties.apiVersion,
+	};
 	vmaCreateAllocator(&allocatorCreateInfo, &vkInstance::allocator);
 
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);

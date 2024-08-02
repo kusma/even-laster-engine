@@ -44,10 +44,11 @@ public:
 
 	VkSubresourceLayout getSubresourceLayout(unsigned mipLevel = 0, unsigned arrayLayer = 0)
 	{
-		VkImageSubresource subRes = {};
-		subRes.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		subRes.mipLevel = mipLevel;
-		subRes.arrayLayer = arrayLayer;
+		VkImageSubresource subRes = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel = mipLevel,
+			.arrayLayer = arrayLayer,
+		};
 
 		VkSubresourceLayout ret;
 		vkGetImageSubresourceLayout(vkInstance::device, image, &subRes, &ret);
@@ -56,11 +57,11 @@ public:
 
 	VkDescriptorImageInfo getDescriptorImageInfo(VkSampler textureSampler)
 	{
-		VkDescriptorImageInfo descriptorImageInfo;
-		descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // TODO: make *sure* of this!
-		descriptorImageInfo.imageView = imageView;
-		descriptorImageInfo.sampler = textureSampler;
-		return descriptorImageInfo;
+		return {
+			.sampler = textureSampler,
+			.imageView = imageView,
+			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // TODO: make *sure* of this!
+		};
 	}
 
 protected:
