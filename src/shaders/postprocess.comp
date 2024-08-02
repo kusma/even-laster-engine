@@ -43,8 +43,8 @@ void main()
 
 	vec2 kaleidoPos = pos;
 	if (pushConstants.kaleidoCount > 0) {
-		vec2 halfSize = imageSize(outputImage) * 0.5;
-		kaleidoPos = 0.5 + kaleidoscope(vec2(gl_GlobalInvocationID.xy) + 0.5 - halfSize, pushConstants.kaleidoCount) / halfSize;
+		vec2 size = imageSize(outputImage);
+		kaleidoPos = 0.5 + kaleidoscope(vec2(gl_GlobalInvocationID.xy) + 0.5 - size * 0.5, pushConstants.kaleidoCount) / size;
 	}
 
 	vec3 color = texture(samplerColor, kaleidoPos).xyz;
