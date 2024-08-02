@@ -137,6 +137,7 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 	vkGetPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
 
 	enabledFeatures.samplerAnisotropy = physicalDeviceFeatures.samplerAnisotropy;
+	enabledFeatures.geometryShader = true;
 
 	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
