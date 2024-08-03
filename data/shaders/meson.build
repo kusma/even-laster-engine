@@ -1,6 +1,6 @@
 sources = [
-	'bloom.frag',
 	'bloom_upscale.frag',
+	'bloom.frag',
 	'fullscreenquad.vert',
 	'plane.frag',
 	'plane.vert',
