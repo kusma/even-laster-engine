@@ -64,6 +64,9 @@ static VkBool32 messageCallback(
 	fprintf(stderr, "%s\n", message);
 #endif
 	delete[] message;
+
+	assert(0);
+
 	return false;
 }
 #endif
