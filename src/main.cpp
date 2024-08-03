@@ -214,13 +214,13 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 	return pipeline;
 }
 
-static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkShaderModule fragmentShader)
+static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkShaderModule fragmentShader, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
 {
 	auto shaderStages = createStageVector({
 		.vertexShader = loadShaderModule("data/shaders/fullscreenquad.vert.spv"),
 		.fragmentShader = fragmentShader,
 	});
-	return createGeometrylessPipeline(layout, renderPass, shaderStages);
+	return createGeometrylessPipeline(layout, renderPass, shaderStages, topology, depthWrite, blendMode);
 }
 
 static Texture3D loadFractalNoise(const std::string &filename, int width, int height, int depth)
@@ -496,8 +496,7 @@ int main(int argc, char *argv[])
 		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
 		unsigned bloomLevels = 32 - clz(max(width, height));
-		ColorRenderTarget bloomDownscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-		ColorRenderTarget bloomUpscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		vector<VkAttachmentDescription> sceneRenderPassAttachments;
@@ -563,7 +562,7 @@ int main(int argc, char *argv[])
 
 		VkAttachmentDescription bloomDownscaleColorAttachment = {
 			.flags = 0,
-			.format = bloomDownscaleRenderTarget.getFormat(),
+			.format = bloomRenderTarget.getFormat(),
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -605,12 +604,12 @@ int main(int argc, char *argv[])
 		});
 
 		auto bloomDescriptorPool = createDescriptorPool(vkInstance::device, {
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(bloomLevels + 2) },
-		}, bloomLevels + 1);
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(3 * bloomLevels + 2) },
+		}, 3 * bloomLevels + 1);
 
+		vector<VkImageView> bloomImageViews;
 		vector<VkFramebuffer> bloomDownscaleFramebuffers;
 		vector<VkDescriptorSet> bloomDownscaleDescriptorSets;
-		vector<VkImageView> bloomDownscaleImageViews;
 
 		VkSampler bloomDownscaleInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 		for (unsigned mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
@@ -621,21 +620,21 @@ int main(int argc, char *argv[])
 				.baseArrayLayer = 0,
 				.layerCount = 1,
 			};
-			auto imageView = createImageView(vkInstance::device, bloomDownscaleRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomDownscaleRenderTarget.getFormat(), subresourceRange);
-			bloomDownscaleImageViews.push_back(imageView);
+			auto imageView = createImageView(vkInstance::device, bloomRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomRenderTarget.getFormat(), subresourceRange);
+			bloomImageViews.push_back(imageView);
 
-			auto mipWidth = TextureBase::mipSize(bloomDownscaleRenderTarget.getWidth(), mipLevel);
-			auto mipHeight = TextureBase::mipSize(bloomDownscaleRenderTarget.getHeight(), mipLevel);
+			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
+			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);
 			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { imageView }, bloomDownscaleRenderPass);
 			bloomDownscaleFramebuffers.push_back(framebuffer);
-
 			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomDownscaleDescriptorSetLayout);
+
 
 			VkDescriptorImageInfo descriptorImageInfo = {
 				.sampler = bloomDownscaleInputSampler,
 				.imageView = mipLevel == 0 ?
 				             sceneColorRenderTarget.getImageView() :
-				             bloomDownscaleImageViews[mipLevel - 1],
+				             bloomImageViews[mipLevel - 1],
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			};
 
@@ -651,13 +650,13 @@ int main(int argc, char *argv[])
 
 		VkAttachmentDescription bloomUpscaleColorAttachment = {
 			.flags = 0,
-			.format = bloomUpscaleRenderTarget.getFormat(),
+			.format = bloomRenderTarget.getFormat(),
 			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		};
 
@@ -683,36 +682,33 @@ int main(int argc, char *argv[])
 		VkRenderPass bloomUpscaleRenderPass;
 		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass));
 
-		auto bloomUpscaleFramebuffer = createFramebuffer(vkInstance::device, width, height, 1, { bloomUpscaleRenderTarget.getImageView() }, bloomUpscaleRenderPass);
-		auto bloomUpscaleDescriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
-		VkSampler bloomUpscaleSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(bloomLevels), false, false);
+		vector<VkFramebuffer> bloomUpscaleFramebuffers;
+		vector<VkDescriptorSet> bloomUpscaleDescriptorSets;
 
-		{
-			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ bloomUpscaleSampler, sceneColorRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-				{ bloomUpscaleSampler, bloomDownscaleRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
+		VkSampler bloomUpscaleInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
+		for (unsigned mipLevel = 0; mipLevel < bloomLevels - 1; ++mipLevel) {
+			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
+			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);
+			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { bloomImageViews[mipLevel] }, bloomUpscaleRenderPass);
+			bloomUpscaleFramebuffers.push_back(framebuffer);
+
+			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
+
+			VkDescriptorImageInfo descriptorImageInfo = {
+				.sampler = bloomUpscaleInputSampler,
+				.imageView = bloomImageViews[mipLevel + 1],
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			};
 
-			updateCombinedImageDescriptor(vkInstance::device,
-			                              bloomUpscaleDescriptorSet, 0,
-			                              descriptorImageInfos);
+			updateCombinedImageDescriptor(vkInstance::device, descriptorSet,
+			                              0, { descriptorImageInfo });
 
+			bloomUpscaleDescriptorSets.push_back(descriptorSet);
 		}
 
-		struct {
-			float bloomAmount;
-			float bloomShape;
-			float seed;
-		} bloomUpscalePushConstants;
-
-		VkPushConstantRange bloomUpscalePushConstantRange = {
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(bloomUpscalePushConstants)
-		};
-		auto bloomUpscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomUpscaleDescriptorSetLayout }, { bloomUpscalePushConstantRange });
+		auto bloomUpscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomUpscaleDescriptorSetLayout }, {});
 		auto bloomUpscaleFragmentShader = loadShaderModule("data/shaders/bloom_upscale.frag.spv");
-		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader);
+		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, BlendMode::Additive);
 
 		struct {
 			glm::mat4 modelViewProjectionMatrix;
@@ -815,11 +811,13 @@ int main(int argc, char *argv[])
 			{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 			{ 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
+			{ 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
 			});
 
 		struct {
 			uint32_t overlayIndex;
 			uint32_t frameSeed;
+			float bloomAmount;
 			float overlayAlpha;
 			float fade;
 			float flash;
@@ -856,7 +854,8 @@ int main(int argc, char *argv[])
 			};
 
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ arrayTextureSampler, bloomUpscaleRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+				{ arrayTextureSampler, sceneColorRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+				{ arrayTextureSampler, bloomRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
 				{ arrayTextureSampler, overlays.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
@@ -909,7 +908,6 @@ int main(int argc, char *argv[])
 		auto refractionIndexTrack = sync_get_track(rocket, "refraction:index");
 
 		auto bloomAmountTrack = sync_get_track(rocket, "postprocess:bloom.amount");
-		auto bloomShapeTrack = sync_get_track(rocket, "postprocess:bloom.shape");
 		auto kaleidoTrack = sync_get_track(rocket, "postprocess:kaleidoscope");
 
 		auto gradeIndex1Track = sync_get_track(rocket, "postprocess:grade.index1");
@@ -1076,8 +1074,8 @@ int main(int argc, char *argv[])
 			vkCmdEndRenderPass(commandBuffer);
 
 			for (unsigned i = 0; i < bloomLevels; ++i) {
-				auto levelWidth = TextureBase::mipSize(bloomDownscaleRenderTarget.getWidth(), i);
-				auto levelHeight = TextureBase::mipSize(bloomDownscaleRenderTarget.getHeight(), i);
+				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
+				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
 				VkRenderPassBeginInfo bloomRenderPassBegin = {
 					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 					.renderPass = bloomDownscaleRenderPass,
@@ -1099,31 +1097,44 @@ int main(int argc, char *argv[])
 				vkCmdEndRenderPass(commandBuffer);
 			}
 
-			VkRenderPassBeginInfo bloomUpscaleRenderPassBegin = {
-				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-				.renderPass = bloomUpscaleRenderPass,
-				.framebuffer = bloomUpscaleFramebuffer,
-				.renderArea = {
-					.extent = {uint32_t(width), uint32_t(height)},
-				},
-			};
+			for (int i = bloomLevels - 2; i >= 0; --i) {
+				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
+				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
+				VkRenderPassBeginInfo bloomRenderPassBegin = {
+					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+					.renderPass = bloomUpscaleRenderPass,
+					.framebuffer = bloomUpscaleFramebuffers[i],
+					.renderArea = {
+						.extent = {levelWidth, levelHeight},
+					},
+				};
 
-			vkCmdBeginRenderPass(commandBuffer, &bloomUpscaleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+				VkImageSubresourceRange subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = uint32_t(i),
+					.levelCount = 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				};
+				imageBarrier(
+					commandBuffer,
+					bloomRenderTarget.getImage(),
+					subresourceRange,
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-			setViewport(commandBuffer, 0, 0, float(width), float(height));
-			setScissor(commandBuffer, 0, 0, width, height);
+				vkCmdBeginRenderPass(commandBuffer, &bloomRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomUpscalePipeline);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomUpscalePipelineLayout, 0, 1, &bloomUpscaleDescriptorSet, 0, nullptr);
+				setViewport(commandBuffer, 0, 0, float(levelWidth), float(levelHeight));
+				setScissor(commandBuffer, 0, 0, levelWidth, levelHeight);
 
-			bloomUpscalePushConstants.bloomAmount = float(sync_get_val(bloomAmountTrack, row));
-			bloomUpscalePushConstants.bloomShape = float(sync_get_val(bloomShapeTrack, row));
-			bloomUpscalePushConstants.seed = float(rand()) / RAND_MAX;
-			vkCmdPushConstants(commandBuffer, bloomUpscalePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(bloomUpscalePushConstants), &bloomUpscalePushConstants);
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomUpscalePipeline);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomUpscalePipelineLayout, 0, 1, &bloomUpscaleDescriptorSets[i], 0, nullptr);
+				vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-			vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRenderPass(commandBuffer);
+			}
 
 			VkDescriptorSet &postProcessDescriptorSet = postProcessDescriptorSets[currentSwapImage];
 			{
@@ -1137,7 +1148,7 @@ int main(int argc, char *argv[])
 
 				updateCombinedImageDescriptor(vkInstance::device,
 				                              postProcessDescriptorSet,
-				                              3, descriptorImageInfos);
+				                              4, descriptorImageInfos);
 			}
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postProcessPipeline);
@@ -1146,7 +1157,7 @@ int main(int argc, char *argv[])
 			imageBarrier(
 				commandBuffer,
 				postProcessRenderTarget.getImage(),
-				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_ASPECT_COLOR_BIT, // ?? does this really do anything?!
 				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 				0, VK_ACCESS_SHADER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -1159,6 +1170,7 @@ int main(int argc, char *argv[])
 
 			postProcessPushConstantData.overlayIndex = uint32_t(sync_get_val(overlayIndexTrack, row));
 			postProcessPushConstantData.frameSeed = rand();
+			postProcessPushConstantData.bloomAmount = float(sync_get_val(bloomAmountTrack, row));
 			postProcessPushConstantData.overlayAlpha = float(sync_get_val(overlayAlphaTrack, row));
 			postProcessPushConstantData.fade = float(fade);
 			postProcessPushConstantData.flash = float(sync_get_val(flashTrack, row));
@@ -1172,7 +1184,7 @@ int main(int argc, char *argv[])
 			imageBarrier(
 				commandBuffer,
 				postProcessRenderTarget.getImage(),
-				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_ASPECT_COLOR_BIT, // ??
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -1181,7 +1193,7 @@ int main(int argc, char *argv[])
 			imageBarrier(
 				commandBuffer,
 				swapChainImage,
-				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_ASPECT_COLOR_BIT, // ??
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1216,7 +1228,7 @@ int main(int argc, char *argv[])
 			imageBarrier(
 				commandBuffer,
 				swapChainImage,
-				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_ASPECT_COLOR_BIT, // ??
 				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 				VK_ACCESS_TRANSFER_WRITE_BIT, 0,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);

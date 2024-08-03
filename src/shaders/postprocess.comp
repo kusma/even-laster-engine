@@ -9,13 +9,15 @@
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (rgba8, binding = 0) uniform writeonly image2D outputImage;
 layout (binding = 1) uniform sampler2D samplerColor;
-layout (binding = 2) uniform sampler2DArray overlaySampler;
-layout (binding = 3) uniform sampler3D colorLut1;
-layout (binding = 4) uniform sampler3D colorLut2;
+layout (binding = 2) uniform sampler2D samplerBloom;
+layout (binding = 3) uniform sampler2DArray overlaySampler;
+layout (binding = 4) uniform sampler3D colorLut1;
+layout (binding = 5) uniform sampler3D colorLut2;
 
 layout(push_constant) uniform PushConstants {
 	int overlayIndex;
 	int frameSeed;
+	float bloomAmount;
 	float overlayAlpha;
 	float fade;
 	float flash;
@@ -48,6 +50,7 @@ void main()
 	}
 
 	vec3 color = texture(samplerColor, kaleidoPos).xyz;
+	color += texture(samplerBloom, kaleidoPos).xyz * pushConstants.bloomAmount;
 
 	vec4 overlay = textureLod(overlaySampler, vec3(pos.xy, pushConstants.overlayIndex), 0);
 	color = color * (1 - overlay.a * pushConstants.overlayAlpha) + overlay.rgb * pushConstants.overlayAlpha;

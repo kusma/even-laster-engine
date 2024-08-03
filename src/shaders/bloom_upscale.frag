@@ -4,41 +4,14 @@
 #extension GL_ARB_shading_language_420pack : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "utils.glsl"
+#include "blur.glsl"
 
 layout (location = 0) in vec2 texCoord;
 layout (location = 0) out vec4 outFragColor;
 
-layout (binding = 0) uniform sampler2D colorSampler;
-layout (binding = 1) uniform sampler2D bloomSampler;
-
-layout(push_constant) uniform PushConstants {
-	float bloomAmount;
-	float bloomShape;
-	float seed;
-} pushConstants;
-
-
-vec3 sampleBloom(vec2 pos, float shape)
-{
-	vec3 sum = vec3(0);
-	int levels = textureQueryLevels(bloomSampler);
-	float total = 0;
-	for (int i = 0; i < levels; ++i) {
-		float weight = pow(float(i), shape);
-		vec2 rnd = vec2(nrand(3 + i + pos.xy + pushConstants.seed),
-		                nrand(5 + i + pos.yx - pushConstants.seed));
-		rnd = (rnd * 2 - 1) / textureSize(bloomSampler, i);
-		sum += textureLod(bloomSampler, pos + rnd * 0.25, float(i)).rgb * weight;
-		total += weight;
-	}
-	return sum / total;
-}
+layout (binding = 0) uniform sampler2D textureSampler;
 
 void main()
 {
-	vec3 color = texture(colorSampler, texCoord).rgb;
-	color += sampleBloom(texCoord, pushConstants.bloomShape) * pushConstants.bloomAmount;
-
-	outFragColor = vec4(color, 1);
+	outFragColor = fastBlur5x5(textureSampler, texCoord, 0);
 }
