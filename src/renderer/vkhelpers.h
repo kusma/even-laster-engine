@@ -450,6 +450,56 @@ namespace vkHelpers
 		return ret;
 	}
 
+	inline void updateCombinedImageDescriptor(VkDevice device,
+	                                          VkDescriptorSet descriptorSet,
+	                                          unsigned dstBinding,
+	                                          const std::vector<VkDescriptorImageInfo> &imageInfo)
+	{
+		assert(imageInfo.size() < UINT32_MAX);
+		VkWriteDescriptorSet writeDescriptorSets = {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = descriptorSet,
+			.dstBinding = dstBinding,
+			.descriptorCount = uint32_t(imageInfo.size()),
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo = imageInfo.data(),
+		};
+		vkUpdateDescriptorSets(device, 1, &writeDescriptorSets, 0, nullptr);
+	}
+
+	inline void updateStorageImageDescriptor(VkDevice device,
+	                                         VkDescriptorSet descriptorSet,
+	                                         unsigned dstBinding,
+	                                         const std::vector<VkDescriptorImageInfo> &imageInfo)
+	{
+		assert(imageInfo.size() < UINT32_MAX);
+		VkWriteDescriptorSet writeDescriptorSets = {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = descriptorSet,
+			.dstBinding = dstBinding,
+			.descriptorCount = uint32_t(imageInfo.size()),
+			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+			.pImageInfo = imageInfo.data(),
+		};
+		vkUpdateDescriptorSets(device, 1, &writeDescriptorSets, 0, nullptr);
+	}
+
+	inline void writeUniformBufferDescriptor(VkDevice device,
+	                                         VkDescriptorSet descriptorSet,
+	                                         unsigned dstBinding,
+	                                         const std::vector<VkDescriptorBufferInfo> &bufferInfo)
+	{
+		assert(bufferInfo.size() < UINT32_MAX);
+		VkWriteDescriptorSet writeDescriptorSets = {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = descriptorSet,
+			.dstBinding = dstBinding,
+			.descriptorCount = uint32_t(bufferInfo.size()),
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.pBufferInfo = bufferInfo.data(),
+		};
+		vkUpdateDescriptorSets(device, 1, &writeDescriptorSets, 0, nullptr);
+	}
 };
 
 #endif // VULKAN_H

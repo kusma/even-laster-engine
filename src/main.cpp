@@ -639,15 +639,8 @@ int main(int argc, char *argv[])
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			};
 
-			VkWriteDescriptorSet writeDescriptorSet = {
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSet,
-				.dstBinding = 0,
-				.descriptorCount = 1,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &descriptorImageInfo,
-			};
-			vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
+			updateCombinedImageDescriptor(vkInstance::device, descriptorSet,
+			                              0, { descriptorImageInfo });
 
 			bloomDescriptorSets.push_back(descriptorSet);
 		}
@@ -700,16 +693,10 @@ int main(int argc, char *argv[])
 				{ bloomSampler, bloomRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
-			VkWriteDescriptorSet writeDescriptorSet = {
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = bloomUpscaleDescriptorSet,
-				.dstBinding = 0,
-				.descriptorCount = uint32_t(descriptorImageInfos.size()),
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = descriptorImageInfos.data(),
-			};
+			updateCombinedImageDescriptor(vkInstance::device,
+			                              bloomUpscaleDescriptorSet, 0,
+			                              descriptorImageInfos);
 
-			vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
 		}
 
 		struct {
@@ -768,23 +755,13 @@ int main(int argc, char *argv[])
 
 			auto descriptorBufferInfo = refractionUniformBuffer->getDescriptorBufferInfo();
 
-			VkWriteDescriptorSet writeDescriptorSets[2] = { {
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = sceneRenderer->getDescriptorSet(),
-				.dstBinding = 1,
-				.descriptorCount = uint32_t(descriptorImageInfos.size()),
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = descriptorImageInfos.data(),
-			}, {
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = sceneRenderer->getDescriptorSet(),
-				.dstBinding = 3,
-				.descriptorCount = 1,
-				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.pBufferInfo = &descriptorBufferInfo,
-			} };
+			updateCombinedImageDescriptor(vkInstance::device,
+			                              sceneRenderer->getDescriptorSet(),
+			                              1, descriptorImageInfos);
 
-			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
+			writeUniformBufferDescriptor(vkInstance::device,
+			                             sceneRenderer->getDescriptorSet(),
+			                             3, { descriptorBufferInfo });
 		}
 
 		auto arrayTextureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
@@ -841,23 +818,10 @@ int main(int argc, char *argv[])
 				{ arrayTextureSampler, overlays.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
-			VkWriteDescriptorSet writeDescriptorSets[2] = { {
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSet,
-				.dstBinding = 0,
-				.descriptorCount = 1,
-				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-				.pImageInfo = &postProcessRenderTargetImageInfo,
-			}, {
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSet,
-				.dstBinding = 1,
-				.descriptorCount = uint32_t(descriptorImageInfos.size()),
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = descriptorImageInfos.data(),
-			}};
-
-			vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
+			updateStorageImageDescriptor(vkInstance::device, descriptorSet,
+			                             0, { postProcessRenderTargetImageInfo });
+			updateCombinedImageDescriptor(vkInstance::device, descriptorSet,
+			                              1, descriptorImageInfos);
 		}
 
 
@@ -1099,16 +1063,9 @@ int main(int argc, char *argv[])
 					{ colorLutSampler, colorLuts[gradeIndex2].getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 				};
 
-				VkWriteDescriptorSet writeDescriptorSet = {
-					.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-					.dstSet = postProcessDescriptorSet,
-					.dstBinding = 3,
-					.descriptorCount = uint32_t(descriptorImageInfos.size()),
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.pImageInfo = descriptorImageInfos.data(),
-				};
-
-				vkUpdateDescriptorSets(vkInstance::device, 1, &writeDescriptorSet, 0, nullptr);
+				updateCombinedImageDescriptor(vkInstance::device,
+				                              postProcessDescriptorSet,
+				                              3, descriptorImageInfos);
 			}
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, postProcessPipeline);
