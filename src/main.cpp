@@ -496,7 +496,7 @@ int main(int argc, char *argv[])
 		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
 		unsigned bloomLevels = 32 - clz(max(width, height));
-		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		ColorRenderTarget bloomDownscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget bloomUpscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
@@ -561,9 +561,9 @@ int main(int argc, char *argv[])
 			{ sceneDepthRenderTarget.getImageView(), sceneColorRenderTarget.getImageView() },
 			sceneRenderPass);
 
-		VkAttachmentDescription bloomColorAttachment = {
+		VkAttachmentDescription bloomDownscaleColorAttachment = {
 			.flags = 0,
-			.format = bloomRenderTarget.getFormat(),
+			.format = bloomDownscaleRenderTarget.getFormat(),
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -573,29 +573,29 @@ int main(int argc, char *argv[])
 			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		};
 
-		VkAttachmentReference bloomColorAttachmentReference = {
+		VkAttachmentReference bloomDownscaleColorAttachmentReference = {
 			.attachment = 0,
 			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		};
 
-		VkSubpassDescription bloomSubpass = {
+		VkSubpassDescription bloomDownscaleSubpass = {
 			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
 			.colorAttachmentCount = 1,
-			.pColorAttachments = &bloomColorAttachmentReference,
+			.pColorAttachments = &bloomDownscaleColorAttachmentReference,
 		};
 
-		VkRenderPassCreateInfo bloomRenderPassCreateInfo = {
+		VkRenderPassCreateInfo bloomDownscaleRenderPassCreateInfo = {
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 			.attachmentCount = 1,
-			.pAttachments = &bloomColorAttachment,
+			.pAttachments = &bloomDownscaleColorAttachment,
 			.subpassCount = 1,
-			.pSubpasses = &bloomSubpass,
+			.pSubpasses = &bloomDownscaleSubpass,
 		};
 
-		VkRenderPass bloomRenderPass;
-		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomRenderPassCreateInfo, nullptr, &bloomRenderPass));
+		VkRenderPass bloomDownscaleRenderPass;
+		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomDownscaleRenderPassCreateInfo, nullptr, &bloomDownscaleRenderPass));
 
-		auto bloomDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
+		auto bloomDownscaleDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
 		});
 
@@ -608,11 +608,11 @@ int main(int argc, char *argv[])
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(bloomLevels + 2) },
 		}, bloomLevels + 1);
 
-		vector<VkFramebuffer> bloomFramebuffers;
-		vector<VkDescriptorSet> bloomDescriptorSets;
-		vector<VkImageView> bloomImageViews;
+		vector<VkFramebuffer> bloomDownscaleFramebuffers;
+		vector<VkDescriptorSet> bloomDownscaleDescriptorSets;
+		vector<VkImageView> bloomDownscaleImageViews;
 
-		VkSampler bloomInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
+		VkSampler bloomDownscaleInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 		for (unsigned mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
 			VkImageSubresourceRange subresourceRange = {
 				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -621,33 +621,33 @@ int main(int argc, char *argv[])
 				.baseArrayLayer = 0,
 				.layerCount = 1,
 			};
-			auto imageView = createImageView(vkInstance::device, bloomRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomRenderTarget.getFormat(), subresourceRange);
-			bloomImageViews.push_back(imageView);
+			auto imageView = createImageView(vkInstance::device, bloomDownscaleRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomDownscaleRenderTarget.getFormat(), subresourceRange);
+			bloomDownscaleImageViews.push_back(imageView);
 
-			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
-			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);
-			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { imageView }, bloomRenderPass);
-			bloomFramebuffers.push_back(framebuffer);
+			auto mipWidth = TextureBase::mipSize(bloomDownscaleRenderTarget.getWidth(), mipLevel);
+			auto mipHeight = TextureBase::mipSize(bloomDownscaleRenderTarget.getHeight(), mipLevel);
+			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { imageView }, bloomDownscaleRenderPass);
+			bloomDownscaleFramebuffers.push_back(framebuffer);
 
-			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomDescriptorSetLayout);
+			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomDownscaleDescriptorSetLayout);
 
 			VkDescriptorImageInfo descriptorImageInfo = {
-				.sampler = bloomInputSampler,
+				.sampler = bloomDownscaleInputSampler,
 				.imageView = mipLevel == 0 ?
 				             sceneColorRenderTarget.getImageView() :
-				             bloomImageViews[mipLevel - 1],
+				             bloomDownscaleImageViews[mipLevel - 1],
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			};
 
 			updateCombinedImageDescriptor(vkInstance::device, descriptorSet,
 			                              0, { descriptorImageInfo });
 
-			bloomDescriptorSets.push_back(descriptorSet);
+			bloomDownscaleDescriptorSets.push_back(descriptorSet);
 		}
 
-		auto bloomPipelineLayout = createPipelineLayout(vkInstance::device, { bloomDescriptorSetLayout }, {});
-		auto bloomFragmentShader = loadShaderModule("data/shaders/bloom.frag.spv");
-		auto bloomPipeline = createFullScreenQuadPipeline(bloomPipelineLayout, bloomRenderPass, bloomFragmentShader);
+		auto bloomDownscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomDownscaleDescriptorSetLayout }, {});
+		auto bloomDownscaleFragmentShader = loadShaderModule("data/shaders/bloom_downscale.frag.spv");
+		auto bloomDownscalePipeline = createFullScreenQuadPipeline(bloomDownscalePipelineLayout, bloomDownscaleRenderPass, bloomDownscaleFragmentShader);
 
 		VkAttachmentDescription bloomUpscaleColorAttachment = {
 			.flags = 0,
@@ -685,12 +685,12 @@ int main(int argc, char *argv[])
 
 		auto bloomUpscaleFramebuffer = createFramebuffer(vkInstance::device, width, height, 1, { bloomUpscaleRenderTarget.getImageView() }, bloomUpscaleRenderPass);
 		auto bloomUpscaleDescriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
-		VkSampler bloomSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(bloomLevels), false, false);
+		VkSampler bloomUpscaleSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(bloomLevels), false, false);
 
 		{
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ bloomSampler, sceneColorRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-				{ bloomSampler, bloomRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
+				{ bloomUpscaleSampler, sceneColorRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
+				{ bloomUpscaleSampler, bloomDownscaleRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
 			updateCombinedImageDescriptor(vkInstance::device,
@@ -1076,12 +1076,12 @@ int main(int argc, char *argv[])
 			vkCmdEndRenderPass(commandBuffer);
 
 			for (unsigned i = 0; i < bloomLevels; ++i) {
-				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
-				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
+				auto levelWidth = TextureBase::mipSize(bloomDownscaleRenderTarget.getWidth(), i);
+				auto levelHeight = TextureBase::mipSize(bloomDownscaleRenderTarget.getHeight(), i);
 				VkRenderPassBeginInfo bloomRenderPassBegin = {
 					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = bloomRenderPass,
-					.framebuffer = bloomFramebuffers[i],
+					.renderPass = bloomDownscaleRenderPass,
+					.framebuffer = bloomDownscaleFramebuffers[i],
 					.renderArea = {
 						.extent = {levelWidth, levelHeight},
 					},
@@ -1092,8 +1092,8 @@ int main(int argc, char *argv[])
 				setViewport(commandBuffer, 0, 0, float(levelWidth), float(levelHeight));
 				setScissor(commandBuffer, 0, 0, levelWidth, levelHeight);
 
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomPipeline);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomPipelineLayout, 0, 1, &bloomDescriptorSets[i], 0, nullptr);
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomDownscalePipeline);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bloomDownscalePipelineLayout, 0, 1, &bloomDownscaleDescriptorSets[i], 0, nullptr);
 				vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 				vkCmdEndRenderPass(commandBuffer);
