@@ -22,5 +22,5 @@ void main()
 	pos *= 5;
 
 	gl_Position = ubo.modelViewProjectionMatrix * vec4(pos, 1.0);
-	outSize = 0.05 * gl_Position.w;
+	outSize = 0.0015 * gl_Position.w;
 }

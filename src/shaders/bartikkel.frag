@@ -5,6 +5,7 @@ layout (location = 0) out vec4 outFragColor;
 
 void main()
 {
-	vec3 col = vec3(1);
+	float d = 2 * distance(inTexCoord, vec2(0.5));
+	vec3 col = vec3(max(1 - d, 0) * 0.025);
 	outFragColor = vec4(col, 1);
 }

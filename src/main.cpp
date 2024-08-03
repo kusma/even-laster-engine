@@ -1049,7 +1049,7 @@ int main(int argc, char *argv[])
 
 				sceneRenderer->draw(commandBuffer, viewMatrix, projectionMatrix);
 			} else {
-				int size = 1;
+				int size = 1 << 10;
 
 				auto modelMatrix = glm::mat4(1);
 				auto modelViewMatrix = viewMatrix * modelMatrix;
