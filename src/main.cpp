@@ -499,8 +499,7 @@ int main(int argc, char *argv[])
 		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		vector<VkAttachmentDescription> sceneRenderPassAttachments;
-		VkAttachmentDescription sceneDepthAttachment = {
+		vector<VkAttachmentDescription> sceneRenderPassAttachments = { {
 			.flags = 0,
 			.format = depthFormat,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
@@ -510,10 +509,7 @@ int main(int argc, char *argv[])
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		};
-		sceneRenderPassAttachments.push_back(sceneDepthAttachment);
-
-		VkAttachmentDescription sceneColorAttachment = {
+		}, {
 			.flags = 0,
 			.format = sceneColorRenderTarget.getFormat(),
 			.samples = VK_SAMPLE_COUNT_1_BIT,
@@ -523,8 +519,7 @@ int main(int argc, char *argv[])
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		};
-		sceneRenderPassAttachments.push_back(sceneColorAttachment);
+		} };
 
 		VkAttachmentReference sceneDepthAttachmentReference = {
 			.attachment = 0,
