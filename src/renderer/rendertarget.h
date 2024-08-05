@@ -39,6 +39,9 @@ protected:
 			.usage = memoryUsage,
 		};
 
+		if (usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
+			allocInfo. preferredFlags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+
 		assumeSuccess(vmaCreateImage(vkInstance::allocator, &imageCreateInfo, &allocInfo, &image, &allocation, nullptr));
 
 		VkImageSubresourceRange subresourceRange = {

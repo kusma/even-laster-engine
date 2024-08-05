@@ -113,7 +113,7 @@ enum BlendMode {
 	Additive
 };
 
-static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPass renderPass, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
+static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
 {
 	VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -164,7 +164,7 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 
 	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+		.rasterizationSamples = sampleCount,
 	};
 
 	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
@@ -220,7 +220,7 @@ static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRender
 		.vertexShader = loadShaderModule("data/shaders/fullscreenquad.vert.spv"),
 		.fragmentShader = fragmentShader,
 	});
-	return createGeometrylessPipeline(layout, renderPass, shaderStages, topology, depthWrite, blendMode);
+	return createGeometrylessPipeline(layout, renderPass, VK_SAMPLE_COUNT_1_BIT, shaderStages, topology, depthWrite, blendMode);
 }
 
 static Texture3D loadFractalNoise(const std::string &filename, int width, int height, int depth)
@@ -491,9 +491,11 @@ int main(int argc, char *argv[])
 			VK_FORMAT_D16_UNORM,
 		};
 
+		auto sceneMSAASamples = getMaxMSAACount(vkInstance::deviceProperties);
 		auto depthFormat = findBestFormat(vkInstance::physicalDevice, depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height);
-		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height, sceneMSAASamples);
+		ColorRenderTarget sceneColorMSAARenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, sceneMSAASamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT);
+		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
 
 		unsigned bloomLevels = 32 - clz(max(width, height));
 		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
@@ -502,7 +504,7 @@ int main(int argc, char *argv[])
 		vector<VkAttachmentDescription> sceneRenderPassAttachments = { {
 			.flags = 0,
 			.format = depthFormat,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.samples = sceneMSAASamples,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -511,9 +513,19 @@ int main(int argc, char *argv[])
 			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 		}, {
 			.flags = 0,
+			.format = sceneColorMSAARenderTarget.getFormat(),
+			.samples = sceneMSAASamples,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		}, {
+			.flags = 0,
 			.format = sceneColorRenderTarget.getFormat(),
 			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -531,10 +543,16 @@ int main(int argc, char *argv[])
 			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		};
 
+		VkAttachmentReference resolveAttachmentReference = {
+			.attachment = 2,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		};
+
 		VkSubpassDescription sceneSubpass = {
 			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
 			.colorAttachmentCount = 1,
 			.pColorAttachments = &sceneColorAttachmentReference,
+			.pResolveAttachments = &resolveAttachmentReference,
 			.pDepthStencilAttachment = &sceneDepthAttachmentReference,
 		};
 
@@ -552,7 +570,11 @@ int main(int argc, char *argv[])
 		auto sceneFramebuffer = createFramebuffer(
 			vkInstance::device,
 			width, height, 1,
-			{ sceneDepthRenderTarget.getImageView(), sceneColorRenderTarget.getImageView() },
+			{
+				sceneDepthRenderTarget.getImageView(),
+				sceneColorMSAARenderTarget.getImageView(),
+				sceneColorRenderTarget.getImageView()
+			},
 			sceneRenderPass);
 
 		VkAttachmentDescription bloomDownscaleColorAttachment = {
@@ -725,7 +747,7 @@ int main(int argc, char *argv[])
 			.geometryShader = loadShaderModule("data/shaders/bartikkel.geom.spv"),
 			.fragmentShader = loadShaderModule("data/shaders/bartikkel.frag.spv"),
 		});
-		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, sceneRenderPass, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
+		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, sceneRenderPass, sceneMSAASamples, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
 
 		auto smokeDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
@@ -764,7 +786,7 @@ int main(int argc, char *argv[])
 
 		vector<SceneRenderer*> sceneRenderers;
 		for (auto scene : scenes)
-			sceneRenderers.push_back(new SceneRenderer(scene, sceneRenderPass));
+			sceneRenderers.push_back(new SceneRenderer(scene, sceneRenderPass, sceneMSAASamples));
 
 		auto planes = importTexture2DArray("assets/planes", TextureImportFlags::NONE);
 		auto overlays = importTexture2DArray("assets/overlays", TextureImportFlags::PREMULTIPLY_ALPHA);
@@ -976,7 +998,7 @@ int main(int argc, char *argv[])
 
 			assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-			VkClearValue clearValues[2] = { {
+			VkClearValue clearValues[] = { {
 					.depthStencil = { 1.0f, 0 }
 				}, {
 					.color = {
@@ -985,6 +1007,8 @@ int main(int argc, char *argv[])
 						float(sync_get_val(clearBTrack, row)),
 						1.0f
 					},
+				}, {
+					.color = { }, // not used
 				},
 			};
 

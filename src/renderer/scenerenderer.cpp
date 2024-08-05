@@ -19,7 +19,7 @@ struct PerObjectUniforms {
 	glm::mat4 modelViewProjectionMatrix;
 };
 
-static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass renderPass, const VkPipelineVertexInputStateCreateInfo &pipelineVertexInputStateCreateInfo, const std::vector<VkPipelineShaderStageCreateInfo> shaderStages)
+static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount, const VkPipelineVertexInputStateCreateInfo &pipelineVertexInputStateCreateInfo, const std::vector<VkPipelineShaderStageCreateInfo> shaderStages)
 {
 	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -49,7 +49,7 @@ static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass r
 
 	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+		.rasterizationSamples = sampleCount,
 	};
 
 	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
@@ -220,7 +220,7 @@ IndexedBatch::~IndexedBatch()
 	}
 }
 
-SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass) :
+SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount) :
 	scene(scene)
 {
 	auto descriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
@@ -266,9 +266,10 @@ SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass) :
 				.vertexShader = loadShaderModule("data/shaders/refraction.vert.spv"),
 				.fragmentShader = loadShaderModule("data/shaders/refraction.frag.spv"),
 			});
-			auto pipeline = createGraphicsPipeline(pipelineLayout, renderPass,
+			auto pipeline = createGraphicsPipeline(pipelineLayout,
+			                                       renderPass, sampleCount,
 			                                       pipelineVertexInputStateCreateInfo,
-												   shaderStages);
+			                                       shaderStages);
 			pipelines.insert(std::make_pair(vertexFormat, pipeline));
 		}
 	}

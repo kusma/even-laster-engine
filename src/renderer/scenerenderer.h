@@ -54,7 +54,7 @@ private:
 
 class SceneRenderer {
 public:
-	SceneRenderer(const Scene *scene, VkRenderPass renderPass);
+	SceneRenderer(const Scene *scene, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount);
 	~SceneRenderer();
 
 	void draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMatrix, const glm::mat4 &projectionMatrix);

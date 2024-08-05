@@ -27,6 +27,23 @@ namespace vkHelpers
 		return ((value + alignment - 1) / alignment) * alignment;
 	}
 
+	inline VkSampleCountFlagBits getMaxMSAACount(VkPhysicalDeviceProperties physicalDeviceProperties) {
+		VkSampleCountFlags supportedCounts =
+			physicalDeviceProperties.limits.framebufferColorSampleCounts &
+			physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+#define CHECK(x) \
+		if (supportedCounts & VK_SAMPLE_COUNT_ ## x ## _BIT) \
+			return VK_SAMPLE_COUNT_ ## x ## _BIT;
+		CHECK(32)
+		CHECK(16)
+		CHECK(8)
+		CHECK(4)
+		CHECK(2)
+
+		throw std::runtime_error("no supported msaa-count!");
+	}
+
 	inline std::vector<VkCommandBuffer> allocateCommandBuffers(VkDevice device, VkCommandPool commandPool, unsigned commandBufferCount)
 	{
 		VkCommandBufferAllocateInfo commandAllocInfo = {
