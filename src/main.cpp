@@ -495,7 +495,7 @@ int main(int argc, char *argv[])
 		auto depthFormat = findBestFormat(vkInstance::physicalDevice, depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height, sceneMSAASamples);
 		ColorRenderTarget sceneColorMSAARenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, sceneMSAASamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT);
-		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
+		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 		unsigned bloomLevels = 32 - clz(max(width, height));
 		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
@@ -576,6 +576,45 @@ int main(int argc, char *argv[])
 				sceneColorRenderTarget.getImageView()
 			},
 			sceneRenderPass);
+
+		VkAttachmentDescription smokeColorAttachment = {
+			.flags = 0,
+			.format = bloomRenderTarget.getFormat(),
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		};
+
+		VkAttachmentReference smokeColorAttachmentReference = {
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		};
+
+		VkSubpassDescription smokeSubpass = {
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &smokeColorAttachmentReference,
+		};
+
+		VkRenderPassCreateInfo smokeRenderPassCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+			.attachmentCount = 1,
+			.pAttachments = &smokeColorAttachment,
+			.subpassCount = 1,
+			.pSubpasses = &smokeSubpass,
+		};
+
+		VkRenderPass smokeRenderPass;
+		assumeSuccess(vkCreateRenderPass(vkInstance::device, &smokeRenderPassCreateInfo, nullptr, &smokeRenderPass));
+
+		auto smokeFramebuffer = createFramebuffer(
+			vkInstance::device,
+			width, height, 1, { sceneColorRenderTarget.getImageView() },
+			smokeRenderPass);
 
 		VkAttachmentDescription bloomDownscaleColorAttachment = {
 			.flags = 0,
@@ -747,7 +786,7 @@ int main(int argc, char *argv[])
 			.geometryShader = loadShaderModule("data/shaders/bartikkel.geom.spv"),
 			.fragmentShader = loadShaderModule("data/shaders/bartikkel.frag.spv"),
 		});
-		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, sceneRenderPass, sceneMSAASamples, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
+		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass, VK_SAMPLE_COUNT_1_BIT, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
 
 		auto smokeDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
@@ -998,36 +1037,6 @@ int main(int argc, char *argv[])
 
 			assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-			VkClearValue clearValues[] = { {
-					.depthStencil = { 1.0f, 0 }
-				}, {
-					.color = {
-						float(sync_get_val(clearRTrack, row)),
-						float(sync_get_val(clearGTrack, row)),
-						float(sync_get_val(clearBTrack, row)),
-						1.0f
-					},
-				}, {
-					.color = { }, // not used
-				},
-			};
-
-			VkRenderPassBeginInfo sceneRenderPassBegin = {
-				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-				.renderPass = sceneRenderPass,
-				.framebuffer = sceneFramebuffer,
-				.renderArea = {
-					.extent = {uint32_t(width), uint32_t(height)},
-				},
-				.clearValueCount = ARRAY_SIZE(clearValues),
-				.pClearValues = clearValues,
-			};
-
-			vkCmdBeginRenderPass(commandBuffer, &sceneRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-
-			setViewport(commandBuffer, 0, 0, float(width), float(height));
-			setScissor(commandBuffer, 0, 0, width, height);
-
 			auto th = sync_get_val(cameraRotYTrack, row) * (M_PI / 180);
 			auto dist = sync_get_val(cameraDistTrack, row);
 			auto roll = sync_get_val(cameraRollTrack, row) * (M_PI / 180);
@@ -1064,7 +1073,40 @@ int main(int argc, char *argv[])
 
 				refractionUniformBuffer->uploadMemory(&refractionUniforms, sizeof(refractionUniforms));
 
+				VkClearValue clearValues[] = { {
+						.depthStencil = { 1.0f, 0 }
+					}, {
+						.color = {
+							float(sync_get_val(clearRTrack, row)),
+							float(sync_get_val(clearGTrack, row)),
+							float(sync_get_val(clearBTrack, row)),
+							1.0f
+						},
+					}, {
+						.color = { }, // not used
+					},
+				};
+
+				VkRenderPassBeginInfo sceneRenderPassBegin = {
+					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+					.renderPass = sceneRenderPass,
+					.framebuffer = sceneFramebuffer,
+					.renderArea = {
+						.extent = {uint32_t(width), uint32_t(height)},
+					},
+					.clearValueCount = ARRAY_SIZE(clearValues),
+					.pClearValues = clearValues,
+				};
+
+				vkCmdBeginRenderPass(commandBuffer, &sceneRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+
+				setViewport(commandBuffer, 0, 0, float(width), float(height));
+				setScissor(commandBuffer, 0, 0, width, height);
+
+				setViewport(commandBuffer, 0, 0, float(width), float(height));
+				setScissor(commandBuffer, 0, 0, width, height);
 				sceneRenderer->draw(commandBuffer, viewMatrix, projectionMatrix);
+				vkCmdEndRenderPass(commandBuffer);
 			} else {
 				int size = 1 << 10;
 
@@ -1084,13 +1126,38 @@ int main(int argc, char *argv[])
 
 				smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
 
+
+				VkClearValue clearValue = {
+					.color = {
+						float(sync_get_val(clearRTrack, row)),
+						float(sync_get_val(clearGTrack, row)),
+						float(sync_get_val(clearBTrack, row)),
+						1.0f
+					}
+				};
+
+				VkRenderPassBeginInfo smokeRenderPassBegin = {
+					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+					.renderPass = smokeRenderPass,
+					.framebuffer = smokeFramebuffer,
+					.renderArea = {
+						.extent = {uint32_t(width), uint32_t(height)},
+					},
+					.clearValueCount = 1,
+					.pClearValues = &clearValue,
+				};
+
+				vkCmdBeginRenderPass(commandBuffer, &smokeRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+
+				setViewport(commandBuffer, 0, 0, float(width), float(height));
+				setScissor(commandBuffer, 0, 0, width, height);
+
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,  smokePipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipelineLayout, 0, 1, &smokeDescriptorSet, 0, nullptr);
 
 				vkCmdDraw(commandBuffer, size, size, 0, 0);
+				vkCmdEndRenderPass(commandBuffer);
 			}
-
-			vkCmdEndRenderPass(commandBuffer);
 
 			for (unsigned i = 0; i < bloomLevels; ++i) {
 				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
