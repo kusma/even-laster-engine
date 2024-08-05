@@ -1,6 +1,7 @@
 bass-linux/
 bass-windows/
 bass-darwin/
+FreeImage/
 glfw/
 glm/
 packagecache/

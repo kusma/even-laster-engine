@@ -1,0 +1,9 @@
+[wrap-file]
+directory = FreeImage
+source_url = https://unlimited.dl.sourceforge.net/project/freeimage/Source%20Distribution/3.18.0/FreeImage3180.zip?viasf=1
+source_filename = FreeImage3180.zip
+source_hash = f41379682f9ada94ea7b34fe86bf9ee00935a3147be41b6569c9605a53e438fd
+patch_directory = freeimage
+
+[provide]
+freeimage = freeimage_dep

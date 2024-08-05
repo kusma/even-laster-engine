@@ -29,7 +29,11 @@ glslc = find_program('glslc')
 glfw_dep = dependency('glfw3', version: '>=3.2')
 glm_dep = dependency('glm')
 
-freeimage_dep = cxx.find_library('freeimage')
+freeimage_dep = dependency('freeimage', required: false, fallback: 'freeimage')
+if not freeimage_dep.found()
+	freeimage_dep = cxx.find_library('freeimage')
+endif
+
 assimp_dep = dependency('assimp')
 
 bass_dep = dependency('bass', fallback: 'bass-' + host_machine.system())
