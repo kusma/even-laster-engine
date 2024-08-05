@@ -12,6 +12,8 @@ void main()
 	int strip = gl_InstanceIndex;
 	int stripIndex = gl_VertexIndex;
 	vec2 texCoord = vec2(stripIndex, strip);
+	uint seed = strip ^ stripIndex;
+	texCoord += vec2(randf(seed), randf(seed + 1));
 	texCoord = (texCoord - 127.5) / 128;
 	texCoord *= 0.1;
 	vec3 pos = vec3(ubo.offset + ubo.scale * texCoord, ubo.time);
