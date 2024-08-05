@@ -29,7 +29,24 @@ namespace vkHelpers
 		return ((value + alignment - 1) / alignment) * alignment;
 	}
 
-	inline uint32_t getMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties deviceMemoryProperties, const VkMemoryRequirements &memoryRequirements, VkMemoryPropertyFlags propertyFlags)
+	inline VkSampleCountFlagBits getMaxMSAACount(VkPhysicalDeviceProperties physicalDeviceProperties) {
+		VkSampleCountFlags supportedCounts =
+			physicalDeviceProperties.limits.framebufferColorSampleCounts &
+			physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+#define CHECK(x) \
+		if (supportedCounts & VK_SAMPLE_COUNT_ ## x ## _BIT) \
+			return VK_SAMPLE_COUNT_ ## x ## _BIT;
+		CHECK(32)
+		CHECK(16)
+		CHECK(8)
+		CHECK(4)
+		CHECK(2)
+
+		throw std::runtime_error("no supported msaa-count!");
+	}
+
+	inline uint32_t findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties deviceMemoryProperties, const VkMemoryRequirements &memoryRequirements, VkMemoryPropertyFlags propertyFlags)
 	{
 		for (auto i = 0u; i < VK_MAX_MEMORY_TYPES; i++) {
 			if (((memoryRequirements.memoryTypeBits >> i) & 1) == 1) {
@@ -39,6 +56,14 @@ namespace vkHelpers
 				}
 			}
 		}
+		return VK_MAX_MEMORY_TYPES;
+	}
+
+	inline uint32_t getMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties deviceMemoryProperties, const VkMemoryRequirements &memoryRequirements, VkMemoryPropertyFlags propertyFlags)
+	{
+		uint32_t index = findMemoryTypeIndex(deviceMemoryProperties, memoryRequirements, propertyFlags);
+		if (index < VK_MAX_MEMORY_TYPES)
+			return index;
 
 		assert(false);
 		throw std::runtime_error("invalid memory type!");

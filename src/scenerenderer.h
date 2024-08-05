@@ -16,7 +16,7 @@ class Buffer;
 class SceneRenderer {
 public:
 
-	SceneRenderer(Scene *scene, VkRenderPass renderPass);
+	SceneRenderer(Scene *scene, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount);
 	void draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMatrix, const glm::mat4 &projectionMatrix);
 
 	VkDescriptorSet getDescriptorSet() { return descriptorSet; } // HACK! Yuck yuck yuck!

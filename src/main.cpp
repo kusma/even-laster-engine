@@ -109,7 +109,7 @@ enum BlendMode {
 	Additive
 };
 
-static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPass renderPass, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
+static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
 {
 	VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {};
 	pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -152,9 +152,10 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 	pipelineColorBlendStateCreateInfo.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState);
 	pipelineColorBlendStateCreateInfo.pAttachments = pipelineColorBlendAttachmentState;
 
-	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {};
-	pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.rasterizationSamples = sampleCount,
+	};
 
 	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {};
 	pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -219,7 +220,7 @@ static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRender
 		nullptr
 	} };
 
-	return createGeometrylessPipeline(layout, renderPass, shaderStages);
+	return createGeometrylessPipeline(layout, renderPass, VK_SAMPLE_COUNT_1_BIT, shaderStages);
 }
 
 static Texture3D loadFractalNoise(const std::string &filename, int width, int height, int depth)
@@ -481,9 +482,11 @@ int main(int argc, char *argv[])
 			VK_FORMAT_D16_UNORM,
 		};
 
+		auto sceneMSAASamples = getMaxMSAACount(vkInstance::deviceProperties);
 		auto depthFormat = findBestFormat(vkInstance::physicalDevice, depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height);
-		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height, sceneMSAASamples);
+		ColorRenderTarget sceneColorMSAARenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, sceneMSAASamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT);
+		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
 
 		int bloomLevels = 32 - clz(max(width, height));
 		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
@@ -492,44 +495,60 @@ int main(int argc, char *argv[])
 		Texture2DArrayRenderTarget colorArray(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 128, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		vector<VkAttachmentDescription> sceneRenderPassAttachments;
-		VkAttachmentDescription sceneDepthAttachment;
-		sceneDepthAttachment.flags = 0;
-		sceneDepthAttachment.format = depthFormat;
-		sceneDepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		sceneDepthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		sceneDepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneDepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		sceneDepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneDepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		sceneDepthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		sceneRenderPassAttachments.push_back(sceneDepthAttachment);
+		vector<VkAttachmentDescription> sceneRenderPassAttachments = { {
+			.flags = 0,
+			.format = depthFormat,
+			.samples = sceneMSAASamples,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		}, {
+			.flags = 0,
+			.format = sceneColorMSAARenderTarget.getFormat(),
+			.samples = sceneMSAASamples,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		}, {
+			.flags = 0,
+			.format = sceneColorRenderTarget.getFormat(),
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		} };
 
-		VkAttachmentDescription sceneColorAttachment;
-		sceneColorAttachment.flags = 0;
-		sceneColorAttachment.format = sceneColorRenderTarget.getFormat();
-		sceneColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		sceneColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		sceneColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		sceneColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		sceneColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		sceneColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		sceneColorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		sceneRenderPassAttachments.push_back(sceneColorAttachment);
+		VkAttachmentReference sceneDepthAttachmentReference = {
+				.attachment = 0,
+				.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		};
 
-		VkAttachmentReference sceneDepthAttachmentReference = {};
-		sceneDepthAttachmentReference.attachment = 0;
-		sceneDepthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference sceneColorAttachmentReference = {
+				.attachment = 1,
+				.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		};
 
-		VkAttachmentReference sceneColorAttachmentReference = {};
-		sceneColorAttachmentReference.attachment = 1;
-		sceneColorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference resolveAttachmentReference = {
+				.attachment = 2,
+				.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		};
 
-		VkSubpassDescription sceneSubpass = {};
-		sceneSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		sceneSubpass.colorAttachmentCount = 1;
-		sceneSubpass.pColorAttachments = &sceneColorAttachmentReference;
-		sceneSubpass.pDepthStencilAttachment = &sceneDepthAttachmentReference;
+		VkSubpassDescription sceneSubpass = {
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &sceneColorAttachmentReference,
+			.pResolveAttachments = &resolveAttachmentReference,
+			.pDepthStencilAttachment = &sceneDepthAttachmentReference,
+		};
 
 		VkRenderPassCreateInfo sceneRenderPassCreateInfo = {};
 		sceneRenderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -544,7 +563,11 @@ int main(int argc, char *argv[])
 		auto sceneFramebuffer = createFramebuffer(
 			vkInstance::device,
 			width, height, 1,
-			{ sceneDepthRenderTarget.getImageView(), sceneColorRenderTarget.getImageView() },
+			{
+				sceneDepthRenderTarget.getImageView(),
+				sceneColorMSAARenderTarget.getImageView(),
+				sceneColorRenderTarget.getImageView()
+			},
 			sceneRenderPass);
 
 		VkAttachmentDescription bloomColorAttachment;
@@ -737,7 +760,7 @@ int main(int argc, char *argv[])
 				nullptr
 			} };
 
-		auto wavePlanePipeline = createGeometrylessPipeline(wavePlanePipelineLayout, sceneRenderPass, wavePlaneShaderStages, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, false, BlendMode::Additive);
+		auto wavePlanePipeline = createGeometrylessPipeline(wavePlanePipelineLayout, sceneRenderPass, sceneMSAASamples, wavePlaneShaderStages, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, false, BlendMode::Additive);
 
 		auto wavePlaneDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
@@ -789,7 +812,7 @@ int main(int argc, char *argv[])
 
 		vector<SceneRenderer> sceneRenderers;
 		for (auto scene : scenes)
-			sceneRenderers.push_back(SceneRenderer(scene, sceneRenderPass));
+			sceneRenderers.push_back(SceneRenderer(scene, sceneRenderPass, sceneMSAASamples));
 
 		auto planes = importTexture2DArray("assets/planes", TextureImportFlags::NONE);
 		auto offsetMaps = importTexture2DArray("assets/offset-maps", TextureImportFlags::NONE);
@@ -1103,13 +1126,18 @@ int main(int argc, char *argv[])
 
 			assumeSuccess(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-			VkClearValue clearValues[2];
-			clearValues[0].depthStencil = { 1.0f, 0 };
-			clearValues[1].color = {
-				float(sync_get_val(clearRTrack, row)),
-				float(sync_get_val(clearGTrack, row)),
-				float(sync_get_val(clearBTrack, row)),
-				1.0f
+			VkClearValue clearValues[] = { {
+					.depthStencil = { 1.0f, 0 }
+				}, {
+					.color = {
+						float(sync_get_val(clearRTrack, row)),
+						float(sync_get_val(clearGTrack, row)),
+						float(sync_get_val(clearBTrack, row)),
+						1.0f
+					},
+				}, {
+					.color = { }, // not used
+				},
 			};
 
 			VkRenderPassBeginInfo sceneRenderPassBegin = {};

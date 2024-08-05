@@ -38,7 +38,14 @@ protected:
 		VkMemoryRequirements memoryRequirements;
 		vkGetImageMemoryRequirements(vkInstance::device, image, &memoryRequirements);
 
-		auto memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		uint32_t memoryTypeIndex;
+		if (usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) {
+			memoryTypeIndex = findMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT);
+			if (memoryTypeIndex >= VK_MAX_MEMORY_TYPES)
+				memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		} else
+			memoryTypeIndex = getMemoryTypeIndex(vkInstance::deviceMemoryProperties, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
 		auto deviceMemory = allocateDeviceMemory(vkInstance::device, memoryRequirements.size, memoryTypeIndex);
 
 		assumeSuccess(vkBindImageMemory(vkInstance::device, image, deviceMemory, 0));
