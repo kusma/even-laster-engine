@@ -38,6 +38,8 @@ assimp_dep = dependency('assimp')
 
 bass_dep = dependency('bass', fallback: 'bass-' + host_machine.system())
 
+inc_volk = include_directories('volk')
+
 subdir('src')
 subdir('tools')
 subdir('data')

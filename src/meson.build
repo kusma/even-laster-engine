@@ -6,6 +6,7 @@ executable(
 	'demo',
 	sources,
 	dependencies: demo_deps,
+	include_directories: [inc_volk],
 	c_args: '-DSYNC_PLAYER',
 	cpp_args: '-DSYNC_PLAYER',
 	win_subsystem: 'windows',
@@ -13,4 +14,10 @@ executable(
 	install_dir: 'bin',
 )
 
-executable('editor', sources, dependencies: demo_deps, win_subsystem: 'windows')
+executable(
+	'editor',
+	sources,
+	dependencies : demo_deps,
+	include_directories: [inc_volk],
+	win_subsystem : 'windows'
+)
