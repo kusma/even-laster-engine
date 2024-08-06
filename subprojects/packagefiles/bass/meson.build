@@ -1,16 +1,21 @@
 project('bass', 'c',
          version: '2.4.17')
 
-lib_dirs = [meson.current_source_dir()]
 if host_machine.system() == 'windows'
   if not ['x86', 'x86_64'].contains(host_machine.cpu_family())
     error('This wrap of bass is for x86 and ARM, and will not work on ' +
           'your system')
   endif
-  lib_dirs += [
-    meson.current_source_dir() / 'x64',
-    meson.current_source_dir() / 'c',
-    meson.current_source_dir() / 'c' / 'x64']
+
+  if host_machine.cpu_family() == 'x86_64'
+    lib_dirs = [
+      meson.current_source_dir() / 'x64',
+      meson.current_source_dir() / 'c' / 'x64']
+  else
+    lib_dirs = [
+      meson.current_source_dir(),
+      meson.current_source_dir() / 'c']
+  endif
   inc_dirs = include_directories('c')
 elif host_machine.system() == 'linux'
   if not ['aarch64', 'armhf', 'x86', 'x86_64'].contains(host_machine.cpu_family())
