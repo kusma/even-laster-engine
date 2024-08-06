@@ -6,3 +6,4 @@ FreeImage/
 glfw/
 glm/
 packagecache/
+vk_mem_alloc/

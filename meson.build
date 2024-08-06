@@ -39,6 +39,7 @@ assimp_dep = dependency('assimp')
 bass_dep = dependency('bass', fallback: 'bass-' + host_machine.system())
 
 inc_volk = include_directories('volk')
+vk_mem_alloc_dep = dependency('vk_mem_alloc')
 
 subdir('src')
 subdir('tools')
