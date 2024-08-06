@@ -1,6 +1,6 @@
 project('engine', 'cpp', 'c',
 	default_options : [
-		'cpp_std=c++17',
+		'cpp_std=c++20',
 		'default_library=static',
 		'b_ndebug=if-release'
 	],
