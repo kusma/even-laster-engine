@@ -20,6 +20,7 @@ cxx = meson.get_compiler('cpp')
 
 add_project_arguments(cxx.get_supported_arguments('-mf16c'), language: 'cpp')
 
+add_project_arguments('-DNOMINMAX', language : 'cpp')
 
 python = import('python').find_installation('python3')
 
