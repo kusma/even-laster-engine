@@ -44,6 +44,9 @@ const unsigned maxConcurrentFrames = 2u;
 #include <glm/gtx/quaternion.hpp>
 #include <bass.h>
 
+#define FREEIMAGE_LIB
+#include <FreeImage.h>
+
 using namespace vkHelpers;
 
 using std::vector;
@@ -377,6 +380,8 @@ int main(int argc, char *argv[])
 
 		if (!glfwVulkanSupported())
 			throw runtime_error("no vulkan support!");
+
+		FreeImage_Initialise(false);
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		if (!fullscreen)

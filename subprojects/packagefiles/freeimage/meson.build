@@ -1,6 +1,7 @@
 project('freeimage', ['c', 'cpp'],
         default_options : [
             'cpp_std=none',
+            'default_library=static',
         ],
         version: '3.18.0')
 
@@ -515,12 +516,16 @@ include = include_directories(
     'Source/LibJXR/jxrgluelib',
 )
 
-defines = ['-DWINVER=0x0500', '-DOPJ_STATIC', '-DLIBRAW_NODLL', '-DDISABLE_PERF_MEASUREMENT', '-DFREEIMAGE_LIB']
+defines = ['-DWINVER=0x0500', '-DOPJ_STATIC', '-DLIBRAW_NODLL', '-DDISABLE_PERF_MEASUREMENT']
 
 freeimage = library('freeimage', srcs,
     include_directories: include,
     c_args: defines,
     cpp_args: defines,
+    c_shared_args: '-DFREEIMAGE_EXPORTS',
+    cpp_shared_args: '-DFREEIMAGE_EXPORTS',
+    c_static_args: '-DFREEIMAGE_LIB',
+    cpp_static_args: '-DFREEIMAGE_LIB',
     install: true)
 
 freeimage_dep = declare_dependency(

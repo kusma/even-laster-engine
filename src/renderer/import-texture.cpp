@@ -16,6 +16,7 @@ using std::max;
 using std::vector;
 using vkHelpers::setImageName;
 
+#define FREEIMAGE_LIB
 #include <FreeImage.h>
 #include <immintrin.h>
 
