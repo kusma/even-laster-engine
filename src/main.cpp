@@ -414,16 +414,8 @@ int main(int argc, char *argv[])
 #endif
 
 	auto appName = "Excess - Aurora";
-#ifdef NDEBUG
 	auto width = 1920, height = 1080;
-#else
-	auto width = 1280, height = 720;
-#endif
-#ifdef SYNC_PLAYER
 	auto fullscreen = true;
-#else
-	auto fullscreen = false;
-#endif
 	GLFWwindow *win = nullptr;
 
 	try {
@@ -436,7 +428,24 @@ int main(int argc, char *argv[])
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		if (!fullscreen)
 			glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-		win = glfwCreateWindow(width, height, appName, fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr);
+
+#ifdef SYNC_PLAYER
+		auto monitor = glfwGetPrimaryMonitor();
+#else
+		int monitorCount;
+		GLFWmonitor **monitors = glfwGetMonitors(&monitorCount);
+		GLFWmonitor *monitor = nullptr;
+		if (monitorCount > 1) {
+			fullscreen = true;
+			monitor = monitors[monitorCount - 1];
+			glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+		} else {
+			fullscreen = false;
+			width = 1280;
+			height = 720;
+		}
+#endif
+		win = glfwCreateWindow(width, height, appName, fullscreen ? monitor : nullptr, nullptr);
 		if (fullscreen)
 			glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -479,7 +488,7 @@ int main(int argc, char *argv[])
 		float monitor_aspect = demo_aspect;
 		if (fullscreen) {
 			int width_mm, height_mm;
-			glfwGetMonitorPhysicalSize(glfwGetPrimaryMonitor(), &width_mm, &height_mm);
+			glfwGetMonitorPhysicalSize(monitor, &width_mm, &height_mm);
 			monitor_aspect = float(width_mm) / height_mm;
 		}
 
