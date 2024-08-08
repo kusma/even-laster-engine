@@ -786,7 +786,7 @@ int main(int argc, char *argv[])
 		auto smokeUniformBuffer = new UniformBuffer(sizeof(smokeUniforms));
 
 		auto smokeDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
-			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT },
 			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT },
 		});
 		auto smokePipelineLayout = createPipelineLayout(vkInstance::device, { smokeDescriptorSetLayout }, {});
