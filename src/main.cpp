@@ -483,7 +483,7 @@ int main(int argc, char *argv[])
 			monitor_aspect = float(width_mm) / height_mm;
 		}
 
-		VkRect2D letterbox = makeLetterbox(swapWidth, swapHeight, monitor_aspect, 16.0f / 9);
+		VkRect2D letterbox = makeLetterbox(swapWidth, swapHeight, monitor_aspect, demo_aspect);
 
 		vector<VkFormat> depthCandidates = {
 			VK_FORMAT_D32_SFLOAT,
