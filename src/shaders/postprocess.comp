@@ -63,11 +63,11 @@ void main()
 	uint pixelSeed = rand(137 + gl_GlobalInvocationID.x) | (rand(8 + gl_GlobalInvocationID.y) << 4);
 	color += randf(pixelSeed ^ pushConstants.frameSeed) * (4.0 / 255);
 
-	vec3 srgbColor = fromLinear(color);
-	vec3 gradeColor1 = toLinear(textureLod(colorLut1, srgbColor, 0).rgb);
-	vec3 gradeColor2 = toLinear(textureLod(colorLut2, srgbColor, 0).rgb);
+	vec3 gradeColor1 = toLinear(textureLod(colorLut1, color, 0).rgb);
+	vec3 gradeColor2 = toLinear(textureLod(colorLut2, color, 0).rgb);
 	vec3 gradeColor = mix(gradeColor1, gradeColor2, pushConstants.gradeBlend);
 	color = mix(color, gradeColor, pushConstants.gradeAmount);
 
+	color = fromLinear(color);
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
 }
