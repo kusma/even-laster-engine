@@ -2,6 +2,7 @@
 #define RENDERPASS_H
 
 #include "vkhelpers.h"
+#include "vkinstance.h"
 #include <cassert>
 
 /*

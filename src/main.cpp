@@ -114,7 +114,7 @@ enum BlendMode {
 	Additive
 };
 
-static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
+static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, const RenderPass &renderPass, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
 {
 	VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -165,7 +165,7 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 
 	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = sampleCount,
+		.rasterizationSamples = renderPass.getSampleCount(),
 	};
 
 	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
@@ -207,7 +207,7 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 		.pColorBlendState = &pipelineColorBlendStateCreateInfo,
 		.pDynamicState = &pipelineDynamicStateCreateInfo,
 		.layout = layout,
-		.renderPass = renderPass,
+		.renderPass = renderPass.getRenderPass(),
 	};
 
 	VkPipeline pipeline;
@@ -215,13 +215,13 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, VkRenderPa
 	return pipeline;
 }
 
-static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkShaderModule fragmentShader, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
+static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, const RenderPass &renderPass, VkShaderModule fragmentShader, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
 {
 	auto shaderStages = createStageVector({
 		.vertexShader = loadShaderModule("data/shaders/fullscreenquad.vert.spv"),
 		.fragmentShader = fragmentShader,
 	});
-	return createGeometrylessPipeline(layout, renderPass, VK_SAMPLE_COUNT_1_BIT, shaderStages, topology, depthWrite, blendMode);
+	return createGeometrylessPipeline(layout, renderPass, shaderStages, topology, depthWrite, blendMode);
 }
 
 static Texture3D loadFractalNoise(const std::string &filename, int width, int height, int depth)
@@ -590,7 +590,7 @@ int main(int argc, char *argv[])
 
 		auto bloomDownscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomDownscaleDescriptorSetLayout }, {});
 		auto bloomDownscaleFragmentShader = loadShaderModule("data/shaders/bloom_downscale.frag.spv");
-		auto bloomDownscalePipeline = createFullScreenQuadPipeline(bloomDownscalePipelineLayout, bloomDownscaleRenderPass.getRenderPass(), bloomDownscaleFragmentShader);
+		auto bloomDownscalePipeline = createFullScreenQuadPipeline(bloomDownscalePipelineLayout, bloomDownscaleRenderPass, bloomDownscaleFragmentShader);
 
 		RenderPass bloomUpscaleRenderPass(bloomRenderTarget.getFormat(),
 		                                  VK_FORMAT_UNDEFINED,
@@ -624,7 +624,7 @@ int main(int argc, char *argv[])
 
 		auto bloomUpscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomUpscaleDescriptorSetLayout }, {});
 		auto bloomUpscaleFragmentShader = loadShaderModule("data/shaders/bloom_upscale.frag.spv");
-		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass.getRenderPass(), bloomUpscaleFragmentShader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, BlendMode::Additive);
+		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, BlendMode::Additive);
 
 		struct {
 			glm::mat4 modelViewProjectionMatrix;
@@ -646,7 +646,7 @@ int main(int argc, char *argv[])
 			.geometryShader = loadShaderModule("data/shaders/bartikkel.geom.spv"),
 			.fragmentShader = loadShaderModule("data/shaders/bartikkel.frag.spv"),
 		});
-		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass.getRenderPass(), VK_SAMPLE_COUNT_1_BIT, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
+		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
 
 		auto smokeDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
@@ -685,7 +685,7 @@ int main(int argc, char *argv[])
 
 		vector<SceneRenderer*> sceneRenderers;
 		for (auto scene : scenes)
-			sceneRenderers.push_back(new SceneRenderer(scene, sceneRenderPass.getRenderPass(), sceneMSAASamples));
+			sceneRenderers.push_back(new SceneRenderer(scene, sceneRenderPass));
 
 		auto planes = importTexture2DArray("assets/planes", TextureImportFlags::NONE);
 		auto overlays = importTexture2DArray("assets/overlays", TextureImportFlags::PREMULTIPLY_ALPHA);

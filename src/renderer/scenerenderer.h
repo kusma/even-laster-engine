@@ -3,6 +3,7 @@
 
 #include <volk.h>
 #include "scene/scene.h"
+#include "renderpass.h"
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -54,7 +55,7 @@ private:
 
 class SceneRenderer {
 public:
-	SceneRenderer(const Scene *scene, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount);
+	SceneRenderer(const Scene *scene, const RenderPass &renderPass);
 	~SceneRenderer();
 
 	void draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMatrix, const glm::mat4 &projectionMatrix);

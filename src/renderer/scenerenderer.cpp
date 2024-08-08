@@ -19,7 +19,7 @@ struct PerObjectUniforms {
 	glm::mat4 modelViewProjectionMatrix;
 };
 
-static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount, const VkPipelineVertexInputStateCreateInfo &pipelineVertexInputStateCreateInfo, const std::vector<VkPipelineShaderStageCreateInfo> shaderStages)
+static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, const RenderPass &renderPass, const VkPipelineVertexInputStateCreateInfo &pipelineVertexInputStateCreateInfo, const std::vector<VkPipelineShaderStageCreateInfo> shaderStages)
 {
 	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -49,7 +49,7 @@ static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass r
 
 	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = sampleCount,
+		.rasterizationSamples = renderPass.getSampleCount(),
 	};
 
 	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
@@ -91,7 +91,7 @@ static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, VkRenderPass r
 		.pColorBlendState = &pipelineColorBlendStateCreateInfo,
 		.pDynamicState = &pipelineDynamicStateCreateInfo,
 		.layout = layout,
-		.renderPass = renderPass,
+		.renderPass = renderPass.getRenderPass(),
 	};
 
 	VkPipeline pipeline;
@@ -220,7 +220,7 @@ IndexedBatch::~IndexedBatch()
 	}
 }
 
-SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass, VkSampleCountFlagBits sampleCount) :
+SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 	scene(scene)
 {
 	auto descriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
@@ -267,7 +267,7 @@ SceneRenderer::SceneRenderer(const Scene *scene, VkRenderPass renderPass, VkSamp
 				.fragmentShader = loadShaderModule("data/shaders/refraction.frag.spv"),
 			});
 			auto pipeline = createGraphicsPipeline(pipelineLayout,
-			                                       renderPass, sampleCount,
+			                                       renderPass,
 			                                       pipelineVertexInputStateCreateInfo,
 			                                       shaderStages);
 			pipelines.insert(std::make_pair(vertexFormat, pipeline));
