@@ -52,9 +52,6 @@ void main()
 	vec3 color = texture(samplerColor, kaleidoPos).xyz;
 	color += texture(samplerBloom, kaleidoPos).xyz * pushConstants.bloomAmount;
 
-	vec4 overlay = textureLod(overlaySampler, vec3(pos.xy, pushConstants.overlayIndex), 0);
-	color = color * (1 - overlay.a * pushConstants.overlayAlpha) + overlay.rgb * pushConstants.overlayAlpha;
-
 	// vignette
 	color *= 1.0 - distance(pos, vec2(0.5));
 
@@ -67,6 +64,9 @@ void main()
 	vec3 gradeColor2 = toLinear(textureLod(colorLut2, color, 0).rgb);
 	vec3 gradeColor = mix(gradeColor1, gradeColor2, pushConstants.gradeBlend);
 	color = mix(color, gradeColor, pushConstants.gradeAmount);
+
+	vec4 overlay = textureLod(overlaySampler, vec3(pos.xy, pushConstants.overlayIndex), 0);
+	color = color * (1 - overlay.a * pushConstants.overlayAlpha) + overlay.rgb * pushConstants.overlayAlpha;
 
 	color = fromLinear(color);
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
