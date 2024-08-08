@@ -7,10 +7,7 @@
 /*
  *
  * Current Assumptions:
- * - Both depth and color are cleared on start
- * - Color buffer will be read by a shader after rendering
- *   - No multi render-pass rendering supported.
- *   - Might want to losen this assumption at some point
+ * - The depth buffer is cleared on start
  * - Depth buffer is ignored
  * - If more than one sample: "Normal" MSAA
  *   - E.g. many samples resolved to one
@@ -21,7 +18,9 @@ class RenderPass {
 public:
 	RenderPass(VkFormat colorFormat = VK_FORMAT_UNDEFINED,
 	           VkFormat depthStencilFormat = VK_FORMAT_UNDEFINED,
-	           VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) :
+	           VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
+	           VkAttachmentLoadOp colorLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+	           VkImageLayout colorInitialLayout = VK_IMAGE_LAYOUT_UNDEFINED) :
 		colorFormat(colorFormat),
 		depthStencilFormat(depthStencilFormat),
 		sampleCount(sampleCount)
@@ -71,13 +70,13 @@ public:
 				.flags = 0,
 				.format = colorFormat,
 				.samples = sampleCount,
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.loadOp = colorLoadOp,
 				.storeOp = sampleCount != VK_SAMPLE_COUNT_1_BIT ?
 				           VK_ATTACHMENT_STORE_OP_DONT_CARE :
 				           VK_ATTACHMENT_STORE_OP_STORE,
 				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.initialLayout = colorInitialLayout,
 				.finalLayout = sampleCount != VK_SAMPLE_COUNT_1_BIT ?
 				               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
 				               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

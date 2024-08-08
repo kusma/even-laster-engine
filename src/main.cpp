@@ -532,39 +532,11 @@ int main(int argc, char *argv[])
 			width, height, 1, { sceneColorRenderTarget.getImageView() },
 			smokeRenderPass.getRenderPass());
 
-		VkAttachmentDescription bloomDownscaleColorAttachment = {
-			.flags = 0,
-			.format = bloomRenderTarget.getFormat(),
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		};
 
-		VkAttachmentReference bloomDownscaleColorAttachmentReference = {
-			.attachment = 0,
-			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		};
-
-		VkSubpassDescription bloomDownscaleSubpass = {
-			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &bloomDownscaleColorAttachmentReference,
-		};
-
-		VkRenderPassCreateInfo bloomDownscaleRenderPassCreateInfo = {
-			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			.attachmentCount = 1,
-			.pAttachments = &bloomDownscaleColorAttachment,
-			.subpassCount = 1,
-			.pSubpasses = &bloomDownscaleSubpass,
-		};
-
-		VkRenderPass bloomDownscaleRenderPass;
-		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomDownscaleRenderPassCreateInfo, nullptr, &bloomDownscaleRenderPass));
+		RenderPass bloomDownscaleRenderPass(bloomRenderTarget.getFormat(),
+		                                    VK_FORMAT_UNDEFINED,
+		                                    VK_SAMPLE_COUNT_1_BIT,
+		                                    VK_ATTACHMENT_LOAD_OP_DONT_CARE);
 
 		auto bloomDownscaleDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
 			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
@@ -597,7 +569,7 @@ int main(int argc, char *argv[])
 
 			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
 			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);
-			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { imageView }, bloomDownscaleRenderPass);
+			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { imageView }, bloomDownscaleRenderPass.getRenderPass());
 			bloomDownscaleFramebuffers.push_back(framebuffer);
 			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomDownscaleDescriptorSetLayout);
 
@@ -618,41 +590,13 @@ int main(int argc, char *argv[])
 
 		auto bloomDownscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomDownscaleDescriptorSetLayout }, {});
 		auto bloomDownscaleFragmentShader = loadShaderModule("data/shaders/bloom_downscale.frag.spv");
-		auto bloomDownscalePipeline = createFullScreenQuadPipeline(bloomDownscalePipelineLayout, bloomDownscaleRenderPass, bloomDownscaleFragmentShader);
+		auto bloomDownscalePipeline = createFullScreenQuadPipeline(bloomDownscalePipelineLayout, bloomDownscaleRenderPass.getRenderPass(), bloomDownscaleFragmentShader);
 
-		VkAttachmentDescription bloomUpscaleColorAttachment = {
-			.flags = 0,
-			.format = bloomRenderTarget.getFormat(),
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		};
-
-		VkAttachmentReference bloomUpscaleColorAttachmentReference = {
-			.attachment = 0,
-			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		};
-
-		VkSubpassDescription bloomUpscaleSubpass = {
-			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &bloomUpscaleColorAttachmentReference,
-		};
-
-		VkRenderPassCreateInfo bloomUpscaleRenderPassCreateInfo = {
-			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			.attachmentCount = 1,
-			.pAttachments = &bloomUpscaleColorAttachment,
-			.subpassCount = 1,
-			.pSubpasses = &bloomUpscaleSubpass,
-		};
-
-		VkRenderPass bloomUpscaleRenderPass;
-		assumeSuccess(vkCreateRenderPass(vkInstance::device, &bloomUpscaleRenderPassCreateInfo, nullptr, &bloomUpscaleRenderPass));
+		RenderPass bloomUpscaleRenderPass(bloomRenderTarget.getFormat(),
+		                                  VK_FORMAT_UNDEFINED,
+		                                  VK_SAMPLE_COUNT_1_BIT,
+		                                  VK_ATTACHMENT_LOAD_OP_LOAD,
+		                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 		vector<VkFramebuffer> bloomUpscaleFramebuffers;
 		vector<VkDescriptorSet> bloomUpscaleDescriptorSets;
@@ -661,7 +605,7 @@ int main(int argc, char *argv[])
 		for (unsigned mipLevel = 0; mipLevel < bloomLevels - 1; ++mipLevel) {
 			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
 			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);
-			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { bloomImageViews[mipLevel] }, bloomUpscaleRenderPass);
+			auto framebuffer = createFramebuffer(vkInstance::device, mipWidth, mipHeight, 1, { bloomImageViews[mipLevel] }, bloomUpscaleRenderPass.getRenderPass());
 			bloomUpscaleFramebuffers.push_back(framebuffer);
 
 			auto descriptorSet = allocateDescriptorSet(vkInstance::device, bloomDescriptorPool, bloomUpscaleDescriptorSetLayout);
@@ -680,7 +624,7 @@ int main(int argc, char *argv[])
 
 		auto bloomUpscalePipelineLayout = createPipelineLayout(vkInstance::device, { bloomUpscaleDescriptorSetLayout }, {});
 		auto bloomUpscaleFragmentShader = loadShaderModule("data/shaders/bloom_upscale.frag.spv");
-		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, BlendMode::Additive);
+		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass.getRenderPass(), bloomUpscaleFragmentShader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, BlendMode::Additive);
 
 		struct {
 			glm::mat4 modelViewProjectionMatrix;
@@ -1080,7 +1024,7 @@ int main(int argc, char *argv[])
 				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
 				VkRenderPassBeginInfo bloomRenderPassBegin = {
 					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = bloomDownscaleRenderPass,
+					.renderPass = bloomDownscaleRenderPass.getRenderPass(),
 					.framebuffer = bloomDownscaleFramebuffers[i],
 					.renderArea = {
 						.extent = {levelWidth, levelHeight},
@@ -1104,7 +1048,7 @@ int main(int argc, char *argv[])
 				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
 				VkRenderPassBeginInfo bloomRenderPassBegin = {
 					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = bloomUpscaleRenderPass,
+					.renderPass = bloomUpscaleRenderPass.getRenderPass(),
 					.framebuffer = bloomUpscaleFramebuffers[i],
 					.renderArea = {
 						.extent = {levelWidth, levelHeight},
