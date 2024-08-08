@@ -21,6 +21,7 @@
 #include "scene/sceneimporter.h"
 #include "renderer/buffer.h"
 #include "renderer/scenerenderer.h"
+#include "renderer/renderpass.h"
 
 #include "sync/sync.h"
 
@@ -501,80 +502,18 @@ int main(int argc, char *argv[])
 		};
 
 		auto sceneMSAASamples = getMaxMSAACount(vkInstance::deviceProperties);
+		auto sceneFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
 		auto depthFormat = findBestFormat(vkInstance::physicalDevice, depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height, sceneMSAASamples);
-		ColorRenderTarget sceneColorMSAARenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, sceneMSAASamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT);
-		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+		ColorRenderTarget sceneColorMSAARenderTarget(sceneFormat, width, height, 1, sceneMSAASamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT);
+		ColorRenderTarget sceneColorRenderTarget(sceneFormat, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 		unsigned bloomLevels = 32 - clz(max(width, height));
 		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		vector<VkAttachmentDescription> sceneRenderPassAttachments = { {
-			.flags = 0,
-			.format = depthFormat,
-			.samples = sceneMSAASamples,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		}, {
-			.flags = 0,
-			.format = sceneColorMSAARenderTarget.getFormat(),
-			.samples = sceneMSAASamples,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		}, {
-			.flags = 0,
-			.format = sceneColorRenderTarget.getFormat(),
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		} };
-
-		VkAttachmentReference sceneDepthAttachmentReference = {
-			.attachment = 0,
-			.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		};
-
-		VkAttachmentReference sceneColorAttachmentReference = {
-			.attachment = 1,
-			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		};
-
-		VkAttachmentReference resolveAttachmentReference = {
-			.attachment = 2,
-			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		};
-
-		VkSubpassDescription sceneSubpass = {
-			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &sceneColorAttachmentReference,
-			.pResolveAttachments = &resolveAttachmentReference,
-			.pDepthStencilAttachment = &sceneDepthAttachmentReference,
-		};
-
-		VkRenderPassCreateInfo sceneRenderPassCreateInfo = {
-			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			.attachmentCount = uint32_t(sceneRenderPassAttachments.size()),
-			.pAttachments = sceneRenderPassAttachments.data(),
-			.subpassCount = 1,
-			.pSubpasses = &sceneSubpass,
-		};
-
-		VkRenderPass sceneRenderPass;
-		assumeSuccess(vkCreateRenderPass(vkInstance::device, &sceneRenderPassCreateInfo, nullptr, &sceneRenderPass));
+		assert(sceneColorMSAARenderTarget.getFormat() == sceneColorRenderTarget.getFormat());
+		RenderPass sceneRenderPass(sceneFormat, depthFormat, sceneMSAASamples);
 
 		auto sceneFramebuffer = createFramebuffer(
 			vkInstance::device,
@@ -584,46 +523,14 @@ int main(int argc, char *argv[])
 				sceneColorMSAARenderTarget.getImageView(),
 				sceneColorRenderTarget.getImageView()
 			},
-			sceneRenderPass);
+			sceneRenderPass.getRenderPass());
 
-		VkAttachmentDescription smokeColorAttachment = {
-			.flags = 0,
-			.format = bloomRenderTarget.getFormat(),
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		};
-
-		VkAttachmentReference smokeColorAttachmentReference = {
-			.attachment = 0,
-			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		};
-
-		VkSubpassDescription smokeSubpass = {
-			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &smokeColorAttachmentReference,
-		};
-
-		VkRenderPassCreateInfo smokeRenderPassCreateInfo = {
-			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			.attachmentCount = 1,
-			.pAttachments = &smokeColorAttachment,
-			.subpassCount = 1,
-			.pSubpasses = &smokeSubpass,
-		};
-
-		VkRenderPass smokeRenderPass;
-		assumeSuccess(vkCreateRenderPass(vkInstance::device, &smokeRenderPassCreateInfo, nullptr, &smokeRenderPass));
+		RenderPass smokeRenderPass(sceneFormat);
 
 		auto smokeFramebuffer = createFramebuffer(
 			vkInstance::device,
 			width, height, 1, { sceneColorRenderTarget.getImageView() },
-			smokeRenderPass);
+			smokeRenderPass.getRenderPass());
 
 		VkAttachmentDescription bloomDownscaleColorAttachment = {
 			.flags = 0,
@@ -795,7 +702,7 @@ int main(int argc, char *argv[])
 			.geometryShader = loadShaderModule("data/shaders/bartikkel.geom.spv"),
 			.fragmentShader = loadShaderModule("data/shaders/bartikkel.frag.spv"),
 		});
-		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass, VK_SAMPLE_COUNT_1_BIT, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
+		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass.getRenderPass(), VK_SAMPLE_COUNT_1_BIT, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
 
 		auto smokeDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
@@ -834,7 +741,7 @@ int main(int argc, char *argv[])
 
 		vector<SceneRenderer*> sceneRenderers;
 		for (auto scene : scenes)
-			sceneRenderers.push_back(new SceneRenderer(scene, sceneRenderPass, sceneMSAASamples));
+			sceneRenderers.push_back(new SceneRenderer(scene, sceneRenderPass.getRenderPass(), sceneMSAASamples));
 
 		auto planes = importTexture2DArray("assets/planes", TextureImportFlags::NONE);
 		auto overlays = importTexture2DArray("assets/overlays", TextureImportFlags::PREMULTIPLY_ALPHA);
@@ -1098,7 +1005,7 @@ int main(int argc, char *argv[])
 
 				VkRenderPassBeginInfo sceneRenderPassBegin = {
 					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = sceneRenderPass,
+					.renderPass = sceneRenderPass.getRenderPass(),
 					.framebuffer = sceneFramebuffer,
 					.renderArea = {
 						.extent = {uint32_t(width), uint32_t(height)},
@@ -1147,7 +1054,7 @@ int main(int argc, char *argv[])
 
 				VkRenderPassBeginInfo smokeRenderPassBegin = {
 					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = smokeRenderPass,
+					.renderPass = smokeRenderPass.getRenderPass(),
 					.framebuffer = smokeFramebuffer,
 					.renderArea = {
 						.extent = {uint32_t(width), uint32_t(height)},
