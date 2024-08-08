@@ -8,9 +8,10 @@ enum TextureImportFlags {
 	NONE = 0,
 	GENERATE_MIPMAPS = 1 << 0,
 	PREMULTIPLY_ALPHA = 1 << 1,
+	PREFER_LINEAR = 1 << 2,
 };
 
-inline TextureImportFlags operator|(const TextureImportFlags &a, const TextureImportFlags &b)
+inline TextureImportFlags operator | (const TextureImportFlags &a, const TextureImportFlags &b)
 {
 	return static_cast<TextureImportFlags>(static_cast<int>(a) | static_cast<int>(b));
 }

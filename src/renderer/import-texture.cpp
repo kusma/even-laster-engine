@@ -19,7 +19,7 @@ using vkHelpers::setImageName;
 #include <FreeImage.h>
 #include <immintrin.h>
 
-static FIBITMAP *loadBitmap(string filename, VkFormat *format)
+static FIBITMAP *loadBitmap(string filename, VkFormat *format, bool preferLinear)
 {
 	FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename.c_str(), 0);
 	if (fif == FIF_UNKNOWN) {
@@ -44,7 +44,7 @@ static FIBITMAP *loadBitmap(string filename, VkFormat *format)
 		FreeImage_Unload(temp);
 		if (!dib)
 			throw runtime_error("failed to convert to 32bits!");
-		*format = VK_FORMAT_R8G8B8A8_UNORM;
+		*format = VK_FORMAT_R8G8B8A8_SRGB;
 		break;
 
 	case FIT_RGBF:
@@ -156,8 +156,10 @@ static void uploadMipChain(VkCommandBuffer commandBuffer, TextureBase &texture,
 
 Texture2D importTexture2D(string filename, TextureImportFlags flags)
 {
+	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
+
 	VkFormat format = VK_FORMAT_UNDEFINED;
-	auto dib = loadBitmap(filename, &format);
+	auto dib = loadBitmap(filename, &format, preferLinear);
 	assert(format != VK_FORMAT_UNDEFINED);
 
 	if (flags & TextureImportFlags::PREMULTIPLY_ALPHA)
@@ -182,6 +184,8 @@ Texture2D importTexture2D(string filename, TextureImportFlags flags)
 
 Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 {
+	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
+
 	VkFormat firstFormat = VK_FORMAT_UNDEFINED;
 	unsigned int firstWidth = 0, firstHeight = 0;
 
@@ -196,7 +200,7 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 			break;
 
 		VkFormat format = VK_FORMAT_UNDEFINED;
-		auto dib = loadBitmap(path, &format);
+		auto dib = loadBitmap(path, &format, preferLinear);
 
 		auto width = FreeImage_GetWidth(dib);
 		auto height = FreeImage_GetHeight(dib);
@@ -238,8 +242,10 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 
 TextureCube importTextureCube(string filename, TextureImportFlags flags)
 {
+	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
+
 	VkFormat format = VK_FORMAT_UNDEFINED;
-	auto dib = loadBitmap(filename, &format);
+	auto dib = loadBitmap(filename, &format, preferLinear);
 	assert(format != VK_FORMAT_UNDEFINED);
 
 	auto imageWidth = FreeImage_GetWidth(dib);
