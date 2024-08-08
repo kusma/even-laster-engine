@@ -13,7 +13,7 @@
 
 #include "vkhelpers.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
@@ -58,7 +58,7 @@ static VkBool32 messageCallback(
 		return false;
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	OutputDebugStringA(message);
 #else
 	fprintf(stderr, "%s\n", message);

@@ -353,7 +353,7 @@ VkRect2D makeLetterbox(unsigned swapWidth, unsigned swapHeight, float monitor_as
 	};
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 
 int APIENTRY WinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -1305,7 +1305,7 @@ int main(int argc, char *argv[])
 		if (win != nullptr)
 			glfwDestroyWindow(win);
 
-#ifdef WIN32
+#ifdef _WIN32
 		MessageBox(nullptr, e.what(), nullptr, MB_OK);
 #else
 		fprintf(stderr, "FATAL ERROR: %s\n", e.what());
