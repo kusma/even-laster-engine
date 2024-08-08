@@ -8,7 +8,7 @@
 
 #include <sys/stat.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #define S_ISDIR(m) (((m)& S_IFMT) == S_IFDIR)
 #define mkdir(pathname, mode) _mkdir(pathname)
@@ -108,7 +108,7 @@ static inline int socket_poll(SOCKET socket)
 
 static inline int xsend(SOCKET s, const void *buf, size_t len, int flags)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	assert(len <= INT_MAX);
 	return send(s, (const char *)buf, (int)len, flags) != (int)len;
 #else
@@ -118,7 +118,7 @@ static inline int xsend(SOCKET s, const void *buf, size_t len, int flags)
 
 static inline int xrecv(SOCKET s, void *buf, size_t len, int flags)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	assert(len <= INT_MAX);
 	return recv(s, (char *)buf, (int)len, flags) != (int)len;
 #else
@@ -141,7 +141,7 @@ static SOCKET server_connect(const char *host, unsigned short nport)
 	char **ap;
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 	static int need_init = 1;
 	if (need_init) {
 		WSADATA wsa;
