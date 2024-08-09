@@ -541,21 +541,13 @@ int main(int argc, char *argv[])
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(3 * bloomLevels + 2) },
 		}, 3 * bloomLevels + 1);
 
-		vector<VkImageView> bloomImageViews;
+		const vector<VkImageView> &bloomImageViews = bloomRenderTarget.getMipImageViews();
 		vector<VkFramebuffer> bloomDownscaleFramebuffers;
 		vector<VkDescriptorSet> bloomDownscaleDescriptorSets;
 
 		VkSampler bloomDownscaleInputSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 		for (unsigned mipLevel = 0; mipLevel < bloomLevels; ++mipLevel) {
-			VkImageSubresourceRange subresourceRange = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = mipLevel,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1,
-			};
-			auto imageView = createImageView(vkInstance::device, bloomRenderTarget.getImage(), VK_IMAGE_VIEW_TYPE_2D, bloomRenderTarget.getFormat(), subresourceRange);
-			bloomImageViews.push_back(imageView);
+			auto imageView = bloomImageViews[mipLevel];
 
 			auto mipWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), mipLevel);
 			auto mipHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), mipLevel);

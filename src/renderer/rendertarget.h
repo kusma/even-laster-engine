@@ -89,7 +89,26 @@ public:
 		                 sampleCount, usage,
 		                 VK_IMAGE_ASPECT_COLOR_BIT, VMA_MEMORY_USAGE_AUTO, 0)
 	{
+		mipImageViews.reserve(mipLevels);
+		for (unsigned i = 0; i < mipLevels; ++i) {
+			VkImageSubresourceRange subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = i,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			};
+			mipImageViews.push_back(vkHelpers::createImageView(vkInstance::device, image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange));
+		}
 	}
+
+	const std::vector<VkImageView> &getMipImageViews() const
+	{
+		return mipImageViews;
+	}
+
+private:
+	std::vector<VkImageView> mipImageViews;
 };
 
 class DepthRenderTarget : public RenderTargetBase {
