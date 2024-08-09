@@ -514,23 +514,13 @@ int main(int argc, char *argv[])
 
 		assert(sceneColorMSAARenderTarget.getFormat() == sceneColorRenderTarget.getFormat());
 		RenderPass sceneRenderPass(sceneFormat, depthFormat, sceneMSAASamples);
-
-		auto sceneFramebuffer = createFramebuffer(
-			vkInstance::device,
-			width, height, 1,
-			{
-				sceneDepthRenderTarget.getImageView(),
-				sceneColorMSAARenderTarget.getImageView(),
-				sceneColorRenderTarget.getImageView()
-			},
-			sceneRenderPass.getRenderPass());
+		auto sceneFramebuffer = sceneRenderPass.createFramebuffer(
+			{ &sceneDepthRenderTarget, &sceneColorMSAARenderTarget, &sceneColorRenderTarget });
 
 		RenderPass smokeRenderPass(sceneFormat);
 
-		auto smokeFramebuffer = createFramebuffer(
-			vkInstance::device,
-			width, height, 1, { sceneColorRenderTarget.getImageView() },
-			smokeRenderPass.getRenderPass());
+		auto smokeFramebuffer = smokeRenderPass.createFramebuffer(
+			{ &sceneColorRenderTarget });
 
 
 		RenderPass bloomDownscaleRenderPass(bloomRenderTarget.getFormat(),

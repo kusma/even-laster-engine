@@ -3,6 +3,7 @@
 
 #include "vkhelpers.h"
 #include "vkinstance.h"
+#include "rendertarget.h"
 #include <cassert>
 
 /*
@@ -114,6 +115,64 @@ public:
 	}
 
 	VkRenderPass getRenderPass() const { return renderPass; }
+
+	VkFramebuffer createFramebuffer(const std::vector<RenderTargetBase*> &renderTargets) {
+		unsigned width = 0, height = 0, layers = 0;
+
+		std::vector<VkImageView> imageViews;
+		if (depthStencilFormat != VK_FORMAT_UNDEFINED) {
+			const RenderTargetBase *rt = renderTargets[imageViews.size()];
+			assert(rt->getFormat() == depthStencilFormat);
+
+			if (!imageViews.size()) {
+				width = rt->getWidth();
+				height = rt->getHeight();
+				layers = rt->getArrayLayers();
+			} else {
+				assert(width == rt->getWidth());
+				assert(height == rt->getHeight());
+				assert(layers == rt->getArrayLayers());
+			}
+
+			imageViews.push_back(rt->getImageView());
+		}
+
+		if (colorFormat != VK_FORMAT_UNDEFINED) {
+			const RenderTargetBase *rt = renderTargets[imageViews.size()];
+			assert(rt->getFormat() == colorFormat);
+
+			if (!imageViews.size()) {
+				width = rt->getWidth();
+				height = rt->getHeight();
+				layers = rt->getArrayLayers();
+			} else {
+				assert(width == rt->getWidth());
+				assert(height == rt->getHeight());
+				assert(layers == rt->getArrayLayers());
+			}
+
+			imageViews.push_back(rt->getImageView());
+
+			if (sampleCount != VK_SAMPLE_COUNT_1_BIT) {
+				const RenderTargetBase *rt = renderTargets[imageViews.size()];
+				assert(rt->getFormat() == colorFormat);
+
+				assert(width == rt->getWidth());
+				assert(height == rt->getHeight());
+				assert(layers == rt->getArrayLayers());
+
+				imageViews.push_back(rt->getImageView());
+			}
+		}
+
+		assert(imageViews.size() == renderTargets.size());
+		assert(width > 0 && height > 0 && layers > 0);
+
+		return vkHelpers::createFramebuffer(
+			vkInstance::device,
+			width, height, layers,
+			imageViews, renderPass);
+	}
 
 	VkFormat getColorFormat() const { return colorFormat; }
 	VkFormat getDepthStencilFormat() const { return depthStencilFormat; }
