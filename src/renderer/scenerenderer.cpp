@@ -3,6 +3,7 @@
 #include "vkhelpers.h"
 #include "shader.h"
 #include "pipeline.h"
+#include "descriptorset.h"
 
 #include "buffer.h"
 
@@ -176,12 +177,13 @@ IndexedBatch::~IndexedBatch()
 SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 	scene(scene)
 {
-	auto descriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
-		{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-		{ 3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT }
-		});
+	DescriptorSetBuilder descSetBuilder;
+	descSetBuilder.addUniformBufferDynamic(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+	descSetBuilder.addCombinedImageSampler(1, VK_SHADER_STAGE_FRAGMENT_BIT);
+	descSetBuilder.addCombinedImageSampler(2, VK_SHADER_STAGE_FRAGMENT_BIT);
+	descSetBuilder.addUniformBuffer(3, VK_SHADER_STAGE_FRAGMENT_BIT);
+	auto descriptorSetLayout = descSetBuilder.createDescriptorSetLayout();
+
 	pipelineLayout = createPipelineLayout(vkInstance::device, { descriptorSetLayout }, {});
 
 	for (auto object : scene->getObjects()) {

@@ -23,6 +23,7 @@
 #include "renderer/scenerenderer.h"
 #include "renderer/renderpass.h"
 #include "renderer/pipeline.h"
+#include "renderer/descriptorset.h"
 
 #include "sync/sync.h"
 
@@ -469,14 +470,15 @@ int main(int argc, char *argv[])
 		                                    VK_SAMPLE_COUNT_1_BIT,
 		                                    VK_ATTACHMENT_LOAD_OP_DONT_CARE);
 
-		auto bloomDownscaleDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
-			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-		});
 
-		auto bloomUpscaleDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
-			{ 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT },
-		});
+		DescriptorSetBuilder bloomDownscaleDescriptorSetBuilder;
+		bloomDownscaleDescriptorSetBuilder.addCombinedImageSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT);
+		auto bloomDownscaleDescriptorSetLayout = bloomDownscaleDescriptorSetBuilder.createDescriptorSetLayout();
+
+		DescriptorSetBuilder bloomUpscaleDescriptorSetBuilder;
+		bloomUpscaleDescriptorSetBuilder.addCombinedImageSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT);
+		bloomUpscaleDescriptorSetBuilder.addCombinedImageSampler(1, VK_SHADER_STAGE_FRAGMENT_BIT);
+		auto bloomUpscaleDescriptorSetLayout = bloomUpscaleDescriptorSetBuilder.createDescriptorSetLayout();
 
 		auto bloomDescriptorPool = createDescriptorPool(vkInstance::device, {
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(bloomLevels + 2 * (bloomLevels - 1)) },
@@ -559,10 +561,11 @@ int main(int argc, char *argv[])
 		} smokeUniforms;
 		auto smokeUniformBuffer = new UniformBuffer(sizeof(smokeUniforms));
 
-		auto smokeDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
-			{ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT },
-		});
+		DescriptorSetBuilder smokeDescriptorSetBuilder;
+		smokeDescriptorSetBuilder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT);
+		smokeDescriptorSetBuilder.addCombinedImageSampler(1, VK_SHADER_STAGE_VERTEX_BIT);
+		auto smokeDescriptorSetLayout = smokeDescriptorSetBuilder.createDescriptorSetLayout();
+
 		auto smokePipelineLayout = createPipelineLayout(vkInstance::device, { smokeDescriptorSetLayout }, {});
 		auto smokeShaderStages = createStageVector({
 			.vertexShader = loadShaderModule("data/shaders/bartikkel.vert.spv"),
@@ -644,15 +647,11 @@ int main(int argc, char *argv[])
 		auto arrayTextureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 		auto colorLutSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
 
-		auto postProcessDescriptorSetLayout = createDescriptorSetLayout(vkInstance::device, {
-			{ 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0 },
-			{ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			{ 5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT },
-			});
-
+		DescriptorSetBuilder postProcessDescriptorSetBuilder;
+		postProcessDescriptorSetBuilder.addStorageImage(0, VK_SHADER_STAGE_COMPUTE_BIT);
+		for (int i = 1; i < 6; ++i)
+			postProcessDescriptorSetBuilder.addCombinedImageSampler(i, VK_SHADER_STAGE_COMPUTE_BIT);
+		auto postProcessDescriptorSetLayout = postProcessDescriptorSetBuilder.createDescriptorSetLayout();
 		struct {
 			uint32_t overlayIndex;
 			uint32_t frameSeed;
