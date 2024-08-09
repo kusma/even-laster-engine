@@ -1,7 +1,7 @@
 #ifndef SCENERENDERER_H
 #define SCENERENDERER_H
 
-#include <volk.h>
+#include "vkhelpers.h"
 #include "scene/scene.h"
 #include "renderpass.h"
 
