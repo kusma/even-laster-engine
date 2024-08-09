@@ -42,7 +42,7 @@ protected:
 		if (usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
 			allocInfo. preferredFlags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
 
-		assumeSuccess(vmaCreateImage(vkInstance::allocator, &imageCreateInfo, &allocInfo, &image, &allocation, nullptr));
+		vkHelpers::assumeSuccess(vmaCreateImage(vkInstance::allocator, &imageCreateInfo, &allocInfo, &image, &allocation, nullptr));
 
 		VkImageSubresourceRange subresourceRange = {
 			.aspectMask = aspect,
@@ -52,7 +52,7 @@ protected:
 			.layerCount = arrayLayers,
 		};
 
-		imageView = createImageView(vkInstance::device, image, imageViewType, format, subresourceRange);
+		imageView = vkHelpers::createImageView(vkInstance::device, image, imageViewType, format, subresourceRange);
 	}
 
 public:
@@ -124,7 +124,7 @@ public:
 				.baseArrayLayer = i,
 				.layerCount = 1,
 			};
-			arrayImageViews.push_back(createImageView(vkInstance::device, image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange));
+			arrayImageViews.push_back(vkHelpers::createImageView(vkInstance::device, image, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange));
 		}
 	}
 
