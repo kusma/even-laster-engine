@@ -22,6 +22,7 @@
 #include "renderer/buffer.h"
 #include "renderer/scenerenderer.h"
 #include "renderer/renderpass.h"
+#include "renderer/pipeline.h"
 
 #include "sync/sync.h"
 
@@ -116,103 +117,43 @@ enum BlendMode {
 
 static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, const RenderPass &renderPass, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
 {
-	VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		.vertexBindingDescriptionCount = 0,
-		.pVertexBindingDescriptions = nullptr,
-		.vertexAttributeDescriptionCount = 0,
-		.pVertexAttributeDescriptions = nullptr,
-	};
+	GraphicsPipelineBuilder pb;
 
-	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.topology = topology,
-		.primitiveRestartEnable = VK_FALSE,
-	};
+	for (const auto shaderStage: shaderStages)
+		pb.addShaderStage(shaderStage);
 
-	VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		.polygonMode = VK_POLYGON_MODE_FILL,
-		.cullMode = VK_CULL_MODE_NONE,
-		.frontFace = VK_FRONT_FACE_CLOCKWISE,
-		.lineWidth = 1.0f,
-	};
+	pb.setIAState(topology);
 
-	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState[1] = { {
+	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
 		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
 		                  VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-	} };
+	};
 	switch (blendMode) {
 	case BlendMode::None:
-		pipelineColorBlendAttachmentState[0].blendEnable = VK_FALSE;
+		colorBlendAttachmentState.blendEnable = VK_FALSE;
 		break;
 	case BlendMode::Additive:
-		pipelineColorBlendAttachmentState[0].blendEnable = VK_TRUE;
-		pipelineColorBlendAttachmentState[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].colorBlendOp = VK_BLEND_OP_ADD;
-		pipelineColorBlendAttachmentState[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		pipelineColorBlendAttachmentState[0].alphaBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachmentState.blendEnable = VK_TRUE;
+		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 		break;
 	}
+	pb.addColorBlendAttachment(colorBlendAttachmentState);
+	pb.setRasterizationSamples(renderPass.getSampleCount());
 
-	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState),
-		.pAttachments = pipelineColorBlendAttachmentState,
-	};
+	pb.addViewport({}); // dummy
+	pb.addScissor({}); // dummy
 
-	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = renderPass.getSampleCount(),
-	};
+	pb.setDepthTest(depthWrite, depthWrite, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-		.viewportCount = 1,
-		.pViewports = nullptr,
-		.scissorCount = 1,
-		.pScissors = nullptr,
-	};
+	pb.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT);
+	pb.addDynamicState(VK_DYNAMIC_STATE_SCISSOR);
 
-	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		.depthTestEnable = depthWrite,
-		.depthWriteEnable = depthWrite,
-		.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-	};
-
-	VkDynamicState dynamicStateEnables[] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		.dynamicStateCount = ARRAY_SIZE(dynamicStateEnables),
-		.pDynamicStates = dynamicStateEnables,
-	};
-
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.stageCount = uint32_t(shaderStages.size()),
-		.pStages = shaderStages.data(),
-		.pVertexInputState = &pipelineVertexInputStateCreateInfo,
-		.pInputAssemblyState = &pipelineInputAssemblyStateCreateInfo,
-		.pViewportState = &pipelineViewportStateCreateInfo,
-		.pRasterizationState = &pipelineRasterizationStateCreateInfo,
-		.pMultisampleState = &pipelineMultisampleStateCreateInfo,
-		.pDepthStencilState = &pipelineDepthStencilStateCreateInfo,
-		.pColorBlendState = &pipelineColorBlendStateCreateInfo,
-		.pDynamicState = &pipelineDynamicStateCreateInfo,
-		.layout = layout,
-		.renderPass = renderPass.getRenderPass(),
-	};
-
-	VkPipeline pipeline;
-	assumeSuccess(vkCreateGraphicsPipelines(vkInstance::device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
-	return pipeline;
+	return pb.createPipeline(layout, renderPass.getRenderPass());
 }
 
 static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, const RenderPass &renderPass, VkShaderModule fragmentShader, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)

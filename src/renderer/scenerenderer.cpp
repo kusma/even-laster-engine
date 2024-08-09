@@ -2,6 +2,7 @@
 
 #include "vkhelpers.h"
 #include "shader.h"
+#include "pipeline.h"
 
 #include "buffer.h"
 
@@ -21,83 +22,35 @@ struct PerObjectUniforms {
 
 static VkPipeline createGraphicsPipeline(VkPipelineLayout layout, const RenderPass &renderPass, const VkPipelineVertexInputStateCreateInfo &pipelineVertexInputStateCreateInfo, const std::vector<VkPipelineShaderStageCreateInfo> shaderStages)
 {
-	VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		.primitiveRestartEnable = VK_FALSE,
-	};
+	GraphicsPipelineBuilder pb;
 
-	VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		.polygonMode = VK_POLYGON_MODE_FILL,
-		.cullMode = VK_CULL_MODE_BACK_BIT,
-		.frontFace = VK_FRONT_FACE_CLOCKWISE,
-		.lineWidth = 1.0f,
-	};
+	for (const auto shaderStage: shaderStages)
+		pb.addShaderStage(shaderStage);
 
-	VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState[1] = { {
+	for (unsigned i = 0; i < pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount; ++i)
+		pb.addVertexInputBinding(pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions[i]);
+
+	for (unsigned i = 0; i < pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount; ++i)
+		pb.addVertexInputAttribute(pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions[i]);
+
+	pb.setIAState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	pb.setCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
+	pb.addColorBlendAttachment({
 		.blendEnable = VK_FALSE,
 		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
 		                  VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-	} };
+	});
+	pb.setRasterizationSamples(renderPass.getSampleCount());
 
-	VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		.attachmentCount = ARRAY_SIZE(pipelineColorBlendAttachmentState),
-		.pAttachments = pipelineColorBlendAttachmentState,
-	};
+	pb.addViewport({}); // dummy
+	pb.addScissor({}); // dummy
 
-	VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.rasterizationSamples = renderPass.getSampleCount(),
-	};
+	pb.setDepthTest(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-	VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-		.viewportCount = 1,
-		.pViewports = nullptr,
-		.scissorCount = 1,
-		.pScissors = nullptr,
-	};
+	pb.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT);
+	pb.addDynamicState(VK_DYNAMIC_STATE_SCISSOR);
 
-	VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		.depthTestEnable = VK_TRUE,
-		.depthWriteEnable = VK_TRUE,
-		.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-	};
-
-	VkDynamicState dynamicStateEnables[] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-
-	VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		.dynamicStateCount = ARRAY_SIZE(dynamicStateEnables),
-		.pDynamicStates = dynamicStateEnables,
-	};
-
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.stageCount = uint32_t(shaderStages.size()),
-		.pStages = shaderStages.data(),
-		.pVertexInputState = &pipelineVertexInputStateCreateInfo,
-		.pInputAssemblyState = &pipelineInputAssemblyStateCreateInfo,
-		.pViewportState = &pipelineViewportStateCreateInfo,
-		.pRasterizationState = &pipelineRasterizationStateCreateInfo,
-		.pMultisampleState = &pipelineMultisampleStateCreateInfo,
-		.pDepthStencilState = &pipelineDepthStencilStateCreateInfo,
-		.pColorBlendState = &pipelineColorBlendStateCreateInfo,
-		.pDynamicState = &pipelineDynamicStateCreateInfo,
-		.layout = layout,
-		.renderPass = renderPass.getRenderPass(),
-	};
-
-	VkPipeline pipeline;
-	assumeSuccess(vkCreateGraphicsPipelines(vkInstance::device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
-
-	return pipeline;
+	return pb.createPipeline(layout, renderPass.getRenderPass());
 }
 
 static IndexedBatch *meshToIndexedBatch(const Mesh &mesh)

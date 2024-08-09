@@ -8,6 +8,7 @@ sources = files(
 	'sync/track.c',
 	'renderer/scenerenderer.cpp',
 	'renderer/shader.cpp',
+	'renderer/pipeline.cpp',
 	'swapchain.cpp',
 	'renderer/vkinstance.cpp'
 )
