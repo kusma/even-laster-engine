@@ -56,7 +56,7 @@ protected:
 	}
 
 public:
-	VkFormat getFormat() { return format; }
+	VkFormat getFormat() const { return format; }
 
 	unsigned getWidth() const { return width; }
 	unsigned getHeight() const { return height; }
@@ -64,8 +64,8 @@ public:
 
 	unsigned getArrayLayers() const { return arrayLayers; }
 
-	VkImage getImage() { return image; }
-	VkImageView getImageView() { return imageView; }
+	VkImage getImage() const { return image; }
+	VkImageView getImageView() const { return imageView; }
 
 protected:
 	VkFormat format;
