@@ -146,7 +146,6 @@ void SceneImporter::traverseNode(const aiNode *node, Transform *parentTransform)
 		auto scaling = glm::scale(glm::mat4(1), glm::vec3(scale.x, scale.y, scale.z));
 		auto translate = glm::translate(glm::mat4(1), glm::vec3(trans.x, trans.y, trans.z));
 		auto localMatrix = scaling * rotation * translate;
-//		auto localMatrix = translate * rotation * scaling;
 
 		transform->setLocalMatrix(localMatrix);
 		parentTransform = transform;
@@ -154,41 +153,9 @@ void SceneImporter::traverseNode(const aiNode *node, Transform *parentTransform)
 
 	for (auto i = 0u; i < node->mNumMeshes; ++i) {
 		auto mesh = meshes[node->mMeshes[i]];
-
 		auto material = materials[source->mMeshes[i]->mMaterialIndex];
-
 		auto model = new Model(mesh, material);
 		result->createObject(model, parentTransform);
-
-		/*
-		auto mesh = Mesh(vertices, indices);
-		auto material = Material();
-
-		auto object = result->createObject(model, parentTransform);
-		*/
-
-		/*
-		snprintf(buf, sizeof(buf), "%s-%d.mesh", node->mName.data, i);
-		for (int j = 0; buf[j]; ++j)
-		if (!allowed_path_char(buf[j]))
-		buf[j] = '_';
-
-		ret = dump_mesh(buf, mesh);
-		if (ret)
-		return -1;
-
-		TiXmlElement *objectElem = new TiXmlElement("object");
-		objectElem->SetAttribute("id", node->mName.data);
-		TiXmlElement *transformElem = new TiXmlElement("transform");
-		transformElem->SetAttribute("ref", transform_name);
-		objectElem->LinkEndChild(transformElem);
-		TiXmlElement *meshElem = new TiXmlElement("mesh");
-		meshElem->SetAttribute("src", buf);
-		objectElem->LinkEndChild(meshElem);
-
-		dump_material(ais->mMaterials[mesh->mMaterialIndex], objectElem);
-		objectsElem->LinkEndChild(objectElem);
-		*/
 	}
 
 	traverseChildren(node, parentTransform);
