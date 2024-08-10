@@ -479,8 +479,8 @@ int main(int argc, char *argv[])
 		});
 
 		auto bloomDescriptorPool = createDescriptorPool(vkInstance::device, {
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(3 * bloomLevels + 2) },
-		}, 3 * bloomLevels + 1);
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(bloomLevels + 2 * (bloomLevels - 1)) },
+		}, bloomLevels + bloomLevels - 1);
 
 		const vector<VkImageView> &bloomImageViews = bloomRenderTarget.getMipImageViews();
 		vector<VkFramebuffer> bloomDownscaleFramebuffers;
