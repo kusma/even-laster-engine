@@ -229,11 +229,7 @@ SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 		}
 	}
 
-	auto descriptorPool = createDescriptorPool(vkInstance::device, {
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 }
-		}, 1);
+	auto descriptorPool = descSetBuilder.createDescriptorPool(1);
 
 	uniformBufferSpacing = uint32_t(alignSize(sizeof(PerObjectUniforms), vkInstance::deviceProperties.limits.minUniformBufferOffsetAlignment));
 	auto uniformBufferSize = VkDeviceSize(uniformBufferSpacing * scene->getTransforms().size());
