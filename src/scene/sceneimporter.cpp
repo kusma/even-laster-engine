@@ -145,7 +145,7 @@ void SceneImporter::traverseNode(const aiNode *node, Transform *parentTransform)
 		auto rotation = glm::toMat4(glm::quat(rot.w, rot.x, rot.y, rot.z));
 		auto scaling = glm::scale(glm::mat4(1), glm::vec3(scale.x, scale.y, scale.z));
 		auto translate = glm::translate(glm::mat4(1), glm::vec3(trans.x, trans.y, trans.z));
-		auto localMatrix = scaling * rotation * translate;
+		auto localMatrix = translate * rotation * scaling;
 
 		transform->setLocalMatrix(localMatrix);
 		parentTransform = transform;
