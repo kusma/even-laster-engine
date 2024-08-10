@@ -57,17 +57,16 @@ void main()
 
 	color = color * pushConstants.fade + pushConstants.flash;
 
-	uint pixelSeed = rand(137 + gl_GlobalInvocationID.x) | (rand(8 + gl_GlobalInvocationID.y) << 4);
-	color += randf(pixelSeed ^ pushConstants.frameSeed) * (4.0 / 255);
-
 	vec3 gradeColor1 = toLinear(textureLod(colorLut1, color, 0).rgb);
 	vec3 gradeColor2 = toLinear(textureLod(colorLut2, color, 0).rgb);
 	vec3 gradeColor = mix(gradeColor1, gradeColor2, pushConstants.gradeBlend);
 	color = mix(color, gradeColor, pushConstants.gradeAmount);
 
+	uint pixelSeed = rand(137 + gl_GlobalInvocationID.x) | (rand(8 + gl_GlobalInvocationID.y) << 4);
+	color += randf(pixelSeed ^ pushConstants.frameSeed) * (2.0 / 255);
+
 	vec4 overlay = textureLod(overlaySampler, vec3(pos.xy, pushConstants.overlayIndex), 0);
 	color = color * (1 - overlay.a * pushConstants.overlayAlpha) + overlay.rgb * pushConstants.overlayAlpha;
 
-	color = fromLinear(color);
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1));
 }
