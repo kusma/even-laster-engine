@@ -956,6 +956,22 @@ int main(int argc, char *argv[])
 				vkCmdEndRenderPass(commandBuffer);
 			}
 
+			VkImageSubresourceRange subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = bloomLevels - 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			};
+
+			imageBarrier(
+				commandBuffer,
+				bloomRenderTarget.getImage(),
+				subresourceRange,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
 			for (int i = bloomLevels - 2; i >= 0; --i) {
 				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
 				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
@@ -967,21 +983,6 @@ int main(int argc, char *argv[])
 						.extent = {levelWidth, levelHeight},
 					},
 				};
-
-				VkImageSubresourceRange subresourceRange = {
-					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-					.baseMipLevel = uint32_t(i),
-					.levelCount = 1,
-					.baseArrayLayer = 0,
-					.layerCount = 1,
-				};
-				imageBarrier(
-					commandBuffer,
-					bloomRenderTarget.getImage(),
-					subresourceRange,
-					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-					VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 				vkCmdBeginRenderPass(commandBuffer, &bloomRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
