@@ -61,7 +61,6 @@ public:
 
 	const std::vector<uint8_t>& getVertices() const { return vertices; }
 	VertexFormat getVertexFormat() const { return vertexFormat; }
-	size_t getVertexStride() const { return calculateVertexStride(vertexFormat); }
 	const std::vector<uint8_t>& getIndices() const { return indices; }
 	IndexType getIndexType() const { return indexType; }
 

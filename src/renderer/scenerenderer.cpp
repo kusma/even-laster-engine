@@ -197,7 +197,7 @@ SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 		// transform vertexformats to pipelines
 		auto vertexFormat = mesh->getVertexFormat();
 		if (pipelines.find(vertexFormat) == pipelines.end()) {
-			auto stride = mesh->getVertexStride();
+			auto stride = Mesh::calculateVertexStride(vertexFormat);
 			assert(stride < UINT32_MAX);
 			VkVertexInputBindingDescription vertexInputBindingDesc[1] = {{
 				.binding = 0,
