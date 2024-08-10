@@ -623,7 +623,6 @@ int main(int argc, char *argv[])
 
 		for (SceneRenderer *sceneRenderer : sceneRenderers) {
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				planes.getDescriptorImageInfo(textureSampler),
 				cubeTexture.getDescriptorImageInfo(textureSampler)
 			};
 
@@ -635,7 +634,7 @@ int main(int argc, char *argv[])
 
 			writeUniformBufferDescriptor(vkInstance::device,
 			                             sceneRenderer->getDescriptorSet(),
-			                             3, { descriptorBufferInfo });
+			                             2, { descriptorBufferInfo });
 		}
 
 		auto arrayTextureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);

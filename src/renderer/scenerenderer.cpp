@@ -180,8 +180,7 @@ SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 	DescriptorSetBuilder descSetBuilder;
 	descSetBuilder.addUniformBufferDynamic(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 	descSetBuilder.addCombinedImageSampler(1, VK_SHADER_STAGE_FRAGMENT_BIT);
-	descSetBuilder.addCombinedImageSampler(2, VK_SHADER_STAGE_FRAGMENT_BIT);
-	descSetBuilder.addUniformBuffer(3, VK_SHADER_STAGE_FRAGMENT_BIT);
+	descSetBuilder.addUniformBuffer(2, VK_SHADER_STAGE_FRAGMENT_BIT);
 	auto descriptorSetLayout = descSetBuilder.createDescriptorSetLayout();
 
 	pipelineLayout = createPipelineLayout(vkInstance::device, { descriptorSetLayout }, {});
