@@ -479,10 +479,7 @@ int main(int argc, char *argv[])
 		bloomUpscaleDescriptorSetBuilder.addCombinedImageSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT);
 		bloomUpscaleDescriptorSetBuilder.addCombinedImageSampler(1, VK_SHADER_STAGE_FRAGMENT_BIT);
 		auto bloomUpscaleDescriptorSetLayout = bloomUpscaleDescriptorSetBuilder.createDescriptorSetLayout();
-
-		auto bloomDescriptorPool = createDescriptorPool(vkInstance::device, {
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(bloomLevels + 2 * (bloomLevels - 1)) },
-		}, bloomLevels + bloomLevels - 1);
+		auto bloomDescriptorPool = bloomUpscaleDescriptorSetBuilder.createDescriptorPool(bloomLevels + bloomLevels - 1);
 
 		const vector<VkImageView> &bloomImageViews = bloomRenderTarget.getMipImageViews();
 		vector<VkFramebuffer> bloomDownscaleFramebuffers;
@@ -574,10 +571,7 @@ int main(int argc, char *argv[])
 		});
 		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
 
-		auto smokeDescriptorPool = createDescriptorPool(vkInstance::device, {
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
-			}, 1);
+		auto smokeDescriptorPool = smokeDescriptorSetBuilder.createDescriptorPool(1);
 
 		auto smokeDescriptorSet = allocateDescriptorSet(vkInstance::device, smokeDescriptorPool, smokeDescriptorSetLayout);
 
@@ -675,10 +669,7 @@ int main(int argc, char *argv[])
 		VkPipeline postProcessPipeline = createComputePipeline(postProcessPipelineLayout, loadShaderModule("data/shaders/postprocess.comp.spv"));
 
 		int swapChainImageCount = swapChain.getImageViews().size();
-		auto postProcessDescriptorPool = createDescriptorPool(vkInstance::device, {
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, uint32_t(swapChainImageCount * 1) },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(swapChainImageCount * 6) },
-		}, swapChainImageCount);
+		auto postProcessDescriptorPool = postProcessDescriptorSetBuilder.createDescriptorPool(swapChainImageCount);
 
 		vector<VkDescriptorSet> postProcessDescriptorSets;
 		postProcessDescriptorSets.reserve(swapChainImageCount);

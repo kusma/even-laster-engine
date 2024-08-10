@@ -13,6 +13,13 @@ public:
 	void addLayoutBinding(const VkDescriptorSetLayoutBinding &binding)
 	{
 		layoutBindings.push_back(binding);
+
+		// count needed descriptors per type
+		auto n = descriptorTypeCounts.find(binding.descriptorType);
+		if (n != descriptorTypeCounts.end())
+			n->second++;
+		else
+			descriptorTypeCounts[binding.descriptorType] = 1;
 	}
 
 	void addCombinedImageSampler(unsigned binding,
@@ -81,8 +88,16 @@ public:
 		return descriptorSetLayout;
 	}
 
+	VkDescriptorPool createDescriptorPool(unsigned maxSets) {
+		std::vector<VkDescriptorPoolSize> poolSizes;
+		for (const auto &[key, value] : descriptorTypeCounts)
+			poolSizes.push_back({ key, value * maxSets });
+		return vkHelpers::createDescriptorPool(vkInstance::device, poolSizes, maxSets);
+	}
+
 private:
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+	std::map<VkDescriptorType, unsigned> descriptorTypeCounts;
 };
 
 #endif // DESCRIPTORSET_H
