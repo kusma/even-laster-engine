@@ -551,7 +551,11 @@ int main(int argc, char *argv[])
 		struct {
 			glm::mat4 modelViewProjectionMatrix;
 			glm::vec2 offsets;
+			float time;
+		} particleUniforms;
+		auto particleUniformBuffer = new UniformBuffer(sizeof(particleUniforms));
 
+		struct {
 			glm::vec2 offset;
 			glm::vec2 scale;
 			float time;
@@ -560,14 +564,15 @@ int main(int argc, char *argv[])
 
 		DescriptorSetBuilder smokeDescriptorSetBuilder;
 		smokeDescriptorSetBuilder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT);
-		smokeDescriptorSetBuilder.addCombinedImageSampler(1, VK_SHADER_STAGE_VERTEX_BIT);
+		smokeDescriptorSetBuilder.addUniformBuffer(1, VK_SHADER_STAGE_VERTEX_BIT);
+		smokeDescriptorSetBuilder.addCombinedImageSampler(2, VK_SHADER_STAGE_VERTEX_BIT);
 		auto smokeDescriptorSetLayout = smokeDescriptorSetBuilder.createDescriptorSetLayout();
 
 		auto smokePipelineLayout = createPipelineLayout(vkInstance::device, { smokeDescriptorSetLayout }, {});
 		auto smokeShaderStages = createStageVector({
-			.vertexShader = loadShaderModule("data/shaders/bartikkel.vert.spv"),
-			.geometryShader = loadShaderModule("data/shaders/bartikkel.geom.spv"),
-			.fragmentShader = loadShaderModule("data/shaders/bartikkel.frag.spv"),
+			.vertexShader = loadShaderModule("data/shaders/smoke.vert.spv"),
+			.geometryShader = loadShaderModule("data/shaders/particle.geom.spv"),
+			.fragmentShader = loadShaderModule("data/shaders/smoke.frag.spv"),
 		});
 		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
 
@@ -579,15 +584,16 @@ int main(int argc, char *argv[])
 		VkSampler fractalNoiseSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, true, false);
 
 		{
-			auto descriptorBufferInfo = smokeUniformBuffer->getDescriptorBufferInfo();
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
 				{ fractalNoiseSampler, fractalNoise.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
 			writeUniformBufferDescriptor(vkInstance::device, smokeDescriptorSet,
-			                             0, { descriptorBufferInfo });
+			                             0, { particleUniformBuffer->getDescriptorBufferInfo() });
+			writeUniformBufferDescriptor(vkInstance::device, smokeDescriptorSet,
+			                             1, { smokeUniformBuffer->getDescriptorBufferInfo() });
 			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
-			                              1, descriptorImageInfos);
+			                              2, descriptorImageInfos);
 		}
 
 		vector<Scene *> scenes;
@@ -887,17 +893,17 @@ int main(int argc, char *argv[])
 				auto modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
 				auto a = projectionMatrix[0].x;
 				auto b = projectionMatrix[1].y;
-				smokeUniforms.modelViewProjectionMatrix = modelViewProjectionMatrix;
-				smokeUniforms.offsets = glm::vec2(a, b);
+
+				particleUniforms.modelViewProjectionMatrix = modelViewProjectionMatrix;
+				particleUniforms.offsets = glm::vec2(a, b);
+				particleUniformBuffer->uploadMemory(&particleUniforms, sizeof(particleUniforms));
 
 				smokeUniforms.offset = glm::vec2(sync_get_val(wavePlaneOffsetXTrack, row),
 				                                 sync_get_val(wavePlaneOffsetYTrack, row));
 				smokeUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
 				                                sync_get_val(wavePlaneScaleYTrack, row));
 				smokeUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
-
 				smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
-
 
 				VkClearValue clearValue = {
 					.color = {

@@ -1,11 +1,18 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 
-#include "bartikkel.glsl"
+#include "particle.glsl"
+
+layout (binding = 1) uniform smokeUBO {
+	vec2 offset;
+	vec2 scale;
+	float time;
+} smoke_ubo;
+
 #include "utils.glsl"
 
 layout (location = 0) out float outSize;
-layout (binding = 1) uniform sampler3D volumeSampler;
+layout (binding = 2) uniform sampler3D volumeSampler;
 
 void main()
 {
@@ -16,7 +23,7 @@ void main()
 	texCoord += vec2(randf(seed), randf(seed + 1));
 	texCoord = (texCoord - 127.5) / 128;
 	texCoord *= 0.1;
-	vec3 pos = vec3(ubo.offset + ubo.scale * texCoord, ubo.time);
+	vec3 pos = vec3(smoke_ubo.offset + smoke_ubo.scale * texCoord, smoke_ubo.time);
 
 	pos = textureLod(volumeSampler, pos, 0).xyz;
 	pos += textureLod(volumeSampler, pos * 3, 0).xyz * 0.5;

@@ -1,13 +1,13 @@
 sources = [
-	'bartikkel.frag',
-	'bartikkel.geom',
-	'bartikkel.vert',
 	'bloom_downscale.frag',
 	'bloom_upscale.frag',
 	'fullscreenquad.vert',
+	'particle.geom',
 	'postprocess.comp',
 	'refraction.frag',
 	'refraction.vert',
+	'smoke.frag',
+	'smoke.vert',
 ]
 
 foreach s : sources

@@ -1,7 +1,7 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 
-#include "bartikkel.glsl"
+#include "particle.glsl"
 
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
