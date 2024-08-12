@@ -113,7 +113,8 @@ VkPhysicalDevice choosePhysicalDevice()
 
 enum BlendMode {
 	None,
-	Additive
+	Additive,
+	SourceOverPremult,
 };
 
 static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, const RenderPass &renderPass, const vector<VkPipelineShaderStageCreateInfo> &shaderStages, VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, bool depthWrite = true, BlendMode blendMode = None)
@@ -140,6 +141,15 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, const Rend
 		colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
 		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+		break;
+	case BlendMode::SourceOverPremult:
+		colorBlendAttachmentState.blendEnable = VK_TRUE;
+		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 		break;
 	}
