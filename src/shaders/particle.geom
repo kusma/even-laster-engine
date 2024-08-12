@@ -14,22 +14,22 @@ void main() {
     vec4 offs = vec4(ubo.offsets.xy, -ubo.offsets.xy) * inSize[0];
 
     gl_Position = gl_in[0].gl_Position;
-    gl_Position.xy += offs.xy;
+    gl_Position.xy += offs.xw;
     outTexCoord = vec2(0, 0);
     EmitVertex();
 
     gl_Position = gl_in[0].gl_Position;
-    gl_Position.xy += offs.xw;
+    gl_Position.xy += offs.xy;
     outTexCoord = vec2(0, 1);
     EmitVertex();
 
     gl_Position = gl_in[0].gl_Position;
-    gl_Position.xy += offs.zy;
+    gl_Position.xy += offs.zw;
     outTexCoord = vec2(1, 0);
     EmitVertex();
 
     gl_Position = gl_in[0].gl_Position;
-    gl_Position.xy += offs.zw;
+    gl_Position.xy += offs.zy;
     outTexCoord = vec2(1, 1);
     EmitVertex();
 
