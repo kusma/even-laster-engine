@@ -77,8 +77,8 @@ public:
 		name(name),
 		albedoMap(albedoMap)
 	{
-
 	}
+
 	const std::string &getName() const { return name; }
 	const std::string &getAlbedoMap() const { return albedoMap; }
 
