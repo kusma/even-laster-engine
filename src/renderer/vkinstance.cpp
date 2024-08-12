@@ -79,7 +79,7 @@ void vkInstance::instanceInit(const char *appName, const vector<const char *> &e
 	VkApplicationInfo appInfo = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = appName,
-		.pEngineName = "very lastest engine ever",
+		.pEngineName = "even laster engine",
 		.apiVersion = VK_API_VERSION_1_3,
 	};
 
