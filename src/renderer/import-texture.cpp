@@ -19,8 +19,20 @@ using vkHelpers::setImageName;
 #include <FreeImage.h>
 #include <immintrin.h>
 
+static void errorHandler(FREE_IMAGE_FORMAT fif, const char *message)
+{
+	printf("\n*** ");
+	if (fif != FIF_UNKNOWN) {
+		printf("%s Format\n", FreeImage_GetFormatFromFIF(fif));
+	}
+	printf(message);
+	printf(" ***\n");
+}
+
 static FIBITMAP *loadBitmap(string filename, VkFormat *format, bool preferLinear)
 {
+	FreeImage_SetOutputMessage(errorHandler);
+
 	FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename.c_str(), 0);
 	if (fif == FIF_UNKNOWN) {
 		fif = FreeImage_GetFIFFromFilename(filename.c_str());
@@ -239,6 +251,38 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 	return texture;
 }
 
+
+Texture3D importTexture3D(string filename, TextureImportFlags flags)
+{
+	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
+
+	VkFormat format = VK_FORMAT_UNDEFINED;
+	auto dib = loadBitmap(filename, &format, preferLinear);
+	assert(format != VK_FORMAT_UNDEFINED);
+
+	if (flags & TextureImportFlags::PREMULTIPLY_ALPHA)
+		FreeImage_PreMultiplyWithAlpha(dib);
+
+	auto baseWidth = FreeImage_GetWidth(dib);
+	auto baseHeight = FreeImage_GetHeight(dib);
+
+	printf("wat: %d %d\n", baseWidth, baseHeight);
+
+	auto baseDepth = baseWidth; // FreeImage_GetDepth(dib);
+
+	auto mipLevels = 1;
+	if (flags & TextureImportFlags::GENERATE_MIPMAPS)
+		mipLevels = 32 - clz(max(baseWidth, baseHeight));
+
+	Texture3D texture(format, baseWidth, baseHeight, baseDepth, mipLevels);
+
+	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
+		uploadMipChain(commandBuffer, texture, dib, mipLevels);
+	});
+
+	setImageName(vkInstance::device, texture.getImage(), filename);
+	return texture;
+}
 
 TextureCube importTextureCube(string filename, TextureImportFlags flags)
 {

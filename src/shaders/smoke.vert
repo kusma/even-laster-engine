@@ -12,6 +12,7 @@ layout (binding = 1) uniform smokeUBO {
 #include "utils.glsl"
 
 layout (location = 0) out float outSize;
+layout (location = 1) out vec4 outColor;
 layout (binding = 2) uniform sampler3D volumeSampler;
 
 void main()
