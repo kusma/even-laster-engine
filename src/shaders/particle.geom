@@ -7,11 +7,15 @@ layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
 layout (location = 0) in float inSize[];
+layout (location = 1) in vec4 inColor[];
 
 layout (location = 0) out vec2 outTexCoord;
+layout (location = 1) out vec4 outColor;
 
 void main() {
     vec4 offs = vec4(ubo.offsets.xy, -ubo.offsets.xy) * inSize[0];
+
+    outColor = inColor[0];
 
     gl_Position = gl_in[0].gl_Position;
     gl_Position.xy += offs.xw;

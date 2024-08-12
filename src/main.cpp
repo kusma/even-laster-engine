@@ -469,9 +469,9 @@ int main(int argc, char *argv[])
 		auto sceneFramebuffer = sceneRenderPass.createFramebuffer(
 			{ &sceneDepthRenderTarget, &sceneColorMSAARenderTarget, &sceneColorRenderTarget });
 
-		RenderPass smokeRenderPass(sceneFormat);
+		RenderPass particleRenderPass(sceneFormat);
 
-		auto smokeFramebuffer = smokeRenderPass.createFramebuffer(
+		auto particleFramebuffer = particleRenderPass.createFramebuffer(
 			{ &sceneColorRenderTarget });
 
 
@@ -558,12 +558,16 @@ int main(int argc, char *argv[])
 		auto bloomUpscaleFragmentShader = loadShaderModule("data/shaders/bloom_upscale.frag.spv");
 		auto bloomUpscalePipeline = createFullScreenQuadPipeline(bloomUpscalePipelineLayout, bloomUpscaleRenderPass, bloomUpscaleFragmentShader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, BlendMode::Additive);
 
+		// particle effects
+
 		struct {
 			glm::mat4 modelViewProjectionMatrix;
 			glm::vec2 offsets;
 			float time;
 		} particleUniforms;
 		auto particleUniformBuffer = new UniformBuffer(sizeof(particleUniforms));
+
+		// smoke effect
 
 		struct {
 			glm::vec2 offset;
@@ -584,7 +588,7 @@ int main(int argc, char *argv[])
 			.geometryShader = loadShaderModule("data/shaders/particle.geom.spv"),
 			.fragmentShader = loadShaderModule("data/shaders/smoke.frag.spv"),
 		});
-		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, smokeRenderPass, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
+		auto smokePipeline = createGeometrylessPipeline(smokePipelineLayout, particleRenderPass, smokeShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::Additive);
 
 		auto smokeDescriptorPool = smokeDescriptorSetBuilder.createDescriptorPool(1);
 
@@ -605,6 +609,53 @@ int main(int argc, char *argv[])
 			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
 			                              2, descriptorImageInfos);
 		}
+
+		// bartikkel effect
+
+		struct {
+			glm::ivec4 xaxis;
+			glm::ivec4 yaxis;
+			glm::ivec4 zaxis;
+			glm::ivec4 zpos;
+			glm::mat4 modelViewMatrix;
+		} bartikkelUniforms;
+		auto bartikkelUniformBuffer = new UniformBuffer(sizeof(bartikkelUniforms));
+
+		DescriptorSetBuilder bartikkelDescriptorSetBuilder;
+		bartikkelDescriptorSetBuilder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT);
+		bartikkelDescriptorSetBuilder.addUniformBuffer(1, VK_SHADER_STAGE_VERTEX_BIT);
+		bartikkelDescriptorSetBuilder.addCombinedImageSampler(2, VK_SHADER_STAGE_FRAGMENT_BIT);
+		auto bartikkelDescriptorSetLayout = bartikkelDescriptorSetBuilder.createDescriptorSetLayout();
+
+		auto bartikkelPipelineLayout = createPipelineLayout(vkInstance::device, { bartikkelDescriptorSetLayout }, {});
+		auto bartikkelShaderStages = createStageVector({
+			.vertexShader = loadShaderModule("data/shaders/bartikkel.vert.spv"),
+			.geometryShader = loadShaderModule("data/shaders/particle.geom.spv"),
+			.fragmentShader = loadShaderModule("data/shaders/bartikkel.frag.spv"),
+		});
+		auto bartikkelPipeline = createGeometrylessPipeline(bartikkelPipelineLayout, particleRenderPass, bartikkelShaderStages, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, false, BlendMode::SourceOverPremult);
+
+		auto bartikkelDescriptorPool = bartikkelDescriptorSetBuilder.createDescriptorPool(1);
+
+		auto bartikkelDescriptorSet = allocateDescriptorSet(vkInstance::device, bartikkelDescriptorPool, bartikkelDescriptorSetLayout);
+
+		auto bartikkelTexture = importTexture2D("assets/bartikkel.png", TextureImportFlags::PREMULTIPLY_ALPHA | TextureImportFlags::GENERATE_MIPMAPS);
+		VkSampler bartikkelSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, FLT_MAX, true, false);
+
+		{
+			vector<VkDescriptorImageInfo> descriptorImageInfos = {
+				{ bartikkelSampler, bartikkelTexture.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
+			};
+
+			writeUniformBufferDescriptor(vkInstance::device, bartikkelDescriptorSet,
+			                             0, { particleUniformBuffer->getDescriptorBufferInfo() });
+			writeUniformBufferDescriptor(vkInstance::device, bartikkelDescriptorSet,
+			                             1, { bartikkelUniformBuffer->getDescriptorBufferInfo() });
+			updateCombinedImageDescriptor(vkInstance::device, bartikkelDescriptorSet,
+			                              2, descriptorImageInfos);
+		}
+
+
 
 		vector<Scene *> scenes;
 		for (int i = 0; true; ++i) {
@@ -896,8 +947,6 @@ int main(int argc, char *argv[])
 				sceneRenderer->draw(commandBuffer, viewMatrix, projectionMatrix);
 				vkCmdEndRenderPass(commandBuffer);
 			} else {
-				int size = 1 << 10;
-
 				auto modelMatrix = glm::mat4(1);
 				auto modelViewMatrix = viewMatrix * modelMatrix;
 				auto modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
@@ -908,13 +957,6 @@ int main(int argc, char *argv[])
 				particleUniforms.offsets = glm::vec2(a, b);
 				particleUniformBuffer->uploadMemory(&particleUniforms, sizeof(particleUniforms));
 
-				smokeUniforms.offset = glm::vec2(sync_get_val(wavePlaneOffsetXTrack, row),
-				                                 sync_get_val(wavePlaneOffsetYTrack, row));
-				smokeUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
-				                                sync_get_val(wavePlaneScaleYTrack, row));
-				smokeUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
-				smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
-
 				VkClearValue clearValue = {
 					.color = {
 						float(sync_get_val(clearRTrack, row)),
@@ -924,10 +966,10 @@ int main(int argc, char *argv[])
 					}
 				};
 
-				VkRenderPassBeginInfo smokeRenderPassBegin = {
+				VkRenderPassBeginInfo particleRenderPassBegin = {
 					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = smokeRenderPass.getRenderPass(),
-					.framebuffer = smokeFramebuffer,
+					.renderPass = particleRenderPass.getRenderPass(),
+					.framebuffer = particleFramebuffer,
 					.renderArea = {
 						.extent = {uint32_t(width), uint32_t(height)},
 					},
@@ -935,15 +977,73 @@ int main(int argc, char *argv[])
 					.pClearValues = &clearValue,
 				};
 
-				vkCmdBeginRenderPass(commandBuffer, &smokeRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRenderPass(commandBuffer, &particleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
 
 				setViewport(commandBuffer, 0, 0, float(width), float(height));
 				setScissor(commandBuffer, 0, 0, width, height);
 
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,  smokePipeline);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipelineLayout, 0, 1, &smokeDescriptorSet, 0, nullptr);
+				if (false) {
+					smokeUniforms.offset = glm::vec2(sync_get_val(wavePlaneOffsetXTrack, row),
+													sync_get_val(wavePlaneOffsetYTrack, row));
+					smokeUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
+													sync_get_val(wavePlaneScaleYTrack, row));
+					smokeUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
+					smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
 
-				vkCmdDraw(commandBuffer, size, size, 0, 0);
+					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipeline);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipelineLayout, 0, 1, &smokeDescriptorSet, 0, nullptr);
+					int size = 1 << 10;
+					vkCmdDraw(commandBuffer, size, size, 0, 0);
+				} else {
+
+#define AXIS_BITS 6
+					glm::vec3 xaxis = modelViewMatrix[0];
+					glm::vec3 yaxis = modelViewMatrix[1];
+					glm::vec3 zaxis = modelViewMatrix[2];
+					glm::vec3 zpos = modelViewMatrix[3];
+
+					// make sure each axis has positive z
+					if (xaxis.z < 0)
+						xaxis = -xaxis;
+					if (yaxis.z < 0)
+						yaxis = -yaxis;
+					if (zaxis.z < 0)
+						zaxis = -zaxis;
+
+					if (xaxis.z > yaxis.z)
+						std::swap(xaxis, yaxis);
+
+					if (xaxis.z > zaxis.z)
+						std::swap(xaxis, zaxis);
+
+					if (yaxis.z > zaxis.z)
+						std::swap(yaxis, zaxis);
+
+					// center the grid
+					zpos -= xaxis * float(1 << (AXIS_BITS - 1));
+					zpos -= yaxis * float(1 << (AXIS_BITS - 1));
+					zpos -= zaxis * float(1 << (AXIS_BITS - 1));
+
+					auto gridMatrix = glm::mat4(glm::vec4(xaxis, 0),
+					                            glm::vec4(yaxis, 0),
+					                            glm::vec4(zaxis, 0),
+					                            glm::vec4(zpos, 0));
+
+					gridMatrix = glm::inverse(modelViewMatrix) * gridMatrix;
+
+					bartikkelUniforms.xaxis = glm::ivec4(roundf(gridMatrix[0].x), roundf(gridMatrix[0].y), roundf(gridMatrix[0].z), 0);
+					bartikkelUniforms.yaxis = glm::ivec4(roundf(gridMatrix[1].x), roundf(gridMatrix[1].y), roundf(gridMatrix[1].z), 0);
+					bartikkelUniforms.zaxis = glm::ivec4(roundf(gridMatrix[2].x), roundf(gridMatrix[2].y), roundf(gridMatrix[2].z), 0);
+					bartikkelUniforms.zpos = glm::ivec4(roundf(gridMatrix[3].x), roundf(gridMatrix[3].y), roundf(gridMatrix[3].z), 0);
+					bartikkelUniforms.modelViewMatrix = modelViewMatrix;
+					bartikkelUniformBuffer->uploadMemory(&bartikkelUniforms, sizeof(bartikkelUniforms));
+
+					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bartikkelPipeline);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bartikkelPipelineLayout, 0, 1, &bartikkelDescriptorSet, 0, nullptr);
+					int size = 1 << (3 * AXIS_BITS);
+					vkCmdDraw(commandBuffer, size, 1, 0, 0);
+			}
+
 				vkCmdEndRenderPass(commandBuffer);
 			}
 
@@ -1041,11 +1141,14 @@ int main(int argc, char *argv[])
 			auto pulseAmount = sync_get_val(pulseAmountTrack, row);
 			auto pulseSpeed = sync_get_val(pulseSpeedTrack, row);
 			auto pulse = cos(row * pulseSpeed * (M_PI / rowsPerBeat));
-			fade = max(0.0, fade - pulseAmount + pulse * pulseAmount);
+			// fade = max(0.0, fade - pulseAmount + pulse * pulseAmount);
+
+			auto bloomAmount = float(sync_get_val(bloomAmountTrack, row));
+			bloomAmount = max(0.0, bloomAmount - pulseAmount + pulse * pulseAmount);
 
 			postProcessPushConstantData.overlayIndex = uint32_t(sync_get_val(overlayIndexTrack, row));
 			postProcessPushConstantData.frameSeed = rand();
-			postProcessPushConstantData.bloomAmount = float(sync_get_val(bloomAmountTrack, row));
+			postProcessPushConstantData.bloomAmount = bloomAmount;
 			postProcessPushConstantData.overlayAlpha = float(sync_get_val(overlayAlphaTrack, row));
 			postProcessPushConstantData.fade = float(fade);
 			postProcessPushConstantData.flash = float(sync_get_val(flashTrack, row));

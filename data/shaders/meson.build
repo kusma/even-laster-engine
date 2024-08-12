@@ -1,4 +1,6 @@
 sources = [
+	'bartikkel.frag',
+	'bartikkel.vert',
 	'bloom_downscale.frag',
 	'bloom_upscale.frag',
 	'fullscreenquad.vert',
