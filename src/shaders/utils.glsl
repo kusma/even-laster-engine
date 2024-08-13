@@ -24,6 +24,15 @@ float randf(uint seed)
 	return float(r >> (32 - 23)) / ((1 << 23) - 1);
 }
 
+vec3 randf3(uint seed)
+{
+	uint x = rand(seed);
+	uint y = rand(x);
+	uint z = rand(y);
+	x = rand(z);
+	return vec3(uvec3(x, y, z) >> (32 - 23)) / ((1 << 23) - 1);
+}
+
 vec3 fromLinear(vec3 linearRGB)
 {
 	bvec3 cutoff = lessThan(linearRGB, vec3(0.0031308));

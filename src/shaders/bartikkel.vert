@@ -32,7 +32,8 @@ void main()
 
 	vec3 pos = ipos;
 
-	vec3 offs = vec3(randf(ipos.y + ipos.z), randf(ipos.x + ipos.z), randf(ipos.x + ipos.y));
+	ipos += ivec3(7331, 7333, 7349);
+	vec3 offs = randf3(7229 + (ipos.x ^ ipos.y ^ ipos.z));
 	pos += offs - 0.5;
 
 	float depth = (bartikkel_ubo.modelViewMatrix * vec4(pos, 1.0)).z;
