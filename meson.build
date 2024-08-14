@@ -24,7 +24,7 @@ add_project_arguments(cxx.get_supported_arguments('-mf16c'), language: 'cpp')
 python = import('python').find_installation('python3')
 
 vulkan_dep = dependency('vulkan')
-glslang = find_program('glslangValidator')
+glslc = find_program('glslc')
 glfw_dep = dependency('glfw3', version: '>=3.2')
 glm_dep = dependency('glm')
 

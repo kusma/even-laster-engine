@@ -15,18 +15,20 @@ sources = [
 foreach s : sources
 	infile = files(join_paths('..', '..', 'src', 'shaders', s))
 	outfile = s + '.spv'
+	depfile = s + '.d'
 	custom_target(
 		outfile,
 		input: infile,
 		output: outfile,
+		depfile: depfile,
 		command: [
-			glslang,
-			'-V',
-			'--target-env',
-			'vulkan1.3',
+			glslc,
+			'-O',
+			'--target-env=vulkan1.3',
 			'@INPUT@',
 			'-o',
 			'@OUTPUT@',
+			'-MD', '-MF', '@DEPFILE@',
 		],
 		build_by_default: true,
 		install: true,
