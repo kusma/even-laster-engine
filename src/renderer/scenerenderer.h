@@ -18,10 +18,11 @@ class IndexBuffer;
 
 struct IndexedBatch {
 public:
-	IndexedBatch(VkIndexType indexType, uint32_t indexCount) :
+	IndexedBatch(VkIndexType indexType, uint32_t indexCount, uint32_t instanceCount = 1) :
 		indexBuffer(VK_NULL_HANDLE),
 		indexType(indexType),
-		indexCount(indexCount)
+		indexCount(indexCount),
+		instanceCount(instanceCount)
 	{
 		assert(vertexBuffers.size() == vertexBufferOffsets.size());
 	}
@@ -40,7 +41,7 @@ public:
 
 	void draw(VkCommandBuffer commandBuffer) const
 	{
-		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, 0);
 	}
 
 private:
@@ -51,6 +52,7 @@ private:
 	VkBuffer indexBuffer;
 	VkIndexType indexType;
 	uint32_t indexCount;
+	uint32_t instanceCount;
 };
 
 class SceneRenderer {
