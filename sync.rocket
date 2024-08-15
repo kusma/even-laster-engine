@@ -138,8 +138,8 @@
 			<key row="511" value="2" interpolation="0"/>
 			<key row="512" value="69" interpolation="0"/>
 			<key row="704" value="5.0999975" interpolation="2"/>
-			<key row="752" value="14" interpolation="3"/>
-			<key row="767" value="4" interpolation="0"/>
+			<key row="752" value="8" interpolation="3"/>
+			<key row="767" value="6" interpolation="0"/>
 			<key row="768" value="69" interpolation="1"/>
 			<key row="824" value="70" interpolation="1"/>
 			<key row="935" value="53" interpolation="0"/>
@@ -161,17 +161,21 @@
 			<key row="0" value="0" interpolation="0"/>
 			<key row="704" value="0" interpolation="0"/>
 			<key row="752" value="0" interpolation="0"/>
+			<key row="768" value="0" interpolation="0"/>
 		</track>
 		<track name="camera:target.x">
 			<key row="0" value="0" interpolation="0"/>
 			<key row="704" value="0" interpolation="0"/>
 			<key row="752" value="0" interpolation="0"/>
 			<key row="767" value="0" interpolation="0"/>
+			<key row="768" value="10" interpolation="3"/>
+			<key row="770" value="0" interpolation="0"/>
 		</track>
 		<track name="camera:target.z">
 			<key row="0" value="0" interpolation="0"/>
 			<key row="704" value="0" interpolation="0"/>
 			<key row="752" value="0" interpolation="0"/>
+			<key row="768" value="0" interpolation="0"/>
 		</track>
 		<track name="refraction:plane"/>
 		<track name="refraction:fade"/>
