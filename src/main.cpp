@@ -1042,7 +1042,7 @@ int main(int argc, char *argv[])
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bartikkelPipelineLayout, 0, 1, &bartikkelDescriptorSet, 0, nullptr);
 					int size = 1 << (3 * AXIS_BITS);
 					vkCmdDraw(commandBuffer, size, 1, 0, 0);
-			}
+				}
 
 				vkCmdEndRenderPass(commandBuffer);
 			}
