@@ -41,6 +41,6 @@ void main()
 
 	outSize = 0.25;
 
-	const float fogDensity = 0.1;
+	const float fogDensity = 0.075;
 	outColor = vec4(vec3(1), exp(depth * fogDensity));
 }
