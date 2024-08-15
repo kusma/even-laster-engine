@@ -27,7 +27,7 @@
 
 #include "sync/sync.h"
 
-const auto beatsPerMinute = 174.0f;
+const auto beatsPerMinute = 170.0f;
 const auto rowsPerBeat = 8;
 const auto rowRate = (beatsPerMinute / 60.0) * rowsPerBeat;
 
