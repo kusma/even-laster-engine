@@ -9,6 +9,8 @@
 
 layout (location = 0) in vec2 texCoord;
 layout (location = 1) in vec3 modelPos;
+layout (location = 2) in vec3 inNormal;
+
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -22,7 +24,7 @@ layout (binding = 2) uniform UBO
 
 void main()
 {
-	vec3 modelNormal = normalize(cross(dFdx(modelPos), dFdy(modelPos)));
+	vec3 modelNormal = normalize(inNormal); // normalize(cross(dFdx(modelPos), dFdy(modelPos)));
 	vec3 pos = modelPos;
 	vec3 viewPos = perObjectUBO.modelViewInverseMatrix[3].xyz;
 	vec3 view = normalize(modelPos - viewPos);
@@ -31,7 +33,7 @@ void main()
 
 	float fres = pow(1 - dot(modelNormal, -view), 3);
 	vec3 envCoord = reflect(normalize(view), modelNormal);
-	color += (0.25 + 0.5 * texture(samplerEnv, envCoord).rgb * pow(1 - dot(modelNormal, -view), 3)) * fres;
+	color += (0.1 + 0.5 * texture(samplerEnv, envCoord).rgb * pow(1 - dot(modelNormal, -view), 3)) * fres;
 
 	outFragColor = vec4(color, 1);
 }

@@ -898,7 +898,7 @@ int main(int argc, char *argv[])
 			auto fov = sync_get_val(cameraFOVTrack, row);
 			auto aspect = float(width) / height;
 			auto znear = 0.01f;
-			auto zfar = 100.0f;
+			auto zfar = 500.0f;
 			auto projectionMatrix = glm::perspective(float(fov * M_PI / 180), aspect, znear, zfar);
 
 			int sceneIndex = int(sync_get_val(sceneIndexTrack, row));
@@ -982,7 +982,7 @@ int main(int argc, char *argv[])
 				setViewport(commandBuffer, 0, 0, float(width), float(height));
 				setScissor(commandBuffer, 0, 0, width, height);
 
-				if (false) {
+				if (sceneIndex == -1) {
 					smokeUniforms.offset = glm::vec2(sync_get_val(wavePlaneOffsetXTrack, row),
 													sync_get_val(wavePlaneOffsetYTrack, row));
 					smokeUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
