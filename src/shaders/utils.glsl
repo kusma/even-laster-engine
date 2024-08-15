@@ -10,6 +10,15 @@ vec3 spectrum_offset(float t)
 	return clamp( vec3( -t0, 1.0-abs(t0), t0), 0.0, 1.0);
 }
 
+uint hash( uint x ) {
+    x += ( x << 10u );
+    x ^= ( x >>  6u );
+    x += ( x <<  3u );
+    x ^= ( x >> 11u );
+    x += ( x << 15u );
+    return x;
+}
+
 uint rand(uint seed)
 {
 	int a = 1103515245;
