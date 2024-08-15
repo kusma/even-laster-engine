@@ -488,7 +488,6 @@ int main(int argc, char *argv[])
 
 		DescriptorSetBuilder bloomUpscaleDescriptorSetBuilder;
 		bloomUpscaleDescriptorSetBuilder.addCombinedImageSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT);
-		bloomUpscaleDescriptorSetBuilder.addCombinedImageSampler(1, VK_SHADER_STAGE_FRAGMENT_BIT);
 		auto bloomUpscaleDescriptorSetLayout = bloomUpscaleDescriptorSetBuilder.createDescriptorSetLayout();
 		auto bloomDescriptorPool = bloomUpscaleDescriptorSetBuilder.createDescriptorPool(bloomLevels + bloomLevels - 1);
 
