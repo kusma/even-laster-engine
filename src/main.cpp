@@ -996,7 +996,7 @@ int main(int argc, char *argv[])
 					vkCmdDraw(commandBuffer, size, size, 0, 0);
 				} else {
 
-#define AXIS_BITS 6
+					const int AXIS_BITS = 6;
 					glm::vec3 xaxis = modelViewMatrix[0];
 					glm::vec3 yaxis = modelViewMatrix[1];
 					glm::vec3 zaxis = modelViewMatrix[2];
