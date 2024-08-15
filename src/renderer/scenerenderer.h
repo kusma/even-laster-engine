@@ -31,14 +31,14 @@ public:
 	VertexBuffer *createVertexBuffer(VkDeviceSize size, VkDeviceSize offset);
 	IndexBuffer *createIndexBuffer(VkDeviceSize size);
 
-	void bind(VkCommandBuffer commandBuffer)
+	void bind(VkCommandBuffer commandBuffer) const
 	{
 		assert(indexBuffer != VK_NULL_HANDLE);
 		vkCmdBindVertexBuffers(commandBuffer, 0, vertexBuffers.size(), vertexBuffers.data(), vertexBufferOffsets.data());
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, indexType);
 	}
 
-	void draw(VkCommandBuffer commandBuffer)
+	void draw(VkCommandBuffer commandBuffer) const
 	{
 		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 	}
