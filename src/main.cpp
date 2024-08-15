@@ -1001,7 +1001,7 @@ int main(int argc, char *argv[])
 					glm::vec3 xaxis = modelViewMatrix[0];
 					glm::vec3 yaxis = modelViewMatrix[1];
 					glm::vec3 zaxis = modelViewMatrix[2];
-					glm::vec3 zpos = modelViewMatrix[3];
+					glm::vec3 zpos = -modelViewMatrix[3];
 
 					// make sure each axis has positive z
 					if (xaxis.z < 0)
