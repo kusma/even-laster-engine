@@ -476,11 +476,45 @@ int main(int argc, char *argv[])
 			{ &sceneColorRenderTarget });
 
 
+		DescriptorSetBuilder backgroundDescriptorSetBuilder;
+		backgroundDescriptorSetBuilder.addCombinedImageSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT, 2);
+		auto backgroundDescriptorSetLayout = backgroundDescriptorSetBuilder.createDescriptorSetLayout();
+
+		struct {
+			float time;
+		} backgroundPushConstantData;
+
+		VkPushConstantRange backgroundPushConstantRange = {
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(backgroundPushConstantData)
+		};
+
+		auto backgroundPipelineLayout = createPipelineLayout(vkInstance::device, { backgroundDescriptorSetLayout }, { backgroundPushConstantRange });
+		auto backgroundFragmentShader = loadShaderModule("data/shaders/background.frag.spv");
+		auto backgroundPipeline = createFullScreenQuadPipeline(backgroundPipelineLayout, sceneRenderPass, backgroundFragmentShader, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, BlendMode::SourceOverPremult);
+
+		auto backgroundDescriptorPool = backgroundDescriptorSetBuilder.createDescriptorPool(1);
+		auto backgroundDescriptorSet = allocateDescriptorSet(vkInstance::device, backgroundDescriptorPool, backgroundDescriptorSetLayout);
+
+		auto kickflipBGTexture = importTexture2D("assets/kickflip-bg.png", TextureImportFlags::NONE);
+		auto kickflipTexture = importTexture2D("assets/kickflip.png", TextureImportFlags::PREMULTIPLY_ALPHA);
+		VkSampler linearSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
+		updateCombinedImageDescriptor(vkInstance::device, backgroundDescriptorSet, 0,
+		{ {
+			.sampler = linearSampler,
+			.imageView = kickflipBGTexture.getImageView(),
+			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		}, {
+			.sampler = linearSampler,
+			.imageView = kickflipTexture.getImageView(),
+			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		} });
+
 		RenderPass bloomDownscaleRenderPass(bloomRenderTarget.getFormat(),
 		                                    VK_FORMAT_UNDEFINED,
 		                                    VK_SAMPLE_COUNT_1_BIT,
 		                                    VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-
 
 		DescriptorSetBuilder bloomDownscaleDescriptorSetBuilder;
 		bloomDownscaleDescriptorSetBuilder.addCombinedImageSampler(0, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -925,8 +959,14 @@ int main(int argc, char *argv[])
 				setViewport(commandBuffer, 0, 0, float(width), float(height));
 				setScissor(commandBuffer, 0, 0, width, height);
 
-				setViewport(commandBuffer, 0, 0, float(width), float(height));
-				setScissor(commandBuffer, 0, 0, width, height);
+				if (sceneIndex == 0) {
+					backgroundPushConstantData.time = row;
+					vkCmdPushConstants(commandBuffer, backgroundPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(backgroundPushConstantData), &backgroundPushConstantData);
+					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, backgroundPipeline);
+					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, backgroundPipelineLayout, 0, 1, &backgroundDescriptorSet, 0, nullptr);
+					vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+				}
+
 				sceneRenderer->draw(commandBuffer, viewMatrix, projectionMatrix);
 				vkCmdEndRenderPass(commandBuffer);
 			} else {
@@ -975,7 +1015,7 @@ int main(int argc, char *argv[])
 
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipeline);
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipelineLayout, 0, 1, &smokeDescriptorSet, 0, nullptr);
-					int size = 1 << 10;
+					int size = 3 << 8;
 					vkCmdDraw(commandBuffer, size, size, 0, 0);
 				} else {
 

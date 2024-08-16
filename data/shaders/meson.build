@@ -1,4 +1,5 @@
 sources = [
+	'background.frag',
 	'bartikkel.frag',
 	'bartikkel.vert',
 	'bloom_downscale.frag',
