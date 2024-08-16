@@ -189,10 +189,8 @@ SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 	for (auto object : scene->getObjects()) {
 		// transform meshes to indexed batches
 		auto mesh = object->getModel()->getMesh();
-		if (indexedBatches.find(mesh) == indexedBatches.end()) {
-			// FIXME: currently leaks all IndexedBatch objects
+		if (indexedBatches.find(mesh) == indexedBatches.end())
 			indexedBatches.insert(std::make_pair(mesh, meshToIndexedBatch(*mesh)));
-		}
 
 		// transform vertexformats to pipelines
 		auto vertexFormat = mesh->getVertexFormat();
