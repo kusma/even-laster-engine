@@ -723,9 +723,12 @@ int main(int argc, char *argv[])
 				cubeTexture->getDescriptorImageInfo(textureSampler)
 			};
 
-			updateCombinedImageDescriptor(vkInstance::device,
-			                              sceneRenderer->getDescriptorSet(),
-			                              1, descriptorImageInfos);
+			auto descriptorSets = sceneRenderer->getDescriptorSets();
+			for (const auto kv : descriptorSets) {
+				updateCombinedImageDescriptor(vkInstance::device,
+				                              kv.second,
+				                              1, descriptorImageInfos);
+			}
 		}
 
 		auto arrayTextureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);

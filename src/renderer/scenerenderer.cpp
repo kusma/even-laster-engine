@@ -185,6 +185,7 @@ SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 
 	pipelineLayout = createPipelineLayout(vkInstance::device, { descriptorSetLayout }, {});
 
+	std::set<const Material *> materials;
 	for (auto object : scene->getObjects()) {
 		// transform meshes to indexed batches
 		auto mesh = object->getModel()->getMesh();
@@ -226,20 +227,30 @@ SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 			                                       shaderStages);
 			pipelines.insert(std::make_pair(vertexFormat, pipeline));
 		}
+
+		materials.insert(object->getModel()->getMaterial());
 	}
 
-	auto descriptorPool = descSetBuilder.createDescriptorPool(1);
+	auto descriptorPool = descSetBuilder.createDescriptorPool(materials.size());
 
 	uniformBufferSpacing = uint32_t(alignSize(sizeof(PerObjectUniforms), vkInstance::deviceProperties.limits.minUniformBufferOffsetAlignment));
 	auto uniformBufferSize = VkDeviceSize(uniformBufferSpacing * scene->getTransforms().size());
 
 	uniformBuffer = new UniformBuffer(uniformBufferSize);
 
-	descriptorSet = allocateDescriptorSet(vkInstance::device, descriptorPool, descriptorSetLayout);
+	for (auto object : scene->getObjects()) {
+		// transform materials to descriptor sets
+		auto material = object->getModel()->getMaterial();
+		if (descriptorSets.find(material) == descriptorSets.end()) {
+			auto descriptorSet = allocateDescriptorSet(vkInstance::device, descriptorPool, descriptorSetLayout);
 
-	writeUniformBufferDynamicDescriptor(vkInstance::device, descriptorSet, 0, {
-		uniformBuffer->getDescriptorBufferInfo(0, uniformBufferSpacing),
-	});
+			writeUniformBufferDynamicDescriptor(vkInstance::device, descriptorSet, 0, {
+				uniformBuffer->getDescriptorBufferInfo(0, uniformBufferSpacing),
+			});
+
+			descriptorSets.insert(std::make_pair(material, descriptorSet));
+		}
+	}
 }
 
 SceneRenderer::~SceneRenderer()
@@ -280,8 +291,11 @@ void SceneRenderer::draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMat
 	uniformBuffer->unmap();
 
 	for (auto object : scene->getObjects()) {
-		auto mesh = object->getModel()->getMesh();
+		auto model = object->getModel();
+		auto mesh = model->getMesh();
+		auto material = model->getMaterial();
 		auto indexedBatch = indexedBatches.find(mesh)->second;
+		auto descriptorSet = descriptorSets.find(material)->second;
 		auto pipeline = pipelines[mesh->getVertexFormat()];
 
 		indexedBatch->bind(commandBuffer);
