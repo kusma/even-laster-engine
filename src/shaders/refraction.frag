@@ -15,12 +15,6 @@ layout (location = 2) in vec3 inNormal;
 layout (location = 0) out vec4 outFragColor;
 
 layout (binding = 1) uniform samplerCube samplerEnv;
-layout (binding = 2) uniform UBO
-{
-	float planeIndex;
-	float fade;
-	float refractiveIndex;
-} ubo;
 
 void main()
 {
