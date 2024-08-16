@@ -482,6 +482,7 @@ int main(int argc, char *argv[])
 
 		struct {
 			float time;
+			float alpha;
 		} backgroundPushConstantData;
 
 		VkPushConstantRange backgroundPushConstantRange = {
@@ -839,6 +840,9 @@ int main(int argc, char *argv[])
 		auto wavePlaneScaleYTrack = sync_get_track(rocket, "waveplane:scale.y");
 		auto wavePlaneTimeTrack = sync_get_track(rocket, "waveplane:time");
 
+		auto flipTrack = sync_get_track(rocket, "kickflip:flip");
+		auto backgroundAlphaTrack = sync_get_track(rocket, "kickflip:bg-alpha");
+
 		// wait for all pending setup-work to finish
 		vkInstance::finishSetup();
 
@@ -895,6 +899,7 @@ int main(int argc, char *argv[])
 			auto th = sync_get_val(cameraRotYTrack, row) * (M_PI / 180);
 			auto dist = sync_get_val(cameraDistTrack, row);
 			auto roll = sync_get_val(cameraRollTrack, row) * (M_PI / 180);
+			auto flip = sync_get_val(flipTrack, row) * (M_PI / 180);
 
 			auto cameraTargetX = sync_get_val(cameraTargetXTrack, row);
 			auto cameraTargetY = sync_get_val(cameraTargetYTrack, row);
@@ -909,7 +914,7 @@ int main(int argc, char *argv[])
 				cameraTargetY + sync_get_val(cameraUpTrack, row),
 				cameraTargetZ + cos(th) * dist);
 			auto lookAt = glm::lookAt(viewPosition, targetPosition, glm::vec3(0, 1, 0));
-			auto viewMatrix = glm::rotate(glm::mat4(1), float(roll), glm::vec3(0, 0, 1)) * lookAt;
+			auto viewMatrix = glm::rotate(glm::mat4(1), float(roll), glm::vec3(0, 0, 1)) * lookAt * glm::rotate(glm::mat4(1), float(flip), glm::vec3(1, 0, 0));
 
 			auto fov = sync_get_val(cameraFOVTrack, row);
 			auto aspect = float(width) / height;
@@ -959,8 +964,10 @@ int main(int argc, char *argv[])
 				setViewport(commandBuffer, 0, 0, float(width), float(height));
 				setScissor(commandBuffer, 0, 0, width, height);
 
-				if (sceneIndex == 0) {
+				auto backgroundAlpha = sync_get_val(backgroundAlphaTrack, row);
+				if (backgroundAlpha > 0) {
 					backgroundPushConstantData.time = row;
+					backgroundPushConstantData.alpha = backgroundAlpha;
 					vkCmdPushConstants(commandBuffer, backgroundPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(backgroundPushConstantData), &backgroundPushConstantData);
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, backgroundPipeline);
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, backgroundPipelineLayout, 0, 1, &backgroundDescriptorSet, 0, nullptr);

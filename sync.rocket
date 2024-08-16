@@ -67,6 +67,18 @@
 			<key interpolation="2" row="880" value="1"/>
 			<key interpolation="2" row="888" value="0.5"/>
 			<key interpolation="2" row="896" value="1"/>
+			<key interpolation="2" row="904" value="0.5"/>
+			<key interpolation="2" row="912" value="1"/>
+			<key interpolation="2" row="920" value="0.5"/>
+			<key interpolation="2" row="928" value="1"/>
+			<key interpolation="2" row="936" value="0.5"/>
+			<key interpolation="2" row="944" value="1"/>
+			<key interpolation="2" row="952" value="0.5"/>
+			<key interpolation="2" row="960" value="1"/>
+			<key interpolation="2" row="968" value="0.5"/>
+			<key interpolation="2" row="976" value="1"/>
+			<key interpolation="2" row="984" value="0.5"/>
+			<key interpolation="2" row="992" value="1"/>
 		</track>
 		<track name="fade">
 			<key interpolation="1" row="0" value="0"/>
@@ -106,6 +118,10 @@
 		<track name="pulse.speed">
 			<key interpolation="0" row="0" value="1"/>
 		</track>
+		<track name="flip">
+			<key interpolation="1" row="512" value="0"/>
+			<key interpolation="0" row="703" value="1080"/>
+		</track>
 		<track name="background:clear.r">
 			<key interpolation="0" row="0" value="0"/>
 			<key interpolation="0" row="512" value="0"/>
@@ -123,7 +139,7 @@
 			<key interpolation="0" row="704" value="50"/>
 		</track>
 		<track name="camera:rot.y">
-			<key interpolation="1" row="512" value="62.300003"/>
+			<key interpolation="0" row="512" value="0"/>
 			<key interpolation="0" row="703" value="360"/>
 			<key interpolation="2" row="704" value="90"/>
 			<key interpolation="0" row="752" value="180"/>
@@ -136,7 +152,7 @@
 			<key interpolation="0" row="0" value="3"/>
 			<key interpolation="1" row="440" value="3"/>
 			<key interpolation="0" row="511" value="2"/>
-			<key interpolation="0" row="512" value="69"/>
+			<key interpolation="0" row="512" value="80"/>
 			<key interpolation="2" row="704" value="5.0999975"/>
 			<key interpolation="3" row="752" value="8"/>
 			<key interpolation="0" row="767" value="6"/>
@@ -145,7 +161,7 @@
 			<key interpolation="0" row="935" value="53"/>
 		</track>
 		<track name="camera:roll">
-			<key interpolation="0" row="512" value="90"/>
+			<key interpolation="0" row="512" value="-10"/>
 			<key interpolation="2" row="704" value="180"/>
 			<key interpolation="0" row="752" value="104"/>
 			<key interpolation="1" row="768" value="1"/>
@@ -182,7 +198,7 @@
 		<track name="refraction:index"/>
 		<track name="postprocess:bloom.amount">
 			<key interpolation="0" row="0" value="0.30000001"/>
-			<key interpolation="0" row="512" value="1"/>
+			<key interpolation="0" row="512" value="0.2"/>
 			<key interpolation="0" row="768" value="10"/>
 		</track>
 		<track name="postprocess:kaleidoscope">
@@ -191,6 +207,7 @@
 		</track>
 		<track name="postprocess:grade.index1">
 			<key interpolation="0" row="0" value="6"/>
+			<key interpolation="0" row="512" value="5"/>
 			<key interpolation="0" row="712" value="6"/>
 			<key interpolation="0" row="768" value="3"/>
 		</track>
@@ -221,6 +238,17 @@
 		<track name="waveplane:time">
 			<key interpolation="1" row="0" value="0"/>
 			<key interpolation="0" row="511" value="0.1"/>
+		</track>
+		<track name="kickflip:flip">
+			<key interpolation="1" row="512" value="0"/>
+			<key interpolation="0" row="704" value="1080"/>
+			<key interpolation="0" row="768" value="90"/>
+			<key interpolation="1" row="880" value="90"/>
+			<key interpolation="0" row="896" value="270"/>
+		</track>
+		<track name="kickflip:bg-alpha">
+			<key interpolation="0" row="512" value="1"/>
+			<key interpolation="0" row="704" value="0"/>
 		</track>
 	</tracks>
 	<bookmarks/>
