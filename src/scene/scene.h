@@ -12,8 +12,7 @@ enum VertexFormat {
 	VERTEX_FORMAT_POSITION = (1 << 0),
 	VERTEX_FORMAT_NORMAL = (1 << 1),
 	VERTEX_FORMAT_TANGENT = (1 << 2),
-	VERTEX_FORMAT_BINORMAL = (1 << 3),
-	VERTEX_FORMAT_TEXCOORD0 = (1 << 4),
+	VERTEX_FORMAT_BINORMAL = (1 << 3)
 };
 
 enum IndexType {
