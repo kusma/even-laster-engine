@@ -608,6 +608,7 @@ int main(int argc, char *argv[])
 			glm::vec2 offset;
 			glm::vec2 scale;
 			float time;
+			int logoImage;
 			float logoAmount;
 		} smokeUniforms;
 		auto smokeUniformBuffer = new UniformBuffer(sizeof(smokeUniforms));
@@ -634,8 +635,7 @@ int main(int argc, char *argv[])
 		Texture3D fractalNoise = loadFractalNoise("data/fbm.raw", 64, 64, 64);
 		VkSampler fractalNoiseSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, true, false);
 
-
-		auto evokeLogo = importTexture2D("assets/evoke-logo.png",  TextureImportFlags::PREMULTIPLY_ALPHA);
+		auto smokeText = importTexture2DArray("assets/smoke-text", TextureImportFlags::NONE);
 
 		{
 			writeUniformBufferDescriptor(vkInstance::device, smokeDescriptorSet,
@@ -645,7 +645,7 @@ int main(int argc, char *argv[])
 			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
 			                              2, { { fractalNoiseSampler, fractalNoise.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
 			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
-			                              3, { { linearSampler, evokeLogo->getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
+			                              3, { { linearSampler, smokeText->getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
 		}
 
 		// bartikkel effect
@@ -845,6 +845,7 @@ int main(int argc, char *argv[])
 		auto wavePlaneScaleXTrack = sync_get_track(rocket, "waveplane:scale.x");
 		auto wavePlaneScaleYTrack = sync_get_track(rocket, "waveplane:scale.y");
 		auto wavePlaneTimeTrack = sync_get_track(rocket, "waveplane:time");
+		auto logoImageTrack = sync_get_track(rocket, "waveplane:image");
 		auto logoAmoutTrack = sync_get_track(rocket, "waveplane:logo");
 
 		auto flipTrack = sync_get_track(rocket, "kickflip:flip");
@@ -1025,6 +1026,7 @@ int main(int argc, char *argv[])
 					smokeUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
 													sync_get_val(wavePlaneScaleYTrack, row));
 					smokeUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
+					smokeUniforms.logoImage = int(sync_get_val(logoImageTrack, row));
 					smokeUniforms.logoAmount = float(sync_get_val(logoAmoutTrack, row));
 					smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
 
