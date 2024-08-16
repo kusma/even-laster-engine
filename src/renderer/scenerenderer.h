@@ -62,13 +62,13 @@ public:
 
 	void draw(VkCommandBuffer commandBuffer, const glm::mat4 &viewMatrix, const glm::mat4 &projectionMatrix);
 
-	VkDescriptorSet getDescriptorSet() { return descriptorSet; } // HACK! Yuck yuck yuck!
+	std::map<const Material *, VkDescriptorSet> getDescriptorSets() { return descriptorSets; } // HACK! Yuck yuck yuck!
 
 private:
 	const Scene *scene;
 
 	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSet;
+	std::map<const Material *, VkDescriptorSet> descriptorSets;
 	std::map<const Mesh *, IndexedBatch *> indexedBatches;
 	std::map<VertexFormat, VkPipeline> pipelines;
 	VkSampler textureSampler;
