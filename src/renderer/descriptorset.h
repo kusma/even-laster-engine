@@ -17,9 +17,9 @@ public:
 		// count needed descriptors per type
 		auto n = descriptorTypeCounts.find(binding.descriptorType);
 		if (n != descriptorTypeCounts.end())
-			n->second++;
+			n->second += binding.descriptorCount;
 		else
-			descriptorTypeCounts[binding.descriptorType] = 1;
+			descriptorTypeCounts[binding.descriptorType] = binding.descriptorCount;
 	}
 
 	void addCombinedImageSampler(unsigned binding,
