@@ -7,6 +7,7 @@ layout (binding = 1) uniform smokeUBO {
 	vec2 offset;
 	vec2 scale;
 	float time;
+	float logoAmount;
 } smoke_ubo;
 
 #include "utils.glsl"
@@ -14,6 +15,7 @@ layout (binding = 1) uniform smokeUBO {
 layout (location = 0) out float outSize;
 layout (location = 1) out vec4 outColor;
 layout (binding = 2) uniform sampler3D volumeSampler;
+layout (binding = 3) uniform sampler2D logoSampler;
 
 void main()
 {
@@ -29,6 +31,10 @@ void main()
 	pos = textureLod(volumeSampler, pos, 0).xyz;
 	pos += textureLod(volumeSampler, pos * 3, 0).xyz * 0.5;
 	pos += textureLod(volumeSampler, pos * 15, 0).xyz * 0.01;
+
+	texCoord = ((pos.xy * 10.0) / smoke_ubo.scale - smoke_ubo.offset) * 0.5 + 0.5;
+	outColor = vec4(1) + textureLod(logoSampler, texCoord, 0).r * smoke_ubo.logoAmount;
+
 	pos *= 5;
 
 	gl_Position = ubo.modelViewProjectionMatrix * vec4(pos, 1.0);

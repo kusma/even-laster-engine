@@ -608,6 +608,7 @@ int main(int argc, char *argv[])
 			glm::vec2 offset;
 			glm::vec2 scale;
 			float time;
+			float logoAmount;
 		} smokeUniforms;
 		auto smokeUniformBuffer = new UniformBuffer(sizeof(smokeUniforms));
 
@@ -615,6 +616,7 @@ int main(int argc, char *argv[])
 		smokeDescriptorSetBuilder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT);
 		smokeDescriptorSetBuilder.addUniformBuffer(1, VK_SHADER_STAGE_VERTEX_BIT);
 		smokeDescriptorSetBuilder.addCombinedImageSampler(2, VK_SHADER_STAGE_VERTEX_BIT);
+		smokeDescriptorSetBuilder.addCombinedImageSampler(3, VK_SHADER_STAGE_VERTEX_BIT);
 		auto smokeDescriptorSetLayout = smokeDescriptorSetBuilder.createDescriptorSetLayout();
 
 		auto smokePipelineLayout = createPipelineLayout(vkInstance::device, { smokeDescriptorSetLayout }, {});
@@ -632,17 +634,18 @@ int main(int argc, char *argv[])
 		Texture3D fractalNoise = loadFractalNoise("data/fbm.raw", 64, 64, 64);
 		VkSampler fractalNoiseSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, true, false);
 
-		{
-			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ fractalNoiseSampler, fractalNoise.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
-			};
 
+		Texture2D evokeLogo = importTexture2D("assets/evoke-logo.png",  TextureImportFlags::PREMULTIPLY_ALPHA);
+
+		{
 			writeUniformBufferDescriptor(vkInstance::device, smokeDescriptorSet,
 			                             0, { particleUniformBuffer->getDescriptorBufferInfo() });
 			writeUniformBufferDescriptor(vkInstance::device, smokeDescriptorSet,
 			                             1, { smokeUniformBuffer->getDescriptorBufferInfo() });
 			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
-			                              2, descriptorImageInfos);
+			                              2, { { fractalNoiseSampler, fractalNoise.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
+			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
+			                              3, { { linearSampler, evokeLogo.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
 		}
 
 		// bartikkel effect
@@ -839,6 +842,7 @@ int main(int argc, char *argv[])
 		auto wavePlaneScaleXTrack = sync_get_track(rocket, "waveplane:scale.x");
 		auto wavePlaneScaleYTrack = sync_get_track(rocket, "waveplane:scale.y");
 		auto wavePlaneTimeTrack = sync_get_track(rocket, "waveplane:time");
+		auto logoAmoutTrack = sync_get_track(rocket, "waveplane:logo");
 
 		auto flipTrack = sync_get_track(rocket, "kickflip:flip");
 		auto backgroundAlphaTrack = sync_get_track(rocket, "kickflip:bg-alpha");
@@ -1018,6 +1022,7 @@ int main(int argc, char *argv[])
 					smokeUniforms.scale = glm::vec2(sync_get_val(wavePlaneScaleXTrack, row),
 													sync_get_val(wavePlaneScaleYTrack, row));
 					smokeUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
+					smokeUniforms.logoAmount = float(sync_get_val(logoAmoutTrack, row));
 					smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
 
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipeline);
