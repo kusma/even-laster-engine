@@ -61,6 +61,10 @@ Mesh *SceneImporter::convertMesh(const aiMesh *mesh)
 		vertexFormat |= VERTEX_FORMAT_TANGENT | VERTEX_FORMAT_BINORMAL;
 		stride += sizeof(float) * 6;
 	}
+	if (mesh->HasTextureCoords(0)) {
+		vertexFormat |= VERTEX_FORMAT_TEXCOORD0;
+		stride += sizeof(float) * 3;
+	}
 
 	BlobBuilder vertexBuffer;
 	for (auto i = 0u; i < mesh->mNumVertices; ++i) {
@@ -83,6 +87,12 @@ Mesh *SceneImporter::convertMesh(const aiMesh *mesh)
 			vertexBuffer.append(mesh->mBitangents[i].x);
 			vertexBuffer.append(mesh->mBitangents[i].y);
 			vertexBuffer.append(mesh->mBitangents[i].z);
+		}
+
+		if (mesh->HasTextureCoords(0)) {
+			vertexBuffer.append(mesh->mTextureCoords[0][i].x);
+			vertexBuffer.append(mesh->mTextureCoords[0][i].y);
+			vertexBuffer.append(mesh->mTextureCoords[0][i].z);
 		}
 	}
 	auto vertexData = vertexBuffer.getBytes();

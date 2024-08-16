@@ -146,6 +146,17 @@ static vector<VkVertexInputAttributeDescription> vertexFormatToInputAttributeDes
 		offset += sizeof(float) * 3;
 	}
 
+	if (vertexFormat & VERTEX_FORMAT_TEXCOORD0) {
+		VkVertexInputAttributeDescription attr = {
+			.location = 4,
+			.binding = 0,
+			.format = VK_FORMAT_R32G32B32_SFLOAT,
+			.offset = offset,
+		};
+		vertexInputAttributeDescriptions.push_back(attr);
+		offset += sizeof(float) * 3;
+	}
+
 	return vertexInputAttributeDescriptions;
 }
 
