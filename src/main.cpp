@@ -680,28 +680,14 @@ int main(int argc, char *argv[])
 		auto colorLuts = importColorLuts("assets/luts");
 
 		VkSampler textureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(planes.getMipLevels()), false, false);
-
-		struct {
-			float planeIndex;
-			float fade;
-			float refractiveIndex;
-		} refractionUniforms;
-		auto refractionUniformBuffer = new UniformBuffer(sizeof(refractionUniforms));
-
 		for (SceneRenderer *sceneRenderer : sceneRenderers) {
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
 				cubeTexture.getDescriptorImageInfo(textureSampler)
 			};
 
-			auto descriptorBufferInfo = refractionUniformBuffer->getDescriptorBufferInfo();
-
 			updateCombinedImageDescriptor(vkInstance::device,
 			                              sceneRenderer->getDescriptorSet(),
 			                              1, descriptorImageInfos);
-
-			writeUniformBufferDescriptor(vkInstance::device,
-			                             sceneRenderer->getDescriptorSet(),
-			                             2, { descriptorBufferInfo });
 		}
 
 		auto arrayTextureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, false, false);
@@ -797,10 +783,6 @@ int main(int argc, char *argv[])
 		auto cameraTargetXTrack = sync_get_track(rocket, "camera:target.x");
 		auto cameraTargetYTrack = sync_get_track(rocket, "camera:target.y");
 		auto cameraTargetZTrack = sync_get_track(rocket, "camera:target.z");
-
-		auto refractionPlaneIndexTrack = sync_get_track(rocket, "refraction:plane");
-		auto refractionFadeTrack = sync_get_track(rocket, "refraction:fade");
-		auto refractionIndexTrack = sync_get_track(rocket, "refraction:index");
 
 		auto bloomAmountTrack = sync_get_track(rocket, "postprocess:bloom.amount");
 		auto kaleidoTrack = sync_get_track(rocket, "postprocess:kaleidoscope");
@@ -906,11 +888,12 @@ int main(int argc, char *argv[])
 				sceneIndex %= sceneRenderers.size();
 				SceneRenderer *sceneRenderer = sceneRenderers[sceneIndex];
 
-				refractionUniforms.planeIndex = float(sync_get_val(refractionPlaneIndexTrack, row));
-				refractionUniforms.fade = float(sync_get_val(refractionFadeTrack, row));
-				refractionUniforms.refractiveIndex = float(sync_get_val(refractionIndexTrack, row));
-
+#if 0
+				refractionUniforms.planeIndex = 0;
+				refractionUniforms.fade = 0;
+				refractionUniforms.refractiveIndex = 0;
 				refractionUniformBuffer->uploadMemory(&refractionUniforms, sizeof(refractionUniforms));
+#endif
 
 				VkClearValue clearValues[] = { {
 						.depthStencil = { 1.0f, 0 }
