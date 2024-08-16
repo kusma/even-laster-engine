@@ -7,6 +7,7 @@ layout (binding = 1) uniform smokeUBO {
 	vec2 offset;
 	vec2 scale;
 	float time;
+	int textImage;
 	float logoAmount;
 } smoke_ubo;
 
@@ -15,7 +16,7 @@ layout (binding = 1) uniform smokeUBO {
 layout (location = 0) out float outSize;
 layout (location = 1) out vec4 outColor;
 layout (binding = 2) uniform sampler3D volumeSampler;
-layout (binding = 3) uniform sampler2D logoSampler;
+layout (binding = 3) uniform sampler2DArray logoSampler;
 
 void main()
 {
@@ -33,7 +34,8 @@ void main()
 	pos += textureLod(volumeSampler, pos * 15, 0).xyz * 0.01;
 
 	texCoord = ((pos.xy * 10.0) / smoke_ubo.scale - smoke_ubo.offset) * 0.5 + 0.5;
-	outColor = vec4(1) + textureLod(logoSampler, texCoord, 0).r * smoke_ubo.logoAmount;
+	float logo = textureLod(logoSampler, vec3(texCoord, smoke_ubo.textImage), 0).r;
+	outColor = vec4(1) + logo * smoke_ubo.logoAmount;
 
 	pos *= 5;
 
