@@ -138,7 +138,7 @@ static StagingBuffer *copyToStagingBuffer(FIBITMAP *dib)
 	return stagingBuffer;
 }
 
-static void uploadMipChain(VkCommandBuffer commandBuffer, TextureBase &texture,
+static void uploadMipChain(VkCommandBuffer commandBuffer, TextureBase *texture,
                            FIBITMAP *dib, int mipLevels, int arrayLayer = 0)
 {
 	auto baseWidth = FreeImage_GetWidth(dib);
@@ -159,14 +159,14 @@ static void uploadMipChain(VkCommandBuffer commandBuffer, TextureBase &texture,
 		assert(FreeImage_GetHeight(dib) == mipHeight);
 
 		auto stagingBuffer = copyToStagingBuffer(dib);
-		texture.uploadFromStagingBuffer(commandBuffer, stagingBuffer, mipLevel,
-		                                arrayLayer);
+		texture->uploadFromStagingBuffer(commandBuffer, stagingBuffer, mipLevel,
+		                                 arrayLayer);
 	}
 
 	FreeImage_Unload(dib);
 }
 
-Texture2D importTexture2D(string filename, TextureImportFlags flags)
+Texture2D *importTexture2D(string filename, TextureImportFlags flags)
 {
 	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
 
@@ -184,17 +184,17 @@ Texture2D importTexture2D(string filename, TextureImportFlags flags)
 	if (flags & TextureImportFlags::GENERATE_MIPMAPS)
 		mipLevels = 32 - clz(max(baseWidth, baseHeight));
 
-	Texture2D texture(format, baseWidth, baseHeight, mipLevels, 1);
+	auto texture = new Texture2D(format, baseWidth, baseHeight, mipLevels, 1);
 
 	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
 		uploadMipChain(commandBuffer, texture, dib, mipLevels);
 	});
 
-	setImageName(vkInstance::device, texture.getImage(), filename);
+	setImageName(vkInstance::device, texture->getImage(), filename);
 	return texture;
 }
 
-Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
+Texture2DArray *importTexture2DArray(string folder, TextureImportFlags flags)
 {
 	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
 
@@ -240,19 +240,19 @@ Texture2DArray importTexture2DArray(string folder, TextureImportFlags flags)
 	if (flags & TextureImportFlags::GENERATE_MIPMAPS)
 		mipLevels = 32 - clz(max(firstWidth, firstHeight));
 
-	Texture2DArray texture(firstFormat, firstWidth, firstHeight, bitmaps.size(), mipLevels);
+	auto texture = new Texture2DArray(firstFormat, firstWidth, firstHeight, bitmaps.size(), mipLevels);
 
 	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
 		for (size_t i = 0; i < bitmaps.size(); ++i)
 			uploadMipChain(commandBuffer, texture, bitmaps[i], mipLevels, i);
 	});
 
-	setImageName(vkInstance::device, texture.getImage(), folder);
+	setImageName(vkInstance::device, texture->getImage(), folder);
 	return texture;
 }
 
 
-Texture3D importTexture3D(string filename, TextureImportFlags flags)
+Texture3D *importTexture3D(string filename, TextureImportFlags flags)
 {
 	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
 
@@ -266,25 +266,23 @@ Texture3D importTexture3D(string filename, TextureImportFlags flags)
 	auto baseWidth = FreeImage_GetWidth(dib);
 	auto baseHeight = FreeImage_GetHeight(dib);
 
-	printf("wat: %d %d\n", baseWidth, baseHeight);
-
 	auto baseDepth = baseWidth; // FreeImage_GetDepth(dib);
 
 	auto mipLevels = 1;
 	if (flags & TextureImportFlags::GENERATE_MIPMAPS)
 		mipLevels = 32 - clz(max(baseWidth, baseHeight));
 
-	Texture3D texture(format, baseWidth, baseHeight, baseDepth, mipLevels);
+	auto texture = new Texture3D(format, baseWidth, baseHeight, baseDepth, mipLevels);
 
 	vkInstance::submitSetupCommands([&](VkCommandBuffer commandBuffer) {
 		uploadMipChain(commandBuffer, texture, dib, mipLevels);
 	});
 
-	setImageName(vkInstance::device, texture.getImage(), filename);
+	setImageName(vkInstance::device, texture->getImage(), filename);
 	return texture;
 }
 
-TextureCube importTextureCube(string filename, TextureImportFlags flags)
+TextureCube *importTextureCube(string filename, TextureImportFlags flags)
 {
 	bool preferLinear = flags & TextureImportFlags::PREFER_LINEAR;
 
@@ -307,7 +305,7 @@ TextureCube importTextureCube(string filename, TextureImportFlags flags)
 	if (flags & TextureImportFlags::GENERATE_MIPMAPS)
 		mipLevels = 32 - clz(baseSize);
 
-	TextureCube texture(format, baseSize, mipLevels);
+	auto texture = new TextureCube(format, baseSize, mipLevels);
 
 	static const int offsets[6][2] = {
 		{ 2, 2 }, // -X
@@ -335,6 +333,6 @@ TextureCube importTextureCube(string filename, TextureImportFlags flags)
 
 	FreeImage_Unload(dib);
 
-	setImageName(vkInstance::device, texture.getImage(), filename);
+	setImageName(vkInstance::device, texture->getImage(), filename);
 	return texture;
 }

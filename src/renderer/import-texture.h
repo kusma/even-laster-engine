@@ -21,9 +21,9 @@ inline TextureImportFlags operator |= (TextureImportFlags &a, const TextureImpor
 	return static_cast<TextureImportFlags>(static_cast<int>(a) | static_cast<int>(b));
 }
 
-Texture2D importTexture2D(std::string filename, TextureImportFlags flags);
-Texture3D importTexture3D(std::string filename, TextureImportFlags flags);
-TextureCube importTextureCube(std::string filename, TextureImportFlags flags);
-Texture2DArray importTexture2DArray(std::string filename, TextureImportFlags flags);
+Texture2D *importTexture2D(std::string filename, TextureImportFlags flags);
+Texture3D *importTexture3D(std::string filename, TextureImportFlags flags);
+TextureCube *importTextureCube(std::string filename, TextureImportFlags flags);
+Texture2DArray *importTexture2DArray(std::string filename, TextureImportFlags flags);
 
 #endif // IMPORT_TEXTURE_H
