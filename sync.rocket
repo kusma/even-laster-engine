@@ -1,4 +1,4 @@
-<sync rows="4096">
+<sync rows="3134">
 	<tracks>
 		<track name="scene.index">
 			<key interpolation="0" row="0" value="-1"/>
