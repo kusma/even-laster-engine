@@ -517,6 +517,23 @@ namespace vkHelpers
 		};
 		vkUpdateDescriptorSets(device, 1, &writeDescriptorSets, 0, nullptr);
 	}
+
+	inline void writeUniformBufferDynamicDescriptor(VkDevice device,
+	                                                VkDescriptorSet descriptorSet,
+	                                                unsigned dstBinding,
+	                                                const std::vector<VkDescriptorBufferInfo> &bufferInfo)
+	{
+		assert(bufferInfo.size() < UINT32_MAX);
+		VkWriteDescriptorSet writeDescriptorSets = {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.dstSet = descriptorSet,
+			.dstBinding = dstBinding,
+			.descriptorCount = uint32_t(bufferInfo.size()),
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+			.pBufferInfo = bufferInfo.data(),
+		};
+		vkUpdateDescriptorSets(device, 1, &writeDescriptorSets, 0, nullptr);
+	}
 };
 
 #endif // VULKAN_H

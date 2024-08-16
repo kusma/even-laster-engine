@@ -237,18 +237,9 @@ SceneRenderer::SceneRenderer(const Scene *scene, const RenderPass &renderPass) :
 
 	descriptorSet = allocateDescriptorSet(vkInstance::device, descriptorPool, descriptorSetLayout);
 
-	VkDescriptorBufferInfo descriptorBufferInfo = uniformBuffer->getDescriptorBufferInfo(0, uniformBufferSpacing);
-
-	VkWriteDescriptorSet writeDescriptorSets[1] = { {
-		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		.dstSet = descriptorSet,
-		.dstBinding = 0,
-		.descriptorCount = 1,
-		.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-		.pBufferInfo = &descriptorBufferInfo,
-	} };
-
-	vkUpdateDescriptorSets(vkInstance::device, ARRAY_SIZE(writeDescriptorSets), writeDescriptorSets, 0, nullptr);
+	writeUniformBufferDynamicDescriptor(vkInstance::device, descriptorSet, 0, {
+		uniformBuffer->getDescriptorBufferInfo(0, uniformBufferSpacing),
+	});
 }
 
 SceneRenderer::~SceneRenderer()
