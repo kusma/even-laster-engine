@@ -504,11 +504,11 @@ int main(int argc, char *argv[])
 		updateCombinedImageDescriptor(vkInstance::device, backgroundDescriptorSet, 0,
 		{ {
 			.sampler = linearSampler,
-			.imageView = kickflipBGTexture.getImageView(),
+			.imageView = kickflipBGTexture->getImageView(),
 			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		}, {
 			.sampler = linearSampler,
-			.imageView = kickflipTexture.getImageView(),
+			.imageView = kickflipTexture->getImageView(),
 			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		} });
 
@@ -635,7 +635,7 @@ int main(int argc, char *argv[])
 		VkSampler fractalNoiseSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, 0.0f, true, false);
 
 
-		Texture2D evokeLogo = importTexture2D("assets/evoke-logo.png",  TextureImportFlags::PREMULTIPLY_ALPHA);
+		auto evokeLogo = importTexture2D("assets/evoke-logo.png",  TextureImportFlags::PREMULTIPLY_ALPHA);
 
 		{
 			writeUniformBufferDescriptor(vkInstance::device, smokeDescriptorSet,
@@ -645,7 +645,7 @@ int main(int argc, char *argv[])
 			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
 			                              2, { { fractalNoiseSampler, fractalNoise.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
 			updateCombinedImageDescriptor(vkInstance::device, smokeDescriptorSet,
-			                              3, { { linearSampler, evokeLogo.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
+			                              3, { { linearSampler, evokeLogo->getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL } });
 		}
 
 		// bartikkel effect
@@ -682,7 +682,7 @@ int main(int argc, char *argv[])
 
 		{
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				{ bartikkelSampler, bartikkelTexture.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
+				{ bartikkelSampler, bartikkelTexture->getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
 			writeUniformBufferDescriptor(vkInstance::device, bartikkelDescriptorSet,
@@ -717,10 +717,10 @@ int main(int argc, char *argv[])
 		auto cubeTexture = importTextureCube("assets/cubemap.hdr", TextureImportFlags::GENERATE_MIPMAPS);
 		auto colorLuts = importColorLuts("assets/luts");
 
-		VkSampler textureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(planes.getMipLevels()), false, false);
+		VkSampler textureSampler = createSampler(vkInstance::device, vkInstance::enabledFeatures, vkInstance::deviceProperties, float(planes->getMipLevels()), false, false);
 		for (SceneRenderer *sceneRenderer : sceneRenderers) {
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
-				cubeTexture.getDescriptorImageInfo(textureSampler)
+				cubeTexture->getDescriptorImageInfo(textureSampler)
 			};
 
 			updateCombinedImageDescriptor(vkInstance::device,
@@ -775,7 +775,7 @@ int main(int argc, char *argv[])
 			vector<VkDescriptorImageInfo> descriptorImageInfos = {
 				{ arrayTextureSampler, sceneColorRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
 				{ arrayTextureSampler, bloomRenderTarget.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL },
-				{ arrayTextureSampler, overlays.getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
+				{ arrayTextureSampler, overlays->getImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }
 			};
 
 			updateStorageImageDescriptor(vkInstance::device, descriptorSet,
