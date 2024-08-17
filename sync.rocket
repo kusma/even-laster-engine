@@ -332,9 +332,9 @@
 		</track>
 		<track name="waveplane:logo">
 			<key interpolation="0" row="0" value="0"/>
-			<key interpolation="1" row="24" value="0"/>
-			<key interpolation="1" row="28" value="6"/>
-			<key interpolation="0" row="40" value="0"/>
+			<key interpolation="2" row="16" value="0"/>
+			<key interpolation="2" row="32" value="5"/>
+			<key interpolation="0" row="48" value="0"/>
 			<key interpolation="1" row="256" value="3"/>
 			<key interpolation="0" row="272" value="0"/>
 			<key interpolation="1" row="280" value="4"/>
