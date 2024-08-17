@@ -8,6 +8,8 @@
 			<key interpolation="0" row="1024" value="0"/>
 			<key interpolation="0" row="1280" value="-1"/>
 			<key interpolation="0" row="1536" value="-2"/>
+			<key interpolation="0" row="2304" value="1"/>
+			<key interpolation="0" row="2816" value="-1"/>
 		</track>
 		<track name="overlay.index">
 			<key interpolation="0" row="0" value="0"/>
@@ -63,6 +65,8 @@
 			<key interpolation="0" row="944" value="0"/>
 			<key interpolation="1" row="1024" value="1"/>
 			<key interpolation="0" row="1032" value="0"/>
+			<key interpolation="1" row="2816" value="1"/>
+			<key interpolation="0" row="2864" value="0"/>
 		</track>
 		<track name="pulse.amount">
 			<key interpolation="0" row="0" value="0.0099999998"/>
@@ -78,18 +82,21 @@
 			<key interpolation="0" row="0" value="0"/>
 			<key interpolation="0" row="512" value="0"/>
 			<key interpolation="0" row="1536" value="1"/>
+			<key interpolation="0" row="2304" value="0.1"/>
 			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="background:clear.g">
 			<key interpolation="0" row="0" value="0"/>
 			<key interpolation="0" row="512" value="0"/>
 			<key interpolation="0" row="1536" value="1"/>
+			<key interpolation="0" row="2304" value="0.1"/>
 			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="background:clear.b">
 			<key interpolation="0" row="0" value="0"/>
 			<key interpolation="0" row="512" value="0"/>
 			<key interpolation="0" row="1536" value="1"/>
+			<key interpolation="0" row="2304" value="0.1"/>
 			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="camera:fov">
@@ -119,6 +126,8 @@
 			<key interpolation="1" row="1536" value="0"/>
 			<key interpolation="0" row="1791" value="100"/>
 			<key interpolation="0" row="1792" value="0"/>
+			<key interpolation="1" row="1920" value="20"/>
+			<key interpolation="0" row="2047" value="1"/>
 		</track>
 		<track name="camera:dist">
 			<key interpolation="0" row="0" value="3"/>
@@ -140,6 +149,14 @@
 			<key interpolation="0" row="1536" value="10"/>
 			<key interpolation="1" row="1792" value="4"/>
 			<key interpolation="0" row="1919" value="3"/>
+			<key interpolation="1" row="2176" value="1"/>
+			<key interpolation="0" row="2303" value="7"/>
+			<key interpolation="1" row="2304" value="1"/>
+			<key interpolation="0" row="2431" value="2.5"/>
+			<key interpolation="1" row="2432" value="1"/>
+			<key interpolation="1" row="2559" value="2"/>
+			<key interpolation="0" row="2687" value="3"/>
+			<key interpolation="0" row="2688" value="0.5"/>
 			<key interpolation="0" row="2816" value="2"/>
 		</track>
 		<track name="camera:roll">
@@ -155,6 +172,16 @@
 			<key interpolation="0" row="1280" value="0"/>
 			<key interpolation="1" row="1536" value="0"/>
 			<key interpolation="0" row="1791" value="360"/>
+			<key interpolation="1" row="2048" value="0"/>
+			<key interpolation="0" row="2175" value="180"/>
+			<key interpolation="1" row="2304" value="0"/>
+			<key interpolation="1" row="2431" value="0"/>
+			<key interpolation="1" row="2432" value="0"/>
+			<key interpolation="0" row="2463" value="10"/>
+			<key interpolation="1" row="2464" value="-4"/>
+			<key interpolation="2" row="2559" value="74"/>
+			<key interpolation="1" row="2560" value="1"/>
+			<key interpolation="0" row="2687" value="180"/>
 		</track>
 		<track name="camera:up">
 			<key interpolation="0" row="704" value="0"/>
@@ -164,6 +191,12 @@
 			<key interpolation="0" row="1280" value="0"/>
 			<key interpolation="0" row="1536" value="100"/>
 			<key interpolation="0" row="1792" value="1"/>
+			<key interpolation="1" row="2432" value="0.5"/>
+			<key interpolation="0" row="2559" value="0"/>
+			<key interpolation="0" row="2687" value="0"/>
+			<key interpolation="1" row="2688" value="0"/>
+			<key interpolation="0" row="2815" value="1"/>
+			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="camera:target.x">
 			<key interpolation="0" row="0" value="0"/>
@@ -174,18 +207,28 @@
 			<key interpolation="0" row="770" value="0"/>
 			<key interpolation="1" row="1792" value="0"/>
 			<key interpolation="0" row="1919" value="-2"/>
+			<key interpolation="0" row="2432" value="-1.5"/>
+			<key interpolation="0" row="2560" value="0"/>
+			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="camera:target.y">
 			<key interpolation="0" row="0" value="0"/>
 			<key interpolation="0" row="704" value="0"/>
 			<key interpolation="0" row="752" value="0"/>
 			<key interpolation="0" row="768" value="0"/>
+			<key interpolation="0" row="2432" value="0"/>
+			<key interpolation="0" row="2560" value="1"/>
+			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="camera:target.z">
 			<key interpolation="0" row="0" value="0"/>
 			<key interpolation="0" row="704" value="0"/>
 			<key interpolation="0" row="752" value="0"/>
 			<key interpolation="0" row="768" value="0"/>
+			<key interpolation="1" row="2432" value="-1"/>
+			<key interpolation="0" row="2496" value="1"/>
+			<key interpolation="0" row="2560" value="0"/>
+			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="refraction:plane"/>
 		<track name="refraction:fade"/>
@@ -211,6 +254,7 @@
 			<key interpolation="0" row="1408" value="6"/>
 			<key interpolation="0" row="1472" value="7"/>
 			<key interpolation="0" row="1536" value="0"/>
+			<key interpolation="0" row="2304" value="0.40000001"/>
 			<key interpolation="0" row="2816" value="0.30000001"/>
 		</track>
 		<track name="postprocess:kaleidoscope">
@@ -231,6 +275,14 @@
 			<key interpolation="0" row="1536" value="0"/>
 			<key interpolation="0" row="1792" value="1"/>
 			<key interpolation="0" row="1856" value="3"/>
+			<key interpolation="0" row="1920" value="0"/>
+			<key interpolation="0" row="1952" value="5"/>
+			<key interpolation="0" row="1984" value="3"/>
+			<key interpolation="0" row="2048" value="3"/>
+			<key interpolation="0" row="2112" value="4"/>
+			<key interpolation="0" row="2176" value="3"/>
+			<key interpolation="0" row="2560" value="5"/>
+			<key interpolation="0" row="2816" value="0"/>
 		</track>
 		<track name="postprocess:grade.index1">
 			<key interpolation="0" row="0" value="6"/>
@@ -240,6 +292,9 @@
 			<key interpolation="0" row="1024" value="4"/>
 			<key interpolation="0" row="1280" value="5"/>
 			<key interpolation="0" row="1536" value="6"/>
+			<key interpolation="0" row="2304" value="3"/>
+			<key interpolation="0" row="2560" value="1"/>
+			<key interpolation="0" row="2816" value="6"/>
 		</track>
 		<track name="postprocess:grade.index2">
 			<key interpolation="0" row="712" value="1"/>
@@ -252,6 +307,8 @@
 		<track name="postprocess:grade.amount">
 			<key interpolation="0" row="0" value="1"/>
 			<key interpolation="0" row="512" value="1"/>
+			<key interpolation="0" row="2560" value="1"/>
+			<key interpolation="0" row="2816" value="1"/>
 		</track>
 		<track name="waveplane:offset.x">
 			<key interpolation="0" row="0" value="0"/>
@@ -312,6 +369,7 @@
 			<key interpolation="0" row="512" value="1"/>
 			<key interpolation="0" row="704" value="0"/>
 			<key interpolation="0" row="1024" value="1"/>
+			<key interpolation="0" row="2304" value="0"/>
 		</track>
 	</tracks>
 	<bookmarks>
