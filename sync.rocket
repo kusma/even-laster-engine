@@ -12,7 +12,7 @@
 			<key row="2816" interpolation="0" value="-1"/>
 		</track>
 		<track name="overlay.index">
-			<key row="0" interpolation="0" value="0"/>
+			<key row="0" interpolation="0" value="21"/>
 			<key row="512" interpolation="0" value="0"/>
 			<key row="768" interpolation="0" value="6"/>
 			<key row="808" interpolation="0" value="7"/>
@@ -158,7 +158,8 @@
 			<key row="2812" interpolation="0" value="1"/>
 		</track>
 		<track name="overlay.alpha">
-			<key row="0" interpolation="0" value="0"/>
+			<key row="0" interpolation="2" value="1"/>
+			<key row="16" interpolation="0" value="0"/>
 			<key row="512" interpolation="1" value="0"/>
 			<key row="528" interpolation="0" value="1"/>
 			<key row="568" interpolation="1" value="1"/>
