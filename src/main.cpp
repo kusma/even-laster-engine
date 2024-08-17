@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
 {
 #endif
 
-	auto appName = "Excess - Aurora";
+	auto appName = "CarlB - Karl Bauhaus";
 	auto width = 1920, height = 1080;
 	auto fullscreen = true;
 	GLFWwindow *win = nullptr;
