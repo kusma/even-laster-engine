@@ -41,4 +41,5 @@ install_subdir('assets', install_dir: '')
 
 devenv = environment()
 devenv.set('VK_INSTANCE_LAYERS', 'VK_LAYER_KHRONOS_validation')
+devenv.set('VK_LAYER_SETTINGS_PATH', meson.current_source_dir())
 meson.add_devenv(devenv)
