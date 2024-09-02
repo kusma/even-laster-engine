@@ -65,7 +65,7 @@ static VkBool32 messageCallback(
 #endif
 	delete[] message;
 
-	assert(0);
+	assert((flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) == 0);
 
 	return false;
 }
