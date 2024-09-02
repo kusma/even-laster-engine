@@ -101,12 +101,24 @@ public:
 			}
 		}
 
+		std::vector<VkSubpassDependency> dependencies = { {
+			.srcSubpass = 0,
+			.dstSubpass = VK_SUBPASS_EXTERNAL,
+			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+			.dependencyFlags = 0,
+		} };
+
 		VkRenderPassCreateInfo renderPassCreateInfo = {
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 			.attachmentCount = uint32_t(attachments.size()),
 			.pAttachments = attachments.data(),
 			.subpassCount = 1,
 			.pSubpasses = &subpass,
+			.dependencyCount = uint32_t(dependencies.size()),
+			.pDependencies = dependencies.data(),
 		};
 
 		vkHelpers::assumeSuccess(
