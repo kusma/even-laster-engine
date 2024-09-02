@@ -31,7 +31,7 @@ const auto beatsPerMinute = 170.0f;
 const auto rowsPerBeat = 8;
 const auto rowRate = (beatsPerMinute / 60.0) * rowsPerBeat;
 
-const unsigned maxConcurrentFrames = 2u;
+const unsigned maxConcurrentFrames = 1u;
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
