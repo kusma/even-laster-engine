@@ -1238,6 +1238,16 @@ int main(int argc, char *argv[])
 					&color,
 					1,
 					&range);
+
+				// clear and following blit could happen on different HW queues, so we need a
+				// barrier here..
+				imageBarrier(
+					commandBuffer,
+					swapChainImage,
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 			}
 
 			blitImage(commandBuffer,
