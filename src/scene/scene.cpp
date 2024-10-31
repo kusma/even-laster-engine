@@ -35,7 +35,7 @@ IndexedBatch meshToIndexedBatch(const Mesh &mesh)
 		break;
 
 	default:
-		unreachable("invalid index-type!");
+		UNREACHABLE("invalid index-type!");
 	}
 
 	// FIXME: leaks both vertexBuffer and indexBuffer!

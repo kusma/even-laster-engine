@@ -66,7 +66,7 @@ static int getBpp(FIBITMAP *dib)
 	case FIT_BITMAP: return FreeImage_GetBPP(dib);
 	case FIT_RGBF: return sizeof(uint16_t) * 8 * 4; // expand to RGBA, which is always supported
 	default:
-		unreachable("unsupported type!");
+		UNREACHABLE("unsupported type!");
 	}
 	return 0;
 }
@@ -120,7 +120,7 @@ static StagingBuffer *copyToStagingBuffer(FIBITMAP *dib)
 			}
 			break;
 		default:
-			unreachable("unsupported type!");
+			UNREACHABLE("unsupported type!");
 		}
 	}
 	stagingBuffer->unmap();

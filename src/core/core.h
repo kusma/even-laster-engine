@@ -11,13 +11,13 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
 #ifdef _MSC_VER
-#define unreachable(str) \
+#define UNREACHABLE(str) \
 do { \
 	assert(!str); \
 	__assume(0); \
 } while (0);
 #else
-#define unreachable(str) assert(!str)
+#define UNREACHABLE(str) assert(!str)
 #endif
 
 #ifdef _MSC_VER

@@ -113,7 +113,7 @@ namespace vkHelpers
 					return format;
 				break;
 			default:
-				unreachable("unexpected tiling mode");
+				UNREACHABLE("unexpected tiling mode");
 			}
 		}
 
