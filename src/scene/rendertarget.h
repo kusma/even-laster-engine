@@ -90,8 +90,8 @@ class ColorRenderTarget : public RenderTargetBase {
 public:
 	ColorRenderTarget(VkFormat format, int width, int height,
 	                  int mipLevels = 1,
-					  VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-	                  VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) :
+	                  VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
+	                  VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) :
 		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, 1, mipLevels, sampleCount, usage, VK_IMAGE_ASPECT_COLOR_BIT)
 	{
 	}
@@ -101,7 +101,7 @@ class DepthRenderTarget : public RenderTargetBase {
 public:
 	DepthRenderTarget(VkFormat format, int width, int height,
 	                  VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-	                  VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) :
+	                  VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) :
 		RenderTargetBase(format, VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D, width, height, 1, 1, 1, sampleCount, usage, VK_IMAGE_ASPECT_DEPTH_BIT)
 	{
 	}
