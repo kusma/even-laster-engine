@@ -49,6 +49,7 @@ public:
 		};
 
 		std::vector<VkAttachmentDescription> attachments;
+		std::vector<VkSubpassDependency> dependencies;
 		if (depthStencilFormat != VK_FORMAT_UNDEFINED) {
 			assert(depthAttachmentReference.attachment == 0);
 			subpass.pDepthStencilAttachment = &depthAttachmentReference,
@@ -62,6 +63,16 @@ public:
 				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			});
+
+			dependencies.push_back({
+				.srcSubpass = VK_SUBPASS_EXTERNAL,
+				.dstSubpass = 0,
+				.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+				.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+				.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				.dependencyFlags = 0,
 			});
 		}
 
@@ -84,6 +95,26 @@ public:
 				               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			});
 
+			dependencies.push_back({
+				.srcSubpass = VK_SUBPASS_EXTERNAL,
+				.dstSubpass = 0,
+				.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				.srcAccessMask = 0,
+				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+				.dependencyFlags = 0,
+				});
+
+			dependencies.push_back({
+				.srcSubpass = 0,
+				.dstSubpass = VK_SUBPASS_EXTERNAL,
+				.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+				.dependencyFlags = 0,
+			});
+
 			if (sampleCount != VK_SAMPLE_COUNT_1_BIT) {
 				colorResolveAttachmentReference.attachment = attachments.size();
 				subpass.pResolveAttachments = &colorResolveAttachmentReference;
@@ -101,15 +132,6 @@ public:
 			}
 		}
 
-		std::vector<VkSubpassDependency> dependencies = { {
-			.srcSubpass = 0,
-			.dstSubpass = VK_SUBPASS_EXTERNAL,
-			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-			.dependencyFlags = 0,
-		} };
 
 		VkRenderPassCreateInfo renderPassCreateInfo = {
 			.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
