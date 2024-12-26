@@ -997,6 +997,13 @@ int main(int argc, char *argv[])
 				particleUniforms.offsets = glm::vec2(a, b);
 				particleUniformBuffer->uploadMemory(&particleUniforms, sizeof(particleUniforms));
 
+				bufferBarrier(commandBuffer,
+					particleUniformBuffer->getBuffer(),
+					VK_PIPELINE_STAGE_HOST_BIT,
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+					VK_ACCESS_HOST_WRITE_BIT,
+					VK_ACCESS_UNIFORM_READ_BIT);
+
 				VkClearValue clearValue = {
 					.color = {
 						float(sync_get_val(clearRTrack, row)),
@@ -1017,11 +1024,6 @@ int main(int argc, char *argv[])
 					.pClearValues = &clearValue,
 				};
 
-				vkCmdBeginRenderPass(commandBuffer, &particleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-
-				setViewport(commandBuffer, 0, 0, float(width), float(height));
-				setScissor(commandBuffer, 0, 0, width, height);
-
 				if (sceneIndex == -1) {
 					smokeUniforms.offset = glm::vec2(sync_get_val(wavePlaneOffsetXTrack, row),
 													sync_get_val(wavePlaneOffsetYTrack, row));
@@ -1031,6 +1033,18 @@ int main(int argc, char *argv[])
 					smokeUniforms.logoImage = int(sync_get_val(logoImageTrack, row));
 					smokeUniforms.logoAmount = float(sync_get_val(logoAmoutTrack, row));
 					smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
+
+					bufferBarrier(commandBuffer,
+						smokeUniformBuffer->getBuffer(),
+						VK_PIPELINE_STAGE_HOST_BIT,
+						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+						VK_ACCESS_HOST_WRITE_BIT,
+						VK_ACCESS_UNIFORM_READ_BIT);
+
+					vkCmdBeginRenderPass(commandBuffer, &particleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+
+					setViewport(commandBuffer, 0, 0, float(width), float(height));
+					setScissor(commandBuffer, 0, 0, width, height);
 
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipeline);
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipelineLayout, 0, 1, &smokeDescriptorSet, 0, nullptr);
@@ -1079,6 +1093,18 @@ int main(int argc, char *argv[])
 					bartikkelUniforms.zpos = glm::ivec4(roundf(gridMatrix[3].x), roundf(gridMatrix[3].y), roundf(gridMatrix[3].z), 0);
 					bartikkelUniforms.modelViewMatrix = modelViewMatrix;
 					bartikkelUniformBuffer->uploadMemory(&bartikkelUniforms, sizeof(bartikkelUniforms));
+
+					bufferBarrier(commandBuffer,
+						bartikkelUniformBuffer->getBuffer(),
+						VK_PIPELINE_STAGE_HOST_BIT,
+						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+						VK_ACCESS_HOST_WRITE_BIT,
+						VK_ACCESS_UNIFORM_READ_BIT);
+
+					vkCmdBeginRenderPass(commandBuffer, &particleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+
+					setViewport(commandBuffer, 0, 0, float(width), float(height));
+					setScissor(commandBuffer, 0, 0, width, height);
 
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bartikkelPipeline);
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bartikkelPipelineLayout, 0, 1, &bartikkelDescriptorSet, 0, nullptr);

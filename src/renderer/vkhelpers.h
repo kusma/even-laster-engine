@@ -180,6 +180,31 @@ namespace vkHelpers
 			oldQueueFamily, newQueueFamily);
 	}
 
+	inline void bufferBarrier(VkCommandBuffer commandBuffer,
+		VkBuffer buffer,
+		VkPipelineStageFlags srcStage,
+		VkPipelineStageFlags dstStage,
+		VkAccessFlags srcAccess,
+		VkAccessFlags dstAccess,
+		VkDeviceSize offset = 0,
+		VkDeviceSize size = VK_WHOLE_SIZE,
+		uint32_t oldQueueFamily = VK_QUEUE_FAMILY_IGNORED,
+		uint32_t newQueueFamily = VK_QUEUE_FAMILY_IGNORED)
+	{
+		VkBufferMemoryBarrier bufferBarrier = {
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+			NULL,
+			srcAccess, dstAccess,
+			oldQueueFamily, newQueueFamily,
+			buffer, offset, size,
+		};
+		vkCmdPipelineBarrier(commandBuffer,
+			srcStage, dstStage,
+			0, 0, NULL,
+			1, &bufferBarrier,
+			0, NULL);
+	}
+
 	inline void blitImage(
 		VkCommandBuffer commandBuffer,
 		VkImage srcImage, VkImage dstImage,
