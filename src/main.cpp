@@ -162,7 +162,7 @@ static VkPipeline createGeometrylessPipeline(VkPipelineLayout layout, const Rend
 	pb.addViewport({}); // dummy
 	pb.addScissor({}); // dummy
 
-	pb.setDepthTest(depthWrite, depthWrite, VK_COMPARE_OP_LESS_OR_EQUAL);
+	pb.setDepthTest(depthWrite, depthWrite, VK_COMPARE_OP_ALWAYS);
 
 	pb.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT);
 	pb.addDynamicState(VK_DYNAMIC_STATE_SCISSOR);
