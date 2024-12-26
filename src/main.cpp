@@ -1005,13 +1005,6 @@ int main(int argc, char *argv[])
 
 				vkCmdUpdateBuffer(commandBuffer, particleUniformBuffer->getBuffer(), 0, sizeof(particleUniforms), &particleUniforms);
 
-				bufferBarrier(commandBuffer,
-					particleUniformBuffer->getBuffer(),
-					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
-					VK_ACCESS_TRANSFER_WRITE_BIT,
-					VK_ACCESS_UNIFORM_READ_BIT);
-
 				VkClearValue clearValue = {
 					.color = {
 						float(sync_get_val(clearRTrack, row)),
@@ -1041,13 +1034,6 @@ int main(int argc, char *argv[])
 					smokeUniforms.logoImage = int(sync_get_val(logoImageTrack, row));
 					smokeUniforms.logoAmount = float(sync_get_val(logoAmoutTrack, row));
 
-					bufferBarrier(commandBuffer,
-						smokeUniformBuffer->getBuffer(),
-						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,
-						VK_ACCESS_UNIFORM_READ_BIT,
-						VK_ACCESS_TRANSFER_WRITE_BIT);
-
 					vkCmdUpdateBuffer(commandBuffer, smokeUniformBuffer->getBuffer(), 0, sizeof(smokeUniforms), &smokeUniforms);
 
 					bufferBarrier(commandBuffer,
@@ -1066,6 +1052,14 @@ int main(int argc, char *argv[])
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, smokePipelineLayout, 0, 1, &smokeDescriptorSet, 0, nullptr);
 					int size = 3 << 8;
 					vkCmdDraw(commandBuffer, size, size, 0, 0);
+					vkCmdEndRenderPass(commandBuffer);
+
+					bufferBarrier(commandBuffer,
+						smokeUniformBuffer->getBuffer(),
+						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+						VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VK_ACCESS_UNIFORM_READ_BIT,
+						VK_ACCESS_TRANSFER_WRITE_BIT);
 				} else {
 
 					const int AXIS_BITS = 6;
@@ -1109,13 +1103,6 @@ int main(int argc, char *argv[])
 					bartikkelUniforms.zpos = glm::ivec4(roundf(gridMatrix[3].x), roundf(gridMatrix[3].y), roundf(gridMatrix[3].z), 0);
 					bartikkelUniforms.modelViewMatrix = modelViewMatrix;
 
-					bufferBarrier(commandBuffer,
-						bartikkelUniformBuffer->getBuffer(),
-						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-						VK_PIPELINE_STAGE_TRANSFER_BIT,
-						VK_ACCESS_UNIFORM_READ_BIT,
-						VK_ACCESS_TRANSFER_WRITE_BIT);
-
 					vkCmdUpdateBuffer(commandBuffer, bartikkelUniformBuffer->getBuffer(), 0, sizeof(bartikkelUniforms), &bartikkelUniforms);
 
 					bufferBarrier(commandBuffer,
@@ -1134,9 +1121,22 @@ int main(int argc, char *argv[])
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bartikkelPipelineLayout, 0, 1, &bartikkelDescriptorSet, 0, nullptr);
 					int size = 1 << (3 * AXIS_BITS);
 					vkCmdDraw(commandBuffer, size, 1, 0, 0);
+					vkCmdEndRenderPass(commandBuffer);
+
+					bufferBarrier(commandBuffer,
+						bartikkelUniformBuffer->getBuffer(),
+						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+						VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VK_ACCESS_UNIFORM_READ_BIT,
+						VK_ACCESS_TRANSFER_WRITE_BIT);
 				}
 
-				vkCmdEndRenderPass(commandBuffer);
+				bufferBarrier(commandBuffer,
+					particleUniformBuffer->getBuffer(),
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_ACCESS_UNIFORM_READ_BIT);
 			}
 
 			for (unsigned i = 0; i < bloomLevels; ++i) {
