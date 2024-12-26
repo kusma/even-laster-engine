@@ -940,13 +940,6 @@ int main(int argc, char *argv[])
 				sceneIndex %= sceneRenderers.size();
 				SceneRenderer *sceneRenderer = sceneRenderers[sceneIndex];
 
-#if 0
-				refractionUniforms.planeIndex = 0;
-				refractionUniforms.fade = 0;
-				refractionUniforms.refractiveIndex = 0;
-				refractionUniformBuffer->uploadMemory(&refractionUniforms, sizeof(refractionUniforms));
-#endif
-
 				VkClearValue clearValues[] = { {
 						.depthStencil = { 1.0f, 0 }
 					}, {
