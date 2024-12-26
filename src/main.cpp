@@ -1000,8 +1000,8 @@ int main(int argc, char *argv[])
 					particleUniformBuffer->getBuffer(),
 					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
 					VK_PIPELINE_STAGE_TRANSFER_BIT,
-					0,
-					0);
+					VK_ACCESS_UNIFORM_READ_BIT,
+					VK_ACCESS_TRANSFER_WRITE_BIT);
 
 				vkCmdUpdateBuffer(commandBuffer, particleUniformBuffer->getBuffer(), 0, sizeof(particleUniforms), &particleUniforms);
 
@@ -1045,8 +1045,8 @@ int main(int argc, char *argv[])
 						smokeUniformBuffer->getBuffer(),
 						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
 						VK_PIPELINE_STAGE_TRANSFER_BIT,
-						0,
-						0);
+						VK_ACCESS_UNIFORM_READ_BIT,
+						VK_ACCESS_TRANSFER_WRITE_BIT);
 
 					vkCmdUpdateBuffer(commandBuffer, smokeUniformBuffer->getBuffer(), 0, sizeof(smokeUniforms), &smokeUniforms);
 
@@ -1113,8 +1113,8 @@ int main(int argc, char *argv[])
 						bartikkelUniformBuffer->getBuffer(),
 						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
 						VK_PIPELINE_STAGE_TRANSFER_BIT,
-						0,
-						0);
+						VK_ACCESS_UNIFORM_READ_BIT,
+						VK_ACCESS_TRANSFER_WRITE_BIT);
 
 					vkCmdUpdateBuffer(commandBuffer, bartikkelUniformBuffer->getBuffer(), 0, sizeof(bartikkelUniforms), &bartikkelUniforms);
 
