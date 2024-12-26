@@ -25,13 +25,6 @@ public:
 		vmaUnmapMemory(vkInstance::allocator, allocation);
 	}
 
-	void uploadMemory(void *data, VkDeviceSize size)
-	{
-		auto mappedUniformMemory = map();
-		memcpy(mappedUniformMemory, data, (size_t)size);
-		unmap();
-	}
-
 	VkBuffer getBuffer() const { return buffer; }
 	VkDeviceSize getSize() const { return size; }
 
@@ -56,6 +49,13 @@ class StagingBuffer : public Buffer {
 public:
 	StagingBuffer(VkDeviceSize size) : Buffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_AUTO, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
 	{
+	}
+
+	void uploadMemory(void* data, VkDeviceSize size)
+	{
+		auto mappedUniformMemory = map();
+		memcpy(mappedUniformMemory, data, (size_t)size);
+		unmap();
 	}
 };
 
