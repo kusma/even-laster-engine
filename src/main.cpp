@@ -390,9 +390,12 @@ int main(int argc, char *argv[])
 #ifdef SYNC_PLAYER
 		auto monitor = glfwGetPrimaryMonitor();
 #else
+		GLFWmonitor* monitor = nullptr;
+		fullscreen = false;
+#if 0
 		int monitorCount;
 		GLFWmonitor **monitors = glfwGetMonitors(&monitorCount);
-		GLFWmonitor *monitor = nullptr;
+
 		if (monitorCount > 1) {
 			fullscreen = true;
 			monitor = monitors[monitorCount - 1];
@@ -402,6 +405,7 @@ int main(int argc, char *argv[])
 			width = 1280;
 			height = 720;
 		}
+#endif
 #endif
 		win = glfwCreateWindow(width, height, appName, fullscreen ? monitor : nullptr, nullptr);
 		if (fullscreen)
