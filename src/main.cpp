@@ -995,13 +995,21 @@ int main(int argc, char *argv[])
 
 				particleUniforms.modelViewProjectionMatrix = modelViewProjectionMatrix;
 				particleUniforms.offsets = glm::vec2(a, b);
-				particleUniformBuffer->uploadMemory(&particleUniforms, sizeof(particleUniforms));
 
 				bufferBarrier(commandBuffer,
 					particleUniformBuffer->getBuffer(),
-					VK_PIPELINE_STAGE_HOST_BIT,
 					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
-					VK_ACCESS_HOST_WRITE_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					0,
+					0);
+
+				vkCmdUpdateBuffer(commandBuffer, particleUniformBuffer->getBuffer(), 0, sizeof(particleUniforms), &particleUniforms);
+
+				bufferBarrier(commandBuffer,
+					particleUniformBuffer->getBuffer(),
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,
+					VK_ACCESS_TRANSFER_WRITE_BIT,
 					VK_ACCESS_UNIFORM_READ_BIT);
 
 				VkClearValue clearValue = {
@@ -1032,13 +1040,21 @@ int main(int argc, char *argv[])
 					smokeUniforms.time = float(sync_get_val(wavePlaneTimeTrack, row));
 					smokeUniforms.logoImage = int(sync_get_val(logoImageTrack, row));
 					smokeUniforms.logoAmount = float(sync_get_val(logoAmoutTrack, row));
-					smokeUniformBuffer->uploadMemory(&smokeUniforms, sizeof(smokeUniforms));
 
 					bufferBarrier(commandBuffer,
 						smokeUniformBuffer->getBuffer(),
-						VK_PIPELINE_STAGE_HOST_BIT,
 						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-						VK_ACCESS_HOST_WRITE_BIT,
+						VK_PIPELINE_STAGE_TRANSFER_BIT,
+						0,
+						0);
+
+					vkCmdUpdateBuffer(commandBuffer, smokeUniformBuffer->getBuffer(), 0, sizeof(smokeUniforms), &smokeUniforms);
+
+					bufferBarrier(commandBuffer,
+						smokeUniformBuffer->getBuffer(),
+						VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+						VK_ACCESS_TRANSFER_WRITE_BIT,
 						VK_ACCESS_UNIFORM_READ_BIT);
 
 					vkCmdBeginRenderPass(commandBuffer, &particleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
@@ -1092,13 +1108,21 @@ int main(int argc, char *argv[])
 					bartikkelUniforms.zaxis = glm::ivec4(roundf(gridMatrix[2].x), roundf(gridMatrix[2].y), roundf(gridMatrix[2].z), 0);
 					bartikkelUniforms.zpos = glm::ivec4(roundf(gridMatrix[3].x), roundf(gridMatrix[3].y), roundf(gridMatrix[3].z), 0);
 					bartikkelUniforms.modelViewMatrix = modelViewMatrix;
-					bartikkelUniformBuffer->uploadMemory(&bartikkelUniforms, sizeof(bartikkelUniforms));
 
 					bufferBarrier(commandBuffer,
 						bartikkelUniformBuffer->getBuffer(),
-						VK_PIPELINE_STAGE_HOST_BIT,
 						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-						VK_ACCESS_HOST_WRITE_BIT,
+						VK_PIPELINE_STAGE_TRANSFER_BIT,
+						0,
+						0);
+
+					vkCmdUpdateBuffer(commandBuffer, bartikkelUniformBuffer->getBuffer(), 0, sizeof(bartikkelUniforms), &bartikkelUniforms);
+
+					bufferBarrier(commandBuffer,
+						bartikkelUniformBuffer->getBuffer(),
+						VK_PIPELINE_STAGE_TRANSFER_BIT,
+						VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+						VK_ACCESS_TRANSFER_WRITE_BIT,
 						VK_ACCESS_UNIFORM_READ_BIT);
 
 					vkCmdBeginRenderPass(commandBuffer, &particleRenderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
