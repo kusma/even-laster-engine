@@ -1225,9 +1225,11 @@ int main(int argc, char *argv[])
 				commandBuffer,
 				postProcessRenderTarget.getImage(),
 				VK_IMAGE_ASPECT_COLOR_BIT, // ?? does this really do anything?!
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 				0, VK_ACCESS_SHADER_WRITE_BIT,
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_GENERAL);
 
 			auto fade = sync_get_val(fadeTrack, row);
 			auto pulseAmount = sync_get_val(pulseAmountTrack, row);
