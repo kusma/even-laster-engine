@@ -1139,6 +1139,16 @@ int main(int argc, char *argv[])
 				vkCmdEndRenderPass(commandBuffer);
 			}
 
+			imageBarrier(
+				commandBuffer,
+				sceneColorRenderTarget.getImage(),
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+				VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 			for (unsigned i = 0; i < bloomLevels; ++i) {
 				auto levelWidth = TextureBase::mipSize(bloomRenderTarget.getWidth(), i);
 				auto levelHeight = TextureBase::mipSize(bloomRenderTarget.getHeight(), i);
@@ -1230,6 +1240,14 @@ int main(int argc, char *argv[])
 				0, VK_ACCESS_SHADER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL);
+
+			imageBarrier(
+				commandBuffer,
+				bloomRenderTarget.getImage(),
+				subresourceRange,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 			auto fade = sync_get_val(fadeTrack, row);
 			auto pulseAmount = sync_get_val(pulseAmountTrack, row);
