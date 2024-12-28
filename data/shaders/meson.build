@@ -25,7 +25,7 @@ foreach s : sources
 		command: [
 			glslc,
 			'-O',
-			'--target-env=vulkan1.1',
+			'--target-env=vulkan1.3',
 			'@INPUT@',
 			'-o',
 			'@OUTPUT@',
