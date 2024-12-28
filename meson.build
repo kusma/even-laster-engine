@@ -29,9 +29,9 @@ glslc = find_program('glslc')
 glfw_dep = dependency('glfw3', version: '>=3.2')
 glm_dep = dependency('glm')
 
-freeimage_dep = dependency('freeimage', required: false, fallback: 'freeimage')
+freeimage_dep = cxx.find_library('freeimage', required: false)
 if not freeimage_dep.found()
-	freeimage_dep = cxx.find_library('freeimage')
+	freeimage_dep = dependency('freeimage', fallback: 'freeimage')
 endif
 
 assimp_dep = dependency('assimp')
