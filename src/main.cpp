@@ -425,10 +425,6 @@ int main(int argc, char *argv[])
 
 
 		auto enabledExtensions = getRequiredInstanceExtensions();
-#ifndef NDEBUG
-		enabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-		enabledExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif
 
 		vkInstance::instanceInit(appName, enabledExtensions);
 

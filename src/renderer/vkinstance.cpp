@@ -97,19 +97,6 @@ void vkInstance::instanceInit(const char *appName, const vector<const char *> &e
 	assumeSuccess(err);
 
 	volkLoadInstance(vkInstance::instance);
-
-#ifndef NDEBUG
-	VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT,
-		.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
-		.pfnCallback = (PFN_vkDebugReportCallbackEXT)messageCallback,
-	};
-	assumeSuccess(vkCreateDebugReportCallbackEXT(instance, &debugReportCallbackCreateInfo,
-	                                             nullptr, &debugReportCallback));
-
-	// SELF-TEST:
-	// vkDebugReportMessageEXT(instance, VK_DEBUG_REPORT_WARNING_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT, nullptr, 0, 0, "self-test", "This is a dummy warning");
-#endif
 }
 
 static uint32_t findQueue(VkPhysicalDevice physicalDevice, VkQueueFlags requiredFlags, function<bool(VkInstance, VkPhysicalDevice, uint32_t)> usableQueue)
