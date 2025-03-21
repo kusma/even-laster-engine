@@ -196,7 +196,7 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 		.device = device,
 		.pVulkanFunctions = &vulkanFunctions,
 		.instance = instance,
-		.vulkanApiVersion = deviceProperties.apiVersion,
+		.vulkanApiVersion = VK_API_VERSION_1_3,
 	};
 	vmaCreateAllocator(&allocatorCreateInfo, &vkInstance::allocator);
 
