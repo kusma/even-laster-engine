@@ -128,6 +128,7 @@ void vkInstance::deviceInit(VkPhysicalDevice physicalDevice, function<bool(VkIns
 
 	enabledFeatures.samplerAnisotropy = physicalDeviceFeatures.samplerAnisotropy;
 	enabledFeatures.geometryShader = true;
+	enabledFeatures.shaderStorageImageWriteWithoutFormat = true;
 
 	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
