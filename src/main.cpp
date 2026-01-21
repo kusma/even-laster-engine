@@ -225,9 +225,9 @@ static VkPipeline createFullScreenQuadPipeline(VkPipelineLayout layout, VkRender
 
 static Texture3D loadFractalNoise(const std::string &filename, int width, int height, int depth)
 {
-	Texture3D texture(VK_FORMAT_R32G32B32A32_SFLOAT, width, height, depth, 1);
+	Texture3D texture(VK_FORMAT_R16G16B16A16_SNORM, width, height, depth, 1);
 
-	auto size = sizeof(float) * 4 * width * height * depth;
+	auto size = sizeof(uint16_t) * 4 * width * height * depth;
 	auto stagingBuffer = new StagingBuffer(size);
 	void *ptr = stagingBuffer->map(0, size);
 

@@ -1,6 +1,9 @@
 #include "FastNoise.h"
+#include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <limits>
 
 int main(int argc, char **argv)
 {
@@ -13,7 +16,7 @@ int main(int argc, char **argv)
 
    int width = 64, height = 64, depth = 64;
    auto size = 4 * width * height * depth;
-   float *buf = new float[size];
+   int16_t *buf = new int16_t[size];
    FastNoise noiseX(1337), noiseY(1338), noiseZ(1339);
 
    auto type = FastNoise::NoiseType::PerlinFractal;
@@ -59,7 +62,9 @@ int main(int argc, char **argv)
                float v1 = h1 * yw + h2 * (1 - yw);
                float v2 = h3 * yw + h4 * (1 - yw);
 
-               row[x * 4 + i] = v1 * zw + v2 * (1 - zw);
+               float v = v1 * zw + v2 * (1 - zw);
+               assert(v > -0.5f && v < 0.5f);
+               row[x * 4 + i] = v * std::numeric_limits<int16_t>::max();
             }
             row[x * 4 + 3] = 0.0f;
          }
