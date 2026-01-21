@@ -484,16 +484,26 @@ int main(int argc, char *argv[])
 
 		auto sceneMSAASamples = getMaxMSAACount(vkInstance::deviceProperties);
 		auto depthFormat = findBestFormat(vkInstance::physicalDevice, depthCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+		vector<VkFormat> hdrCandidates = {
+			VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+			VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+		};
+		VkFormat hdrFormat = findBestFormat(vkInstance::physicalDevice, hdrCandidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT | VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+
+		VkFormat sdrFormat = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+
 		DepthRenderTarget sceneDepthRenderTarget(depthFormat, width, height, sceneMSAASamples);
-		ColorRenderTarget sceneColorMSAARenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, sceneMSAASamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT);
-		ColorRenderTarget sceneColorRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		ColorRenderTarget sceneColorMSAARenderTarget(hdrFormat, width, height, 1, sceneMSAASamples, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT);
+		ColorRenderTarget sceneColorRenderTarget(hdrFormat, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
 		int bloomLevels = 32 - clz(max(width, height));
-		ColorRenderTarget bloomRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, bloomLevels, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-		ColorRenderTarget bloomUpscaleRenderTarget(VK_FORMAT_R16G16B16A16_SFLOAT, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		ColorRenderTarget bloomRenderTarget(hdrFormat, width, height, bloomLevels, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		ColorRenderTarget bloomUpscaleRenderTarget(hdrFormat, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-		Texture2DArrayRenderTarget colorArray(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 128, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-		ColorRenderTarget postProcessRenderTarget(VK_FORMAT_A2B10G10R10_UNORM_PACK32, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		Texture2DArrayRenderTarget colorArray(sdrFormat, width, height, 128, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		ColorRenderTarget postProcessRenderTarget(sdrFormat, width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		vector<VkAttachmentDescription> sceneRenderPassAttachments = { {
 			.flags = 0,
