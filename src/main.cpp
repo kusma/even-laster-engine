@@ -253,7 +253,7 @@ Texture3D importCubeFile(const std::string &filename)
 	int size = 0;
 
 	StagingBuffer *stagingBuffer = nullptr;
-	float *ptr = nullptr;
+	uint16_t *ptr = nullptr;
 	int colorsRead = 0;
 
 	std::ifstream stream(filename);
@@ -279,9 +279,9 @@ Texture3D importCubeFile(const std::string &filename)
 				if (size < 1)
 					throw runtime_error("size needs to be at least one");
 
-				auto textureSize = sizeof(float) * 4 * size * size * size;
+				auto textureSize = sizeof(uint16_t) * 4 * size * size * size;
 				stagingBuffer = new StagingBuffer(textureSize);
-				ptr = static_cast<float *>(stagingBuffer->map(0, textureSize));
+				ptr = static_cast<uint16_t *>(stagingBuffer->map(0, textureSize));
 
 				continue;
 			}
@@ -324,10 +324,10 @@ Texture3D importCubeFile(const std::string &filename)
 			if (!ss.eof())
 				throw runtime_error("unexpected character");
 
-			ptr[colorsRead * 4 + 0] = r;
-			ptr[colorsRead * 4 + 1] = g;
-			ptr[colorsRead * 4 + 2] = b;
-			ptr[colorsRead * 4 + 3] = 1.0f;
+			ptr[colorsRead * 4 + 0] = float_to_half(r);
+			ptr[colorsRead * 4 + 1] = float_to_half(g);
+			ptr[colorsRead * 4 + 2] = float_to_half(b);
+			ptr[colorsRead * 4 + 3] = float_to_half(1.0f);
 			++colorsRead;
 			continue;
 		}
@@ -341,7 +341,7 @@ Texture3D importCubeFile(const std::string &filename)
 	if (colorsRead != size * size * size)
 		throw runtime_error("wrong amount of colors");
 
-	Texture3D texture(VK_FORMAT_R32G32B32A32_SFLOAT, size, size, size, 1);
+	Texture3D texture(VK_FORMAT_R16G16B16A16_SFLOAT, size, size, size, 1);
 	stagingBuffer->unmap();
 	texture.uploadFromStagingBuffer(stagingBuffer, 0);
 	return texture;
